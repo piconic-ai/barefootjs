@@ -1232,6 +1232,8 @@ import { fixture as moduleFunctionHelperChain } from './module-function-helper-c
 import { fixture as moduleConstDestructureDefault } from './module-const-destructure-default'
 import { fixture as moduleConstDefaultHydrate } from './module-const-default-hydrate'
 import { fixture as moduleConstMemberKeyHydrate } from './module-const-member-key-hydrate'
+import { fixture as moduleConstMemberReadHydrate } from './module-const-member-read-hydrate'
+import { fixture as propsAliasHandlerHydrate } from './props-alias-handler-hydrate'
 // #3012: the boolean-test-position companion of moduleConstArrowHelper /
 // moduleFunctionHelperChain above — a module-scope helper called from
 // inside a ternary's `test` (not `isValidElement`), pinning that the
@@ -2492,6 +2494,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstDestructureDefault,
   moduleConstDefaultHydrate,
   moduleConstMemberKeyHydrate,
+  moduleConstMemberReadHydrate,
+  propsAliasHandlerHydrate,
   moduleHelperBoolcontextCall,
   opaqueLocalAccessorCall,
   opaqueLocalAccessorCallClient,

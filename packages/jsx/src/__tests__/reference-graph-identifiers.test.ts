@@ -14,6 +14,9 @@ import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/index'
 import {
+  addReferencedNames,
+  addReferencedTemplateNames,
+  scanReceiverMembers,
   extractIdentifiers,
   extractTemplateExpressions,
   extractTemplateIdentifiers,
@@ -157,5 +160,38 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     expect(hono.errors).toHaveLength(0)
     const template = hono.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain("__hydrateProps['default']")
+  })
+})
+
+describe('reference names from Phase 1 facts', () => {
+  const reader = {
+    facts: {
+      'D.label + p.n': { free: ['D', 'p'], members: [['D', 'label'], ['p', 'n']] as Array<[string, string]> },
+    },
+    receivers: new Set(['p']),
+  }
+
+  test('a recorded text names its free identifiers and the members of a receiver only', () => {
+    const set = new Set<string>()
+    addReferencedNames('D.label + p.n', reader, set)
+    expect([...set].sort()).toEqual(['D', 'n', 'p'])
+  })
+
+  test('a text with no facts falls back to the token scan', () => {
+    const set = new Set<string>()
+    addReferencedNames('a.b', reader, set)
+    expect([...set].sort()).toEqual(['a', 'b'])
+  })
+
+  test('a template looks up the facts of each substitution body', () => {
+    const set = new Set<string>()
+    addReferencedTemplateNames('<p>${D.label + p.n}</p>', reader, set)
+    expect([...set].sort()).toEqual(['D', 'n', 'p'])
+  })
+
+  test('receiver members are found from token order alone', () => {
+    const set = new Set<string>()
+    scanReceiverMembers("props.a + other.b + props?.c + (props) + x.props.d", new Set(['props']), set)
+    expect([...set].sort()).toEqual(['a', 'c', 'd'])
   })
 })

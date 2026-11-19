@@ -25,6 +25,7 @@ import type {
   MapCallbackPreamble,
   PreambleRegionSource,
   JsSourceText,
+  SourceFacts,
 } from '../types.ts'
 import type { ModuleScopeReplica } from '../module-scope.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
@@ -82,6 +83,8 @@ export interface ClientJsContext {
   propsParams: ParamInfo[]
   propsObjectName: string | null
   restPropsName: string | null
+  /** What each IR source text reads, recorded in Phase 1 (`IRMetadata.sourceFacts`). Absent in a hand-built context. */
+  sourceFacts?: Record<string, SourceFacts>
   /**
    * Threaded through (alongside `propsParams` above) so the reactive-effect
    * emitter can bind its own `datePlugin` matcher (#2292) — see
