@@ -14,6 +14,9 @@ import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/index'
 import {
+  addReferencedNames,
+  addReferencedTemplateNames,
+  scanReceiverMembers,
   extractIdentifiers,
   extractTemplateExpressions,
   extractTemplateIdentifiers,
@@ -60,30 +63,20 @@ describe('extractIdentifiers', () => {
     return [...set].sort()
   }
 
-  test('skips string contents, comments, template static text and member names', () => {
+  test('skips string contents, comments and template static text; keeps member names', () => {
+    // A member name stays in: the graph reads `props.value` as a use of the
+    // `value` prop in props-object mode.
     expect(ids("obj.member + other?.deep + 'word in a string' /* note */ + `tpl ${inner}`")).toEqual([
+      'deep',
       'inner',
+      'member',
       'obj',
       'other',
     ])
   })
 
-  test('skips a property key and a callback parameter', () => {
-    expect(ids("({ label: 1 }).label + [1].map(name => name + 1).length + f(function (text) { return text })")).toEqual(['f'])
-  })
-
-  test('reports the members of a receiver (the props object) as uses of a prop', () => {
-    const set = new Set<string>()
-    extractIdentifiers('props.value + other.value2 + props?.default', set, new Set(['props']))
-    expect([...set].sort()).toEqual(['default', 'other', 'props', 'value'])
-  })
-
   test('reports $ names and contextual keywords, never reserved words', () => {
-    expect(ids('(x) => x + step$ + $ + type + of')).toEqual(['$', 'of', 'step$', 'type'])
-  })
-
-  test('falls back to a token scan, member names included, for a text that does not parse', () => {
-    expect(ids('<Foo bar={a.b} />')).toContain('b')
+    expect(ids('(x) => x + step$ + $ + type + of')).toEqual(['$', 'of', 'step$', 'type', 'x'])
   })
 })
 
@@ -148,10 +141,10 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     ])
   })
 
-  test('a reserved word read as a member name of the props object is reported; as a keyword it is not', () => {
+  test('a reserved word read as a member name is reported; as a keyword it is not', () => {
     const set = new Set<string>()
-    extractIdentifiers('props.default + obj?.enum + (x instanceof Y)', set, new Set(['props']))
-    expect([...set].sort()).toEqual(['Y', 'default', 'obj', 'props', 'x'])
+    extractIdentifiers('props.default + obj?.enum + (x instanceof Y)', set)
+    expect([...set].sort()).toEqual(['Y', 'default', 'enum', 'obj', 'props', 'x'])
   })
 
   test('a keyword-named prop read only by a handler is still hydrated', () => {
@@ -167,5 +160,38 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     expect(hono.errors).toHaveLength(0)
     const template = hono.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain("__hydrateProps['default']")
+  })
+})
+
+describe('reference names from Phase 1 facts', () => {
+  const reader = {
+    facts: {
+      'D.label + p.n': { free: ['D', 'p'], members: [['D', 'label'], ['p', 'n']] as Array<[string, string]> },
+    },
+    receivers: new Set(['p']),
+  }
+
+  test('a recorded text names its free identifiers and the members of a receiver only', () => {
+    const set = new Set<string>()
+    addReferencedNames('D.label + p.n', reader, set)
+    expect([...set].sort()).toEqual(['D', 'n', 'p'])
+  })
+
+  test('a text with no facts falls back to the token scan', () => {
+    const set = new Set<string>()
+    addReferencedNames('a.b', reader, set)
+    expect([...set].sort()).toEqual(['a', 'b'])
+  })
+
+  test('a template looks up the facts of each substitution body', () => {
+    const set = new Set<string>()
+    addReferencedTemplateNames('<p>${D.label + p.n}</p>', reader, set)
+    expect([...set].sort()).toEqual(['D', 'n', 'p'])
+  })
+
+  test('receiver members are found from token order alone', () => {
+    const set = new Set<string>()
+    scanReceiverMembers("props.a + other.b + props?.c + (props) + x.props.d", new Set(['props']), set)
+    expect([...set].sort()).toEqual(['a', 'c', 'd'])
   })
 })

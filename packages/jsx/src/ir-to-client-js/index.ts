@@ -280,6 +280,7 @@ function createContext(
     propsParams: ir.metadata.propsParams,
     propsObjectName: ir.metadata.propsObjectName,
     restPropsName: ir.metadata.restPropsName,
+    sourceFacts: ir.metadata.sourceFacts,
     propsType: ir.metadata.propsType,
     typeDefinitions: ir.metadata.typeDefinitions,
 

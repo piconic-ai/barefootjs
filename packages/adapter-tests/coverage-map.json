@@ -15468,6 +15468,19 @@
         "text"
       ]
     },
+    "props-alias-handler-hydrate": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "props-object-body-rest-spread": {
       "kinds": [
         "identifier",
