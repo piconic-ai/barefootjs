@@ -1055,6 +1055,12 @@ import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as dateInheritedProp } from './date-inherited-prop'
 import { fixture as dateInheritedPropIntersection } from './date-inherited-prop-intersection'
+import { fixture as dateInheritedPropInlineIntersection } from './date-inherited-prop-inline-intersection'
+import { fixture as dateInheritedPropInlineIntersectionBaseLast } from './date-inherited-prop-inline-intersection-base-last'
+import { fixture as dateInheritedPropInlineIntersectionLiteral } from './date-inherited-prop-inline-intersection-literal'
+import { fixture as dateInheritedPropInlineIntersectionDestructured } from './date-inherited-prop-inline-intersection-destructured'
+import { fixture as dateInheritedPropInlineIntersectionNested } from './date-inherited-prop-inline-intersection-nested'
+import { fixture as dateInheritedPropInlineIntersectionExtends } from './date-inherited-prop-inline-intersection-extends'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2389,6 +2395,12 @@ export const jsxFixtures: JSXFixture[] = [
   dateCatalogued,
   dateInheritedProp,
   dateInheritedPropIntersection,
+  dateInheritedPropInlineIntersection,
+  dateInheritedPropInlineIntersectionBaseLast,
+  dateInheritedPropInlineIntersectionLiteral,
+  dateInheritedPropInlineIntersectionDestructured,
+  dateInheritedPropInlineIntersectionNested,
+  dateInheritedPropInlineIntersectionExtends,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,

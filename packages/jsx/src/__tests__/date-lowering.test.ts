@@ -460,3 +460,103 @@ describe('Date members inherited through extends / intersection (#3914)', () => 
     expect(messages[0]).toContain('not declared here')
   })
 })
+
+describe('Date members through an inline intersection props type (#3938)', () => {
+  function matches(src: string, call: string): boolean {
+    const matcher = datePlugin.prepare(metadata(src))
+    if (!matcher) return false
+    const { callee, args } = callParts(call)
+    return matcher(callee, args) !== null
+  }
+
+  function refusals(src: string): string[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
+  }
+
+  test('the props type keeps the constituents; nothing else changes shape', () => {
+    const meta = metadata(`
+      interface Base { at: Date }
+      export function Foo(props: Base & { label: string }) { return <p>{props.label}</p> }
+    `)
+    expect(meta.propsType?.kind).toBe('object')
+    expect(meta.propsType?.inheritance).toBe('intersection')
+    expect(meta.propsType?.inherits?.map((t) => t.kind)).toEqual(['interface', 'object'])
+    expect(meta.propsType?.properties).toBeUndefined()
+  })
+
+  test.each([
+    ['Base & { label: string }'],
+    ['{ label: string } & Base'],
+    ['(Base & { id: string }) & { label: string }'],
+    ['((Base)) & { label: string }'],
+  ])('a Date declared on a constituent is lowered: %s', (props) => {
+    expect(
+      matches(
+        `interface Base { at: Date }
+         export function Foo(props: ${props}) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test('a Date declared on an object literal arm, and a destructured prop, are lowered', () => {
+    expect(
+      matches(
+        `interface Named { label: string }
+         export function Foo({ at }: Named & { at: Date }) { return <p>{at.getTime()}</p> }`,
+        'at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test('a Date reached through a nested receiver on a constituent is lowered', () => {
+    expect(
+      matches(
+        `interface Data { at: Date }
+         interface Base { data: Data }
+         export function Foo(props: Base & { label: string }) { return <p>{props.data.at.getTime()}</p> }`,
+        'props.data.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test('a member that is not a Date on any constituent is not lowered', () => {
+    expect(
+      matches(
+        `interface Base { at: string }
+         export function Foo(props: Base & { label: string; d: Date }) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(false)
+  })
+
+  test('a constituent declared elsewhere is refused loudly instead of rendering empty', () => {
+    const messages = refusals(`
+      import type { Base } from './base'
+      export function Foo(props: Base & { label: string }) { return <p>{props.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain("'props.at'")
+    expect(messages[0]).toContain('not declared here')
+  })
+
+  test('the refusal applies to a destructured prop, and a visible prop is not refused', () => {
+    const imported = `import type { Base } from './base'\n`
+    expect(
+      refusals(`${imported}export function Foo({ at }: Base & { label: string }) { return <p>{at.getTime()}</p> }`),
+    ).toHaveLength(1)
+    expect(
+      refusals(`${imported}export function Foo(props: Base & { label: string }) { return <p>{props.label.toISOString()}</p> }`),
+    ).toHaveLength(0)
+  })
+
+  test('constituents with irreconcilable declarations of the prop are refused', () => {
+    const messages = refusals(`
+      interface Base { at: string }
+      export function Foo(props: Base & { at: Date }) { return <p>{props.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain('cannot be reconciled')
+  })
+})

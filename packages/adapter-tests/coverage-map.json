@@ -4315,6 +4315,84 @@
         "text"
       ]
     },
+    "date-inherited-prop-inline-intersection": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-base-last": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-extends": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-literal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-nested": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-inherited-prop-intersection": {
       "kinds": [
         "call",
