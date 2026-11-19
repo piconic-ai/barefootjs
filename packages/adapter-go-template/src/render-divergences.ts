@@ -117,6 +117,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A key an open spread and another attribute or spread both write renders
+  // twice (an expression or template value before the spread, an attribute
+  // after it, two spreads), and an explicit `null` bag value renders the
+  // earlier literal.
+  'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },

@@ -1766,6 +1766,24 @@ export interface IRAttribute extends AttrMeta {
    * would remove the attribute SSR rendered.
    */
   restFallback?: JsSourceText
+  /**
+   * Set on a literal or bare boolean attribute that a later open spread
+   * (`<p title="a" {...rest}>`) may carry the same key of. JS lets the later
+   * write win, so the attribute renders once, from the spread. The spread's
+   * keys are only known at render time, so a template adapter cannot drop the
+   * attribute ahead of time; it renders THIS value in its place: the
+   * attribute's own value when every such spread lacks the key
+   * (`rest.title == null ? "a" : undefined`), no attribute otherwise, and the
+   * spread supplies it. {@link renderElementAttributes} is the one place that
+   * reads it. JS-runtime consumers (Hono, the client JS) keep `value`, whose
+   * JSX attribute order already gives the spread the last word.
+   *
+   * A key the bag holds with an explicit `null` / `undefined` reads as absent,
+   * as everywhere a template tests whether a spread carries a key
+   * (the rule `restKeyWithFallback` in jsx-to-ir.ts states): the attribute renders where JS
+   * omits it.
+   */
+  spreadOverridable?: ExpressionAttr
 }
 
 export interface IREvent {

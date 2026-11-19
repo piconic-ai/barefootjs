@@ -186,7 +186,16 @@ function collectKindsAndAxes(
   if (rec.sortComparator && typeof rec.sortComparator === 'object') {
     collectSortAxes(rec.sortComparator as Record<string, unknown>, axes)
   }
-  for (const value of Object.values(rec)) collectKindsAndAxes(value, kinds, axes, matchers)
+  for (const value of authoredChildren(rec)) collectKindsAndAxes(value, kinds, axes, matchers)
+}
+
+/**
+ * The values to walk under an IR node. Phase 1 builds
+ * `IRAttribute.spreadOverridable` from the attribute's own literal; it is no
+ * syntax the author wrote, so it covers no subset kind.
+ */
+function authoredChildren(rec: Record<string, unknown>): unknown[] {
+  return Object.entries(rec).filter(([key]) => key !== 'spreadOverridable').map(([, value]) => value)
 }
 
 /**

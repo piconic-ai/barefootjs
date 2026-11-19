@@ -60,7 +60,7 @@ import {
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
 import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, restBagOmittedKeys, livePropReadExpr } from './props-binding.ts'
-import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { PROPS_PARAM, codeSafeStringLiteral } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { lowerRawTextHosts } from './raw-text-host.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -75,7 +75,7 @@ import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
-import { BindingScope } from './scope/binding-scope.ts'
+import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
@@ -7967,6 +7967,7 @@ function processAttributes(
       ...(freeIdentifiers !== undefined && { freeIdentifiers }),
     })
   }
+  markAttrsOverridableBySpread(attrs, ctx)
 
   // The ref callback is resolved once, for both the SSR-portal recognition
   // and BF063. BF063 runs after the loop so it sees every attribute this
@@ -7979,6 +7980,124 @@ function processAttributes(
   }
 
   return { attrs, events, ref, ssrPortalOwnerScope }
+}
+
+// =============================================================================
+// A literal attribute a later open spread may override
+// =============================================================================
+
+/**
+ * Sets `IRAttribute.spreadOverridable` on each literal or bare boolean
+ * attribute that a later open spread may also carry the key of
+ * (`<p title="a" {...rest}>`). JS applies attributes and spreads in order
+ * and the last write wins, so the element renders the key once, with the
+ * spread's value; a template adapter that prints the literal and then the
+ * bag prints it twice, and a browser keeps the first.
+ *
+ * Whether the bag holds the key is known only at render time, so the
+ * decision here is the condition: the attribute's own value when every such
+ * spread lacks the key. It is built once, as an expression over the spread's
+ * own source, and every adapter lowers it with its existing attribute
+ * machinery (`renderElementAttributes`).
+ *
+ * A spread this does not guard (`unreadableBag`) keeps today's output. An
+ * expression-valued attribute (`title={x}`) is not guarded either: its value
+ * may be nullish or have an effect, which the condition would have to carry.
+ */
+function markAttrsOverridableBySpread(
+  attrs: readonly IRAttribute[],
+  ctx: TransformContext,
+): void {
+  if (!attrs.some(attr => attr.value.kind === 'spread')) return
+  attrs.forEach((attr, index) => {
+    const value = attr.value
+    if (value.kind !== 'literal' && value.kind !== 'boolean-attr') return
+    // The key a spread bag spells it: the JSX one, as the reference adapter
+    // writes the attribute (`className`, every other name as the IR has it).
+    const keys = [attr.name === 'class' ? 'className' : attr.name]
+    const missing: string[] = []
+    const templateMissing: string[] = []
+    for (const later of attrs.slice(index + 1)) {
+      if (later.value.kind !== 'spread') continue
+      const bag = spreadBagReader(later.value, ctx)
+      if (bag === null || bagLacksKeys(later.value.expr, keys, ctx)) continue
+      const templateBag = later.value.templateExpr === undefined ? bag : spreadBagReader({ ...later.value, expr: later.value.templateExpr }, ctx)
+      for (const key of keys) {
+        missing.push(`${bag(key)} == null`)
+        templateMissing.push(`${(templateBag ?? bag)(key)} == null`)
+      }
+    }
+    if (missing.length === 0) return
+    const own = value.kind === 'literal' ? codeSafeStringLiteral(value.value) : 'true'
+    const guarded = (tests: string[]): string => `${tests.join(' && ')} ? ${own} : undefined`
+    const expr = guarded(missing)
+    const templateExpr = guarded(templateMissing)
+    attr.spreadOverridable = {
+      ...AttrValueOf.expression(expr, templateExpr === expr ? undefined : { templateExpr }),
+      parsed: parseExpression(expr),
+    }
+  })
+}
+
+/**
+ * How to read a key off a spread's bag, as source text, or null when the
+ * spread is not one every adapter can read twice. It must name a bag the
+ * template holds as a value (the component's props or rest, a destructured
+ * prop, a signal or memo getter, a loop row), as an identifier, a member
+ * chain over one, or a call of a getter with no arguments. A local `const`
+ * (`const sizeAttrs = size ? {…} : {}`), a conditional spread and a call with
+ * arguments are inlined or lowered by the adapters in ways a key read off
+ * them does not survive, so those keep their output.
+ */
+function spreadBagReader(value: SpreadAttr, ctx: TransformContext): ((key: string) => string) | null {
+  const text = value.expr.trim()
+  if (!isReadableBag(parseExpression(text), value, ctx)) return null
+  return (key) => (/^[A-Za-z_$][\w$]*$/.test(key) ? `${text}.${key}` : `${text}[${codeSafeStringLiteral(key)}]`)
+}
+
+function isReadableBag(parsed: ParsedExpr | null, value: SpreadAttr, ctx: TransformContext): boolean {
+  if (parsed === null) return false
+  switch (parsed.kind) {
+    case 'identifier': return isBagName(parsed.name, value, ctx)
+    case 'member': return !parsed.computed && !parsed.optional && isReadableBag(parsed.object, value, ctx)
+    case 'call': {
+      const getter = parsed.callee.kind === 'identifier' ? parsed.callee.name : null
+      return parsed.args.length === 0 && getter !== null && !ctx.scope.isBound(getter)
+        && (ctx.analyzer.signals.some(sig => sig.getter === getter) || ctx.analyzer.memos.some(memo => memo.name === getter))
+    }
+    default: return false
+  }
+}
+
+/** A name that holds a bag as a value in the template: see {@link spreadBagReader}. */
+function isBagName(name: string, value: SpreadAttr, ctx: TransformContext): boolean {
+  if (ctx.scope.isBound(name)) return true
+  // A rest bag spelled like the props object (`{ size, ...props }`): a template
+  // adapter reads `props.k` as the prop `k`, not as a key of the bag.
+  if (ctx.analyzer.propsObjectName === null && name === propsObjectIdentifier(null)) return false
+  return callerBagOfSpread({ ...value, expr: name, templateExpr: undefined }, ctx) !== undefined
+    || name === ctx.analyzer.propsObjectName
+    || ctx.analyzer.propsParams.some(param => param.name === name)
+}
+
+/**
+ * Whether the spread cannot carry any of `keys`. A rest bag lacks the keys
+ * its destructure took. The props object spreads only the props the type
+ * declares, so it lacks a key none of them spells; guarding it would read a
+ * prop the component never declared.
+ */
+function bagLacksKeys(spreadExpr: string, keys: readonly string[], ctx: TransformContext): boolean {
+  const name = spreadExpr.trim()
+  const restName = ctx.analyzer.restPropsName
+  if (restName && isRestBinding(name, restName, ctx)) {
+    const taken = new Set(restBagOmittedKeys(ctx.analyzer))
+    return keys.every(key => taken.has(key))
+  }
+  if (name === ctx.analyzer.propsObjectName && !ctx.scope.isBound(name)) {
+    const declared = new Set(ctx.analyzer.propsParams.map(param => param.sourceName ?? param.name))
+    return keys.every(key => !declared.has(key))
+  }
+  return false
 }
 
 // =============================================================================

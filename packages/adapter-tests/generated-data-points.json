@@ -892,6 +892,39 @@
       }
     }
   ],
+  "attr-spread-key-overlap": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "title": "from-spread",
+        "lang": null
+      }
+    }
+  ],
   "awaits-undefined-plus-shapes": [
     {
       "name": "gen:c:union:1",
@@ -8214,6 +8247,18 @@
         "zero": 0,
         "label": "日本語",
         "__bf_lazy": "fallback"
+      }
+    }
+  ],
+  "literal-attr-before-spread": [
+    {
+      "name": "gen:rows:absent",
+      "props": {
+        "title": "from-spread",
+        "encoding": "text/html",
+        "data-x": "sx",
+        "hidden": false,
+        "dir": ""
       }
     }
   ],
