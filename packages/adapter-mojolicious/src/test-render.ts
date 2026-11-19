@@ -728,7 +728,7 @@ function buildPerlProps(
         literal = toPerlLiteral(value)
       }
       if (literal !== null) {
-        entries.push(`${key} => ${literal}`)
+        entries.push(`${perlStringLiteral(key)} => ${literal}`)
       }
     }
   }
@@ -746,7 +746,7 @@ function buildPerlProps(
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
-      userEntries.push(`${key} => ${toPerlLiteral(value)}`)
+      userEntries.push(`${perlStringLiteral(key)} => ${toPerlLiteral(value)}`)
     }
   }
   const userPropsPerl = `{${userEntries.join(', ')}}`

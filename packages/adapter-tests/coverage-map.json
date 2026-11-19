@@ -996,6 +996,22 @@
         "text"
       ]
     },
+    "attr-spread-key-overlap": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "attr-ternary-title": {
       "kinds": [
         "call",
@@ -8097,6 +8113,36 @@
         "attribute",
         "loop",
         "text"
+      ]
+    },
+    "literal-attr-before-spread": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "literal-boolean-attr-before-spread": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "literal-const-conditional-shapes": {
