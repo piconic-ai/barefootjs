@@ -16070,6 +16070,25 @@
         "text"
       ]
     },
+    "props-object-spread-child-children": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "props-object-spread-child-hydration-props": {
       "kinds": [
         "call",

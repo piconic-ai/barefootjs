@@ -166,6 +166,7 @@ function collectComponentInstances(
       name: comp.name,
       slotId: comp.slotId,
       props: comp.props,
+      children: effectiveChildren,
       fieldName: `${comp.name}${suffix}`,
       childrenText: host.extractTextChildren(effectiveChildren),
       childrenHtml: host.extractHtmlChildren(effectiveChildren),

@@ -131,7 +131,7 @@ interface ChildCallSite {
  */
 export function lowerChildInputFields(
   host: ChildInputHost,
-  child: { name: string; props: readonly IRProp[] },
+  child: { name: string; props: readonly IRProp[]; children?: readonly IRNode[] },
   ir: ComponentIR,
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   rowScope?: BindingScope,
@@ -663,7 +663,7 @@ function lowerJsxChildProp(site: ChildCallSite, prop: IRProp, children: IRNode[]
  */
 function planChildCallProps(
   ctx: GoEmitContext,
-  child: { name: string; props: readonly IRProp[] },
+  child: { name: string; props: readonly IRProp[]; children?: readonly IRNode[] },
   ir: ComponentIR,
   childShape: ChildComponentShape | undefined,
 ): {
@@ -671,8 +671,8 @@ function planChildCallProps(
   paramFields: Array<{ name: string; goValue: string; coerce?: boolean }>
   passedOr: (name: string, value: string) => string
 } {
-  const call = resolvePropsSpreadCall(ctx, ir, child.props)
-  if (call === null) return { props: finalPropWriters(ctx, ir, child.props), paramFields: [], passedOr: (_name, value) => value }
+  const call = resolvePropsSpreadCall(ctx, ir, child.props, child.children)
+  if (call === null) return { props: finalPropWriters(ctx, ir, child.props, child.children), paramFields: [], passedOr: (_name, value) => value }
   const spread = child.props.find(p => isPropsObjectSpread(p, ctx.state.propsObjectName))!
   const props = child.props.filter(p => p !== spread)
   if (call.kind === 'unresolved') {
@@ -837,7 +837,7 @@ function propReadsRow(prop: IRProp, rowScope: BindingScope): boolean {
  */
 export function lowerLoopRowChildInputFields(
   host: ChildInputHost,
-  child: { name: string; props: readonly IRProp[] },
+  child: { name: string; props: readonly IRProp[]; children?: readonly IRNode[] },
   ir: ComponentIR,
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   rowScope: BindingScope,
@@ -845,7 +845,7 @@ export function lowerLoopRowChildInputFields(
   const props = child.props.filter(p => p.name !== 'key')
   const { fields, unlowered } = lowerChildInputFields(
     host,
-    { name: child.name, props },
+    { name: child.name, props, children: child.children },
     ir,
     propFallbackVars,
     rowScope,
