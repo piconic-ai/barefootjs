@@ -2143,6 +2143,15 @@ export interface InitStatementInfo {
    */
   mutatedIdentifiers?: Set<string>
   /**
+   * For each of `mutatedIdentifiers`, the members directly under it the
+   * statement writes when every write names one (`props.items.push('z')`
+   * and `props.items = []` both write `items`), or `null` for a write to
+   * the binding as a whole or to a member no name stands for
+   * (`root.push(x)`, `root[k] = v`, `Object.assign(root, …)`). A reader of
+   * another member does not observe the write (`checkStatementWrites`).
+   */
+  mutatedMembers?: Map<string, Set<string> | null>
+  /**
    * When true, the emitted statement must be prefixed with `;` to defeat
    * ASI fusion with the previous line. Tracked in IR rather than recovered
    * by emit-time text inspection — losing this is the failure mode behind

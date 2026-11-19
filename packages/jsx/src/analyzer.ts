@@ -2388,6 +2388,7 @@ function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
     assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
     mutatedIdentifiers: extractMutatedIdentifiersFromNode(node),
+    mutatedMembers: extractMutatedMembersFromNode(node),
     // Init statements run inside the component's init function, so they
     // belong to `init` scope. Phase is conservatively `hydrate` (run-once
     // at hydration). relocate() can refine this when consuming the field.
@@ -2429,10 +2430,15 @@ function leadsWithAsiHazard(body: string): boolean {
  */
 function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
   const ids = new Set<string>()
+  // Names bound by the in-place callbacks enclosing the node being visited.
+  let shadowed: ReadonlySet<string> = new Set()
+  const add = (name: string): void => {
+    if (!shadowed.has(name)) ids.add(name)
+  }
 
   function addFromTarget(target: ts.Expression | ts.BindingElement): void {
     if (ts.isIdentifier(target)) {
-      ids.add(target.text)
+      add(target.text)
       return
     }
     if (ts.isParenthesizedExpression(target)) {
@@ -2449,7 +2455,7 @@ function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
     }
     if (ts.isObjectLiteralExpression(target)) {
       for (const prop of target.properties) {
-        if (ts.isShorthandPropertyAssignment(prop)) { ids.add(prop.name.text); continue }
+        if (ts.isShorthandPropertyAssignment(prop)) { add(prop.name.text); continue }
         if (ts.isPropertyAssignment(prop)) { addFromTarget(prop.initializer); continue }
         if (ts.isSpreadAssignment(prop)) { addFromTarget(prop.expression); continue }
       }
@@ -2467,15 +2473,15 @@ function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
     // them. The entry node passed in is always a ts.Statement from
     // collectInitStatement, never a function literal, so this guard
     // only trips on descent.
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n) ||
-      ts.isMethodDeclaration(n) ||
-      ts.isGetAccessorDeclaration(n) ||
-      ts.isSetAccessorDeclaration(n) ||
-      ts.isConstructorDeclaration(n)
-    ) {
+    // A callback the statement runs where it stands (an IIFE, an array
+    // iteration callback: `xs.forEach(x => { total += x })`) does execute
+    // at init time, so its writes count; the names it binds itself do not.
+    if (isFunctionScope(n)) {
+      if (!isInvokedInPlace(n)) return
+      const outer = shadowed
+      shadowed = new Set([...outer, ...callbackBoundNames(n)])
+      ts.forEachChild(n, visit)
+      shadowed = outer
       return
     }
     if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
@@ -2556,59 +2562,97 @@ export function rootIdentifierOf(expr: ts.Expression): string | null {
 }
 
 function extractMutatedIdentifiersFromNode(node: ts.Node): Set<string> {
-  const ids = new Set<string>()
+  return new Set(extractMutatedMembersFromNode(node).keys())
+}
+
+/**
+ * `extractMutatedIdentifiersFromNode` with, for each mutated root, WHICH of
+ * its members the statement writes: the names directly under the root when
+ * every write names one (`props.items.push('z')` and `props.items = []`
+ * both write `items`), or `null` for a write to the root as a whole or to a
+ * member no name stands for (`root.push(x)`, `root[k] = v`,
+ * `Object.assign(root, …)`). A reader of another member of the same root
+ * does not observe the write.
+ */
+function extractMutatedMembersFromNode(node: ts.Node): Map<string, Set<string> | null> {
+  const members = new Map<string, Set<string> | null>()
+  // Names bound by the in-place callbacks enclosing the node being visited.
+  let shadowed: ReadonlySet<string> = new Set()
+
+  function record(target: ts.Expression | undefined): void {
+    const written = target && rootMemberOf(target)
+    if (!written || shadowed.has(written.root)) return
+    const known = members.get(written.root)
+    if (written.member === null || known === null) members.set(written.root, null)
+    else members.set(written.root, (known ?? new Set<string>()).add(written.member))
+  }
 
   function visit(n: ts.Node): void {
     // Same init/sub-init boundary as `extractAssignedIdentifiersFromNode`:
-    // a mutation inside a nested function literal doesn't run at init time.
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n) ||
-      ts.isMethodDeclaration(n) ||
-      ts.isGetAccessorDeclaration(n) ||
-      ts.isSetAccessorDeclaration(n) ||
-      ts.isConstructorDeclaration(n)
-    ) {
+    // a mutation inside a nested function literal doesn't run at init time,
+    // unless the statement runs that function where it stands.
+    if (isFunctionScope(n)) {
+      if (!isInvokedInPlace(n)) return
+      const outer = shadowed
+      shadowed = new Set([...outer, ...callbackBoundNames(n)])
+      ts.forEachChild(n, visit)
+      shadowed = outer
       return
     }
 
     if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
-      if (ts.isPropertyAccessExpression(n.left) || ts.isElementAccessExpression(n.left)) {
-        const root = rootIdentifierOf(n.left)
-        if (root) ids.add(root)
-      }
+      if (ts.isPropertyAccessExpression(n.left) || ts.isElementAccessExpression(n.left)) record(n.left)
     } else if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
       const isIncDec = n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken
-      if (isIncDec && (ts.isPropertyAccessExpression(n.operand) || ts.isElementAccessExpression(n.operand))) {
-        const root = rootIdentifierOf(n.operand)
-        if (root) ids.add(root)
-      }
+      if (isIncDec && (ts.isPropertyAccessExpression(n.operand) || ts.isElementAccessExpression(n.operand))) record(n.operand)
     } else if (ts.isCallExpression(n)) {
-      const callee = n.expression
-      if (ts.isPropertyAccessExpression(callee)) {
-        const methodName = callee.name.text
-        if (MUTATING_METHOD_NAMES.has(methodName)) {
-          const root = rootIdentifierOf(callee.expression)
-          if (root) ids.add(root)
-        } else if (
-          methodName === 'assign' &&
-          ts.isIdentifier(callee.expression) &&
-          callee.expression.text === 'Object' &&
-          n.arguments.length > 0
-        ) {
-          // `Object.assign(target, ...)` mutates `target` in place.
-          const root = rootIdentifierOf(n.arguments[0])
-          if (root) ids.add(root)
-        }
-      }
+      record(mutatedCallReceiver(n))
     }
 
     ts.forEachChild(n, visit)
   }
 
   visit(node)
-  return ids
+  return members
+}
+
+/**
+ * The expression a call mutates in place: the receiver of a known mutating
+ * method (`items.push(...)`), or the target of `Object.assign(target, …)`.
+ */
+function mutatedCallReceiver(call: ts.CallExpression): ts.Expression | undefined {
+  const callee = call.expression
+  if (!ts.isPropertyAccessExpression(callee)) return undefined
+  const methodName = callee.name.text
+  if (MUTATING_METHOD_NAMES.has(methodName)) return callee.expression
+  const isObjectAssign = methodName === 'assign' && ts.isIdentifier(callee.expression) && callee.expression.text === 'Object'
+  return isObjectAssign ? call.arguments[0] : undefined
+}
+
+/**
+ * The root identifier of a written member chain and the member directly
+ * under it (`a.b.c` → `a`, `b`; `a['b'].c` → `a`, `b`), `member: null` when
+ * the chain is the bare root or that first access is computed, or `null`
+ * when the chain is not rooted at an identifier.
+ */
+function rootMemberOf(expr: ts.Expression): { root: string; member: string | null } | null {
+  let member: string | null = null
+  let current: ts.Expression = expr
+  for (;;) {
+    if (ts.isIdentifier(current)) return { root: current.text, member }
+    if (ts.isParenthesizedExpression(current) || ts.isNonNullExpression(current)) {
+      current = current.expression
+    } else if (ts.isPropertyAccessExpression(current)) {
+      member = current.name.text
+      current = current.expression
+    } else if (ts.isElementAccessExpression(current)) {
+      const arg = current.argumentExpression
+      member = ts.isStringLiteralLike(arg) ? arg.text : null
+      current = current.expression
+    } else {
+      return null
+    }
+  }
 }
 
 function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
@@ -2630,6 +2674,25 @@ function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
     kind === ts.SyntaxKind.BarBarEqualsToken ||
     kind === ts.SyntaxKind.QuestionQuestionEqualsToken
   )
+}
+
+/**
+ * The names a function literal binds for its own body: its parameters and
+ * the variables its body declares. A write to one of them inside a callback
+ * a statement runs in place is not a write to the component's binding of
+ * that name.
+ */
+function callbackBoundNames(fn: ts.Node): Set<string> {
+  const names = new Set<string>()
+  if (!ts.isFunctionLike(fn)) return names
+  const addBindingName = (name: ts.BindingName): void => {
+    if (ts.isIdentifier(name)) names.add(name.text)
+    else for (const el of name.elements) if (ts.isBindingElement(el)) addBindingName(el.name)
+  }
+  for (const param of fn.parameters) addBindingName(param.name)
+  const body = (fn as ts.FunctionLikeDeclaration).body
+  if (body) for (const name of collectLocalDeclarations(body)) names.add(name)
+  return names
 }
 
 /**

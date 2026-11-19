@@ -1,8 +1,9 @@
 /**
  * `checkStatementWrites` (#3719): a binding a component-body statement
  * writes after its declaration is refused (BF101) where the compiled output
- * would read it as it was declared — a server read, or an init-time read
- * declared after the statement — and compiles everywhere else.
+ * would read it as it was declared while JS reads the written value — a
+ * server read evaluated after the write, or an init-time read declared after
+ * the statement — and compiles everywhere else.
  */
 import { describe, expect, test } from 'bun:test'
 import { compileJSX } from '../index.ts'
@@ -63,11 +64,55 @@ describe('#3719: a server read of a binding a body statement writes', () => {
   props.items.push('z')
   return <p>{props.items.length}</p>
 }`,
-    'a read through a memo declared before the statement': `${CLIENT}export function C() {
+    'a memo declared before the statement that may hold the written object': `${CLIENT}export function C() {
+  const local = ['y']
+  const n = createMemo(() => local)
+  local.push('z')
+  return <p>{n().length}</p>
+}`,
+    'a constant declared before the statement that aliases the written object': `export function C() {
+  const local = ['y']
+  const alias = local
+  local.push('z')
+  return <p>{alias.join(',')}</p>
+}`,
+    'a function declared before the statement, called by the markup': `${CLIENT}export function C() {
+  const local = ['y']
+  const count = () => local.length
+  local.push('z')
+  return <p>{count()}</p>
+}`,
+    'a direct read beside a memo declared before the statement': `${CLIENT}export function C() {
   const local = ['y']
   const n = createMemo(() => local.length)
   local.push('z')
-  return <p>{n()}</p>
+  return <p>{n()}{local.length}</p>
+}`,
+    'a write in a callback the statement runs in place': `${CLIENT}export function C() {
+  const out: string[] = []
+  ;['a'].forEach(x => out.push(x))
+  return <p>{out.length}</p>
+}`,
+    'an assignment in an IIFE': `${CLIENT}export function C() {
+  let total = 0
+  ;(() => { total = Math.max(total, 1) })()
+  return <p>{total}</p>
+}`,
+    'the written member of the props object': `${CLIENT}export function C(props: { items: string[]; title: string }) {
+  props.items.push('z')
+  return <p>{props.title}{props.items.length}</p>
+}`,
+    'any member after a write to the props object as a whole': `${CLIENT}export function C(props: { items: string[]; title: string }) {
+  Object.assign(props, { title: 'x' })
+  return <p>{props.title}</p>
+}`,
+    'any member after a write to a computed member': `${CLIENT}export function C(props: { items: string[]; title: string; k: 'title' }) {
+  props[props.k] = 'x'
+  return <p>{props.items.length}</p>
+}`,
+    'a computed member read beside a written member': `${CLIENT}export function C(props: { items: string[]; title: string; k: 'title' }) {
+  props.items.push('z')
+  return <p>{props[props.k]}</p>
 }`,
     'a component with no client side': `export function C({ code }: { code: string }) {
   const lines = code.split('\\n')
@@ -137,6 +182,13 @@ describe('#3719: an init-time read declared after the statement', () => {
   const n = createMemo(() => count())
   return <button onClick={() => console.log(n())}>x</button>
 }`],
+    'a memo reading the written props member through a function': ["Memo 't'", `${CLIENT}export function C(props: { local: string[]; title: string }) {
+  const local = props
+  local.local.push('z')
+  const len = () => local.local.length
+  const t = createMemo(() => len())
+  return <button onClick={() => console.log(t())}>x</button>
+}`],
     'a memo over a renamed body destructure default': ["Memo 'n'", `${CLIENT}export function C(props: { b?: string[] }) {
   const { b: local = ['y', ''].filter((x) => x !== '') } = props
   local.push('z')
@@ -192,6 +244,50 @@ export function C() {
   const items = ['y']
   items.push('z')
   return <Child items={items} />
+}`,
+    'a memo declared before the statement, read by the markup': `${CLIENT}export function C() {
+  const local = ['y']
+  const n = createMemo(() => local.length)
+  local.push('z')
+  return <p>{n()}</p>
+}`,
+    'a signal seeded before the statement, read by the markup': `${CLIENT}export function C() {
+  const local = ['y']
+  const [n] = createSignal(local.length)
+  local.push('z')
+  return <p>{n()}</p>
+}`,
+    'a memo declared before the statement reading it through a function': `${CLIENT}export function C() {
+  const local = ['y']
+  const count = () => local.length
+  const n = createMemo(() => count() + 0)
+  local.push('z')
+  return <p>{n()}</p>
+}`,
+    'a memo declared before a reassignment, which keeps the earlier value': `${CLIENT}export function C(props: { a: number }) {
+  let x = props.a
+  const y = createMemo(() => x)
+  x = Math.max(x, 3)
+  return <p>{y()}</p>
+}`,
+    'another member of the props object than the written one': `${CLIENT}export function C(props: { items: string[]; title: string }) {
+  props.items.push('z')
+  return <p title={props.title}>{props.title}</p>
+}`,
+    'a memo after the statement over another member of the props object': `${CLIENT}export function C(props: { items: string[]; title: string }) {
+  props.items.push('z')
+  const t = createMemo(() => props.title)
+  return <p>{t()}</p>
+}`,
+    'a callback run in place that writes only its own parameter': `${CLIENT}export function C() {
+  const rows: string[][] = [[]]
+  ;[['a']].forEach(rows => rows.push('x'))
+  return <p>{rows.length}</p>
+}`,
+    'a callback run in place that writes a variable it declares': `${CLIENT}export function C() {
+  const out: string[] = ['a']
+  ;['a'].forEach(x => { const out: string[] = []; out.push(x) })
+  return <p>{out.length}</p>
 }`,
     'a pure let reassignment, folded into its initializer': `${CLIENT}export function C(props: { l?: string }) {
   let label = props.l ?? 'd'

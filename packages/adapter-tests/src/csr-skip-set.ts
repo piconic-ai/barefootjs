@@ -66,6 +66,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The mount renders the child with the mutated array; per-adapter render
   // conformance carries the server divergence this fixture is pinned for.
   'body-statement-write-child-prop',
+  // A memo declared before a body statement mutates the binding it reads
+  // (`createMemo(() => local.length)`, then `local.push('z')`): the CSR
+  // template cannot inline a memo over a binding a statement changes, so its
+  // slot is empty until the mount's effect fills it with the memo's value
+  // (`1`, checked by `issue-3719-body-statement-write.test.ts` in
+  // `packages/client`). Per-adapter render conformance pins the server HTML.
+  'body-statement-write-earlier-memo',
   // A const initialized by a local function call (`const initial = value()`)
   // and an arrow const wrapping one live in the init body: the CSR template
   // has no init to run, so the signals seeded through them render empty

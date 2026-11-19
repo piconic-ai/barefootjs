@@ -1280,6 +1280,34 @@
         "text"
       ]
     },
+    "body-statement-write-earlier-memo": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "body-statement-write-other-props-member": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "body-statement-write-rewrite": {
       "kinds": [
         "array-literal",

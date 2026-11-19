@@ -1,11 +1,13 @@
 /**
- * Runtime checks for #3719: the two reads of a binding a component-body
- * statement writes that the compiler still accepts are read on the client
- * AFTER init ran the statement, so a mount shows what the statement wrote.
+ * Runtime checks for #3719: the reads of a binding a component-body
+ * statement writes that the compiler accepts show, on a client mount, what
+ * JavaScript shows.
  *
- * - a `/* @client *\/` read (the escape `checkStatementWrites`'s BF101 names);
- * - a value handed to a child component as a prop (the client passes the
- *   live binding from init).
+ * - a `/* @client *\/` read (the escape `checkStatementWrites`'s BF101 names)
+ *   and a value handed to a child component as a prop are read after init
+ *   ran the statement: the written value;
+ * - a memo declared before the statement keeps the value from before it;
+ * - a read of another member of the props object than the written one.
  *
  * Compiles each component, registers it through the real runtime's
  * `hydrate`, mounts it with `createComponent` and reads the DOM.
@@ -25,7 +27,7 @@ beforeAll(() => {
   }
 })
 
-async function mount(source: string, name: string): Promise<Element> {
+async function mount(source: string, name: string, props: Record<string, unknown> = {}): Promise<Element> {
   const result = compileJSX(source, `${name}.tsx`, { adapter: new TestAdapter() })
   const errors = result.errors.filter(e => e.severity === 'error')
   if (errors.length > 0) {
@@ -47,7 +49,7 @@ async function mount(source: string, name: string): Promise<Element> {
     try { unlinkSync(file) } catch {}
   }
   const { createComponent } = await import('../../src/runtime')
-  const el = createComponent(name, {}) as Element
+  const el = createComponent(name, props) as Element
   document.body.appendChild(el)
   return el
 }
@@ -71,6 +73,39 @@ describe('#3719: reads of a binding a body statement writes, on a client mount',
     )
     expect(el.textContent).toBe('2')
     expect(el.getAttribute('data-n')).toBe('2')
+  })
+
+  test('a memo declared before the statement keeps the value from before it', async () => {
+    const el = await mount(
+      `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function StatementWriteEarlierMemo(props: { b?: string[] }) {
+        const { b: local = ['y'] } = props
+        const n = createMemo(() => local.length)
+        local.push('z')
+        return <p>{n()}</p>
+      }
+    `,
+      'StatementWriteEarlierMemo',
+    )
+    expect(el.textContent).toBe('1')
+  })
+
+  test('a read of another props member than the written one renders it', async () => {
+    const el = await mount(
+      `
+      'use client'
+      export function StatementWriteOtherMember(props: { items: string[]; title: string }) {
+        props.items.push('z')
+        return <p title={props.title}>{props.title}</p>
+      }
+    `,
+      'StatementWriteOtherMember',
+      { items: ['y'], title: 'T' },
+    )
+    expect(el.textContent).toBe('T')
+    expect(el.getAttribute('title')).toBe('T')
   })
 
   test('a child handed the binding as a prop renders the written value', async () => {

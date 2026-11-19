@@ -1401,6 +1401,8 @@ import { fixture as bodyStatementWriteDirectRead } from './body-statement-write-
 import { fixture as bodyStatementWriteDirectReadClient } from './body-statement-write-direct-read-client'
 import { fixture as bodyStatementWriteRewrite } from './body-statement-write-rewrite'
 import { fixture as bodyStatementWriteChildProp } from './body-statement-write-child-prop'
+import { fixture as bodyStatementWriteEarlierMemo } from './body-statement-write-earlier-memo'
+import { fixture as bodyStatementWriteOtherPropsMember } from './body-statement-write-other-props-member'
 import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
 import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
 import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
@@ -2605,6 +2607,8 @@ export const jsxFixtures: JSXFixture[] = [
   bodyStatementWriteDirectReadClient,
   bodyStatementWriteRewrite,
   bodyStatementWriteChildProp,
+  bodyStatementWriteEarlierMemo,
+  bodyStatementWriteOtherPropsMember,
   destructureDefaultBodyRenamedCallbackMemoChain,
   destructureDefaultBodyRenamedCallbackSignal,
   destructureDefaultBodyCallbackMemo,

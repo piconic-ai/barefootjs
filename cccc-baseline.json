@@ -389,9 +389,6 @@
       "extractMultiReturnJsxBranches": [
         119
       ],
-      "extractMutatedIdentifiersFromNode/visit": [
-        36
-      ],
       "extractProps": [
         31
       ],
