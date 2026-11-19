@@ -2403,6 +2403,12 @@ export interface FunctionInfo {
    * AST: what its body reads when it is called.
    */
   freeIdentifiers?: ReadonlySet<string>
+  /**
+   * The names the function body assigns (`=`, compound assignment, `++` / `--`),
+   * a subset of `freeIdentifiers`. Read for a module function that writes a
+   * module `let` (`moduleScopeView`).
+   */
+  assignedIdentifiers?: ReadonlySet<string>
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
   /**
@@ -2470,6 +2476,12 @@ export interface ConstantInfo {
   isJsxFunction?: boolean
   /** When true, the initializer contains an arrow function or function expression (computed from AST). */
   containsArrow?: boolean
+  /**
+   * When true, the initializer's own expression (parentheses and type wrappers
+   * removed) is a binary, conditional, arrow or `yield` expression, so it must
+   * be parenthesised as the operand of `??` (`var X = X ?? <value>`).
+   */
+  needsOperandGrouping?: boolean
   /**
    * Set when this const is a binding of a body destructure of the props
    * object (`const { label = 'Default' } = props`), recorded by the analyzer
