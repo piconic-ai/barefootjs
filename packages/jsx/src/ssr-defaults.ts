@@ -801,6 +801,33 @@ function coercible(v: unknown): boolean {
   return !holdsFunctionMember(v)
 }
 
+/** An evaluated value a template span or `+` operand can read as a primitive. */
+function isCoercedValue(v: EvalResult): boolean {
+  return v !== UNRESOLVED && coercible(v)
+}
+
+/** An evaluated value that names a member of a plain object or array (`o[k]`). */
+function isIndexKey(key: EvalResult): boolean {
+  return key !== UNRESOLVED && key !== undefined && key !== null && coercible(key)
+}
+
+/**
+ * Whether both operands of a binary operator evaluated, and, for every
+ * operator but the strict comparisons (which compare identity), can be read
+ * as primitives.
+ */
+function operandsReadable(op: ts.SyntaxKind, l: EvalResult, r: EvalResult): boolean {
+  if (l === UNRESOLVED || r === UNRESOLVED) return false
+  if (op === ts.SyntaxKind.EqualsEqualsEqualsToken || op === ts.SyntaxKind.ExclamationEqualsEqualsToken) return true
+  return coercible(l) && coercible(r)
+}
+
+/** `recv.join(sep)` over an evaluated array, unresolved when an element has no primitive. */
+function joinElements(recv: unknown[], sep: string): EvalResult {
+  if (!coercible(recv)) return UNRESOLVED
+  return recv.map(x => (x === null || x === undefined ? '' : `${x}`)).join(sep)
+}
+
 function holdsFunctionMember(v: unknown): boolean {
   if (v === FUNCTION_MEMBER) return true
   if (Array.isArray(v)) return v.some(holdsFunctionMember)
@@ -1011,8 +1038,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     if (base === UNRESOLVED || base === null || typeof base !== 'object') return UNRESOLVED
     if (!node.argumentExpression) return UNRESOLVED
     const key = evalNode(node.argumentExpression, ctx)
-    if (key === UNRESOLVED || key === undefined || key === null) return UNRESOLVED
-    if (!coercible(key)) return UNRESOLVED
+    if (!isIndexKey(key)) return UNRESOLVED
     const k = String(key as string | number)
     // Missing key → JS `undefined` (the `??`/`||` defaulting flows through it).
     return ownMember(base, k)
@@ -1093,8 +1119,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
           if (typeof sepVal !== 'string') return UNRESOLVED
           sep = sepVal
         }
-        if (!coercible(recv)) return UNRESOLVED
-        return recv.map(x => (x === null || x === undefined ? '' : `${x}`)).join(sep)
+        return joinElements(recv, sep)
       }
       return UNRESOLVED
     }
@@ -1129,11 +1154,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
 
     const l = evalNode(node.left, ctx)
     const r = evalNode(node.right, ctx)
-    if (l === UNRESOLVED || r === UNRESOLVED) return UNRESOLVED
-    // Every operator below but the strict ones reads its operands as
-    // primitives, which a value holding a function (or a hook key) cannot give.
-    if (op !== ts.SyntaxKind.EqualsEqualsEqualsToken && op !== ts.SyntaxKind.ExclamationEqualsEqualsToken &&
-        !(coercible(l) && coercible(r))) return UNRESOLVED
+    if (!operandsReadable(op, l, r)) return UNRESOLVED
 
     switch (op) {
       case ts.SyntaxKind.PlusToken:
@@ -1164,7 +1185,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     let acc = node.head.text
     for (const span of node.templateSpans) {
       const v = evalNode(span.expression, ctx)
-      if (v === UNRESOLVED || !coercible(v)) return UNRESOLVED
+      if (!isCoercedValue(v)) return UNRESOLVED
       acc += `${v ?? ''}${span.literal.text}`
     }
     return acc
