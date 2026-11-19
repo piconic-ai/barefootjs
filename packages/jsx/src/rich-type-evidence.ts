@@ -11,7 +11,7 @@
  * only misses a refusal; a false positive would incorrectly block valid code.
  */
 
-import type { IRMetadata, PropertyInfo, TypeInfo } from './types.ts'
+import type { IRMetadata, PropertyInfo, TypeDefinition, TypeInfo } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 
 /**
@@ -163,8 +163,193 @@ export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo
   if (type.properties && type.properties.length > 0) return type
   const name = baseTypeName(type.raw)
   const def = meta.typeDefinitions.find((d) => d.name === name)
-  if (!def?.properties) return type
-  return { ...type, properties: def.properties }
+  if (!def?.properties && !def?.inherits) return type
+  const { members } = collectDefinitionMembers(def, meta, new Set([name]))
+  return members.length > 0 || def.properties ? { ...type, properties: members } : type
+}
+
+/** A definition's resolved members, plus the names whose intersected types cannot be reconciled. */
+interface MemberSet {
+  members: PropertyInfo[]
+  conflicts: Set<string>
+}
+
+/** `unknown` / `any` carry no information: in an intersection the other side refines them. */
+function isUninformative(t: TypeInfo): boolean {
+  return t.kind === 'unknown' && (t.raw === 'unknown' || t.raw === 'any')
+}
+
+const CONFLICTING_TYPE: TypeInfo = { kind: 'unknown', raw: 'unknown' }
+
+function unionArms(t: TypeInfo): readonly TypeInfo[] {
+  return t.kind === 'union' && t.unionTypes ? t.unionTypes : [t]
+}
+
+/** Whether every arm of `sub` is one of the arms of `sup` (same kind and spelling), so `sub` <: `sup`. */
+function isSubtypeByArms(sub: TypeInfo, sup: TypeInfo): boolean {
+  const supArms = unionArms(sup)
+  return unionArms(sub).every((a) => supArms.some((b) => a.kind === b.kind && a.raw === b.raw))
+}
+
+/**
+ * Intersect two declarations of the same member: the type is the
+ * intersection of both, independent of order. An uninformative side
+ * (`unknown` / `any`) defers to the other. When one side's union arms are
+ * all arms of the other (`Date` vs `Date | null`, or two identical types),
+ * the intersection is the narrower side. Anything else is irreconcilable
+ * here (`null` — the caller records a conflict and drops the type).
+ */
+function intersectMemberTypes(a: TypeInfo, b: TypeInfo): TypeInfo | null {
+  if (isUninformative(a)) return b
+  if (isUninformative(b)) return a
+  if (isSubtypeByArms(a, b)) return a
+  if (isSubtypeByArms(b, a)) return b
+  return null
+}
+
+/** Merge member sets as an intersection (`A & B`): order-independent per member. */
+function intersectMemberSets(sets: readonly MemberSet[]): MemberSet {
+  const byName = new Map<string, PropertyInfo>()
+  const conflicts = new Set<string>()
+  for (const set of sets) {
+    for (const c of set.conflicts) conflicts.add(c)
+    for (const p of set.members) {
+      const prev = byName.get(p.name)
+      if (!prev) {
+        byName.set(p.name, p)
+        continue
+      }
+      const type = conflicts.has(p.name) ? null : intersectMemberTypes(prev.type, p.type)
+      if (!type) conflicts.add(p.name)
+      byName.set(p.name, {
+        ...prev,
+        type: type ?? CONFLICTING_TYPE,
+        optional: prev.optional && p.optional,
+        readonly: prev.readonly || p.readonly,
+      })
+    }
+  }
+  return { members: [...byName.values()], conflicts }
+}
+
+/**
+ * A definition's own members combined with every member it inherits (#3914),
+ * so a `Date` declared on a base is as visible as one declared on the type
+ * itself. `extends`: an own member overrides an inherited one of the same
+ * name (TypeScript's override rule), and among bases the first declared
+ * wins. Intersection: the arms combine per member with
+ * `intersectMemberSets`, so `Base & { at: Date }` and `{ at: Date } & Base`
+ * agree. `visiting` breaks a cyclic chain (invalid TypeScript, but never an
+ * infinite walk here).
+ */
+function collectDefinitionMembers(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
+  const own: MemberSet = { members: [...(def.properties ?? [])], conflicts: new Set() }
+  const inherited = (def.inherits ?? []).map((base) => inheritedMembers(base, meta, visiting))
+  if (def.inheritance === 'intersection') return intersectMemberSets([own, ...inherited])
+  const members = [...own.members]
+  const conflicts = new Set<string>()
+  const known = new Set(members.map((p) => p.name))
+  for (const set of inherited) {
+    for (const c of set.conflicts) conflicts.add(c)
+    for (const p of set.members) {
+      if (known.has(p.name)) continue
+      known.add(p.name)
+      members.push(p)
+    }
+  }
+  // An own member overrides a conflicting inherited one.
+  for (const p of own.members) conflicts.delete(p.name)
+  return { members, conflicts }
+}
+
+function inheritedMembers(base: TypeInfo, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
+  const empty: MemberSet = { members: [], conflicts: new Set() }
+  if (base.kind === 'object') return { members: base.properties ?? [], conflicts: new Set() }
+  if (base.kind !== 'interface') return empty
+  const name = baseTypeName(base.raw)
+  if (visiting.has(name)) return empty
+  const def = meta.typeDefinitions.find((d) => d.name === name)
+  if (!def) return empty
+  return collectDefinitionMembers(def, meta, new Set(visiting).add(name))
+}
+
+/**
+ * The member names of a named type whose inherited declarations cannot be
+ * reconciled (`Base & { at: Date }` where `Base.at` is `string`). Their type
+ * is reported as `unknown`; callers that would otherwise lower on the member
+ * must refuse instead (#3914).
+ */
+export function inheritedMemberConflicts(type: TypeInfo | null, meta: EvidenceMetadata): ReadonlySet<string> {
+  const stripped = stripUnion(type)
+  if (!stripped || stripped.kind !== 'interface') return new Set()
+  const name = baseTypeName(stripped.raw)
+  const def = meta.typeDefinitions.find((d) => d.name === name)
+  return def ? collectDefinitionMembers(def, meta, new Set([name])).conflicts : new Set()
+}
+
+/**
+ * Whether `type` is a named type whose inheritance chain reaches a base that
+ * is not declared in this file (an imported interface, a library type) or
+ * that is not a plain reference/object literal, so its members are NOT all
+ * visible here. Evidence lookups on such a type can miss a member the base
+ * declares, which callers must treat as "unknown", never as "absent" (#3914).
+ */
+export function hasUnresolvedBase(type: TypeInfo | null, meta: EvidenceMetadata): boolean {
+  const stripped = stripUnion(type)
+  if (!stripped || stripped.kind !== 'interface') return false
+  const def = meta.typeDefinitions.find((d) => d.name === baseTypeName(stripped.raw))
+  return def ? definitionHasUnresolvedBase(def, meta, new Set([def.name])) : false
+}
+
+function definitionHasUnresolvedBase(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): boolean {
+  return (def.inherits ?? []).some((base) => {
+    if (base.kind === 'object') return false
+    if (base.kind !== 'interface') return true
+    const name = baseTypeName(base.raw)
+    if (visiting.has(name)) return false
+    const baseDef = meta.typeDefinitions.find((d) => d.name === name)
+    return !baseDef || definitionHasUnresolvedBase(baseDef, meta, new Set(visiting).add(name))
+  })
+}
+
+/**
+ * Why a receiver expression's type evidence cannot be trusted at some step of
+ * its member chain (#3914), or `null` when every step resolves:
+ *   - `'conflict'`: the step's member is declared by several intersection arms
+ *     with irreconcilable types, so its type was reported as `unknown`;
+ *   - `'hidden'`: the member is not visible on the containing type, which
+ *     inherits from a base declared outside this file (it may live there).
+ * Checked at EVERY depth (`props.data.at` inspects `Data` for `at`, and the
+ * props type for `data`), so evidence lost to an unsupported intersection or
+ * an unseen base is never mistaken for "not a rich type". Shares
+ * `resolveReceiverType`'s prop-membership rules.
+ */
+export function receiverEvidenceLoss(
+  expr: ParsedExpr,
+  meta: EvidenceMetadata,
+  bindings: ReadonlyMap<string, TypeInfo | null>,
+): { prop: string; reason: 'conflict' | 'hidden' } | null {
+  let containing: TypeInfo | null
+  let prop: string
+  if (expr.kind === 'identifier') {
+    if (bindings.has(expr.name) || meta.propsObjectName !== null) return null
+    const param = meta.propsParams.find((p) => p.name === expr.name && !p.isRest)
+    if (!param) return null
+    containing = meta.propsType
+    prop = param.sourceName ?? param.name
+  } else if (expr.kind === 'member' && !expr.computed) {
+    const inner = receiverEvidenceLoss(expr.object, meta, bindings)
+    if (inner) return inner
+    containing = resolveReceiverType(expr.object, meta, bindings)
+    prop = expr.property
+  } else {
+    return null
+  }
+  const stripped = stripUnion(containing)
+  if (!stripped || stripped.kind !== 'interface') return null
+  if (inheritedMemberConflicts(stripped, meta).has(prop)) return { prop, reason: 'conflict' }
+  const visible = derefNamedType(stripped, meta).properties?.some((p) => p.name === prop)
+  return !visible && hasUnresolvedBase(stripped, meta) ? { prop, reason: 'hidden' } : null
 }
 
 /**
