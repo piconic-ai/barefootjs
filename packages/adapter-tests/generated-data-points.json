@@ -7120,6 +7120,90 @@
       }
     }
   ],
+  "foreign-title-bare-text": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "foreign-title-markup-child": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "foreign-title-slot": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 1234567890
+      }
+    }
+  ],
   "format-date-client": [
     {
       "name": "gen:ok:false",

@@ -22,6 +22,12 @@ export const conformancePins: ConformancePins = {
   'raw-text-host-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-svg-style': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-annotation-xml-svg': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  // html/template reads `<title>` / `<textarea>` as RCDATA whatever the
+  // namespace and escapes every `<` there, so the slot markers of a reactive
+  // child (and any element child) in foreign content can't be emitted (#3937).
+  'foreign-title-slot': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
+  'foreign-title-markup-child': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
+  'raw-text-host-annotation-xml-encodings': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
   // `===` / `!==` over an object or array: JS compares by reference, which
   // no template runtime can tell from equal contents (#3824 step 8).
