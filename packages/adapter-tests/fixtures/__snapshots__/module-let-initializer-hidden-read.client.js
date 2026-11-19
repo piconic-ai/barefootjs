@@ -3,12 +3,13 @@ import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, esc
 var g = g ?? function() {
   return counter
 }
+var counter
 var __bf_module_ModuleLetInitializerHiddenRead = __bf_module_ModuleLetInitializerHiddenRead ?? (() => {
   const base = 'm'
   const alias = base
-  return { alias, counter: base + alias.length }
+  counter = counter ?? base + alias.length
+  return { alias }
 })()
-var counter = counter ?? __bf_module_ModuleLetInitializerHiddenRead.counter
 
 export function initModuleLetInitializerHiddenRead(__scope, _p = {}) {
   if (!__scope) return

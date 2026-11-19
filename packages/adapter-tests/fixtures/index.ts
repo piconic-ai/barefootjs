@@ -1618,6 +1618,9 @@ import { fixture as moduleLetHandlerWriteHiddenRead } from './module-let-handler
 import { fixture as moduleLetBareHiddenRead } from './module-let-bare-hidden-read'
 import { fixture as moduleLetInitializerHiddenRead } from './module-let-initializer-hidden-read'
 import { fixture as moduleLetNameHiddenRead } from './module-let-name-hidden-read'
+import { fixture as moduleLetSharedChainHiddenRead } from './module-let-shared-chain-hidden-read'
+import { fixture as moduleLetConstReadsSharedHiddenRead } from './module-let-const-reads-shared-hidden-read'
+import { fixture as moduleLetFunctionWriteHiddenRead } from './module-let-function-write-hidden-read'
 import { fixture as moduleConstShadowedBySignal } from './module-const-shadowed-by-signal'
 import { fixture as moduleConstDeclaredAfterComponent } from './module-const-declared-after-component'
 import { fixture as moduleConstDestructureDefaultComponentConst } from './module-const-destructure-default-component-const'
@@ -2881,6 +2884,9 @@ export const jsxFixtures: JSXFixture[] = [
   moduleLetBareHiddenRead,
   moduleLetInitializerHiddenRead,
   moduleLetNameHiddenRead,
+  moduleLetSharedChainHiddenRead,
+  moduleLetConstReadsSharedHiddenRead,
+  moduleLetFunctionWriteHiddenRead,
   moduleConstShadowedBySignal,
   moduleConstDeclaredAfterComponent,
   moduleConstDestructureDefaultComponentConst,

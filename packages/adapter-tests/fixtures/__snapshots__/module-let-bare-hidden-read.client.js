@@ -1,13 +1,14 @@
 import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
+var last
 var __bf_module_ModuleLetBareHiddenRead = __bf_module_ModuleLetBareHiddenRead ?? (() => {
   const g = function() {
   return base + last
 }
   const base = 'm'
-  return { g, last: undefined }
+  last = last ?? undefined
+  return { g }
 })()
-var last = last ?? __bf_module_ModuleLetBareHiddenRead.last
 
 export function initModuleLetBareHiddenRead(__scope, _p = {}) {
   if (!__scope) return

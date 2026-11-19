@@ -118,16 +118,23 @@ export function emitModuleScopeReplica(
   if (!replica) return ''
   const used = usedReplicaDeclarations(replica, usedNames)
   if (!used) return ''
-  const lines: string[] = [`var ${replica.name} = ${replica.name} ?? (() => {`]
+  // A shared const's storage is the module-level variable the component
+  // writes (#3932). It is declared before the replica and assigned inside it,
+  // at its source-order position, so a const evaluated later in the replica
+  // reads the value the module would have given it.
+  const lines: string[] = used.shared.map(c => `var ${c.name}`)
+  lines.push(`var ${replica.name} = ${replica.name} ?? (() => {`)
   for (const fn of used.functions) lines.push(`  const ${fn.name} = ${functionExpressionText(fn)}`)
-  for (const c of used.constants) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
-  // A shared const's initializer is evaluated here, where the module's own
-  // names are visible; its variable is declared below at module level, the
-  // storage the component writes (#3932).
-  const members = [...used.exported, ...used.shared.map(c => `${c.name}: ${c.value || 'undefined'}`)]
-  lines.push(`  return { ${members.join(', ')} }`)
+  const constants = new Map(used.constants.map(c => [c.name, c]))
+  const shared = new Map(used.shared.map(c => [c.name, c]))
+  for (const name of used.sourceOrder) {
+    const c = constants.get(name)
+    if (c) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
+    const s = shared.get(name)
+    if (s) lines.push(`  ${s.name} = ${s.name} ?? ${s.value || 'undefined'}`)
+  }
+  lines.push(`  return { ${used.exported.join(', ')} }`)
   lines.push('})()')
-  for (const c of used.shared) lines.push(`var ${c.name} = ${c.name} ?? ${replica.name}.${c.name}`)
   return lines.join('\n') + '\n'
 }
 

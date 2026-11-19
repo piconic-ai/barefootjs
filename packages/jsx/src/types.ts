@@ -2378,6 +2378,12 @@ export interface FunctionInfo {
    * AST: what its body reads when it is called.
    */
   freeIdentifiers?: ReadonlySet<string>
+  /**
+   * The names the function body assigns (`=`, compound assignment, `++` / `--`),
+   * a subset of `freeIdentifiers`. Read for a module function that writes a
+   * module `let` (`moduleScopeView`).
+   */
+  assignedIdentifiers?: ReadonlySet<string>
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
   /**

@@ -3489,6 +3489,7 @@ function collectFunction(
   const isGenerator = !!node.asteriskToken
   // A body rewritten for branch-local names above no longer matches its tree.
   const returnParsed = plainReturnParsed(node, body, isJsxFunction, ctx)
+  const freeIdentifiers = extractFreeIdentifiersFromNode(node)
 
   ctx.localFunctions.push({
     name,
@@ -3507,9 +3508,22 @@ function collectFunction(
     inComponentBody: inComponentBody(node, ctx),
     returnParsed,
     isJsxFunction: isJsxFunction || undefined,
-    freeIdentifiers: extractFreeIdentifiersFromNode(node),
+    freeIdentifiers,
+    assignedIdentifiers: assignedFreeIdentifiers(node, freeIdentifiers),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
+}
+
+/**
+ * The free names `fn` writes, nested callbacks included, by the shared
+ * scope-aware assignment-target rule (a nested binding that shadows the name
+ * is not a write to it).
+ */
+function assignedFreeIdentifiers(fn: ts.FunctionDeclaration, free: ReadonlySet<string>): Set<string> {
+  const ids = new Set<string>()
+  if (!fn.body) return ids
+  for (const id of collectAssignmentTargets(fn.body, free)) ids.add(id.text)
+  return ids
 }
 
 /**

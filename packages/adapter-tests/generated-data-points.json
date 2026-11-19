@@ -11462,6 +11462,52 @@
       }
     }
   ],
+  "module-let-const-reads-shared-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetConstReadsSharedHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetConstReadsSharedHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetConstReadsSharedHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-function-write-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetFunctionWriteHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetFunctionWriteHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetFunctionWriteHiddenRead_test"
+      }
+    }
+  ],
   "module-let-hidden-read": [
     {
       "name": "gen:base:empty",
@@ -11528,6 +11574,29 @@
       "props": {
         "base": "日本語",
         "__instanceId": "ModuleLetNameHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-shared-chain-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetSharedChainHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetSharedChainHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetSharedChainHiddenRead_test"
       }
     }
   ],

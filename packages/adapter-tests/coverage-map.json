@@ -12839,6 +12839,38 @@
         "text"
       ]
     },
+    "module-let-const-reads-shared-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-function-write-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-handler-write-hidden-read": {
       "kinds": [
         "binary",
@@ -12888,6 +12920,22 @@
       ]
     },
     "module-let-name-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-shared-chain-hidden-read": {
       "kinds": [
         "binary",
         "call",

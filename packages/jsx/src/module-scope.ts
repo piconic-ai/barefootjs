@@ -62,9 +62,12 @@ export interface ModuleScopeReplica {
    * Module consts the component reassigns that the replica's members read, or
    * whose initializer reads a name the component binds. The replica evaluates
    * their initializers and returns each value under its own name; the client
-   * script declares the variable at module level from it (`emitModuleScopeReplica`).
+   * script declares the variable at module level and the replica assigns it
+   * in source order, among the consts (`emitModuleScopeReplica`).
    */
   shared: ConstantInfo[]
+  /** Names of `constants` and `shared`, in source order. */
+  sourceOrder: string[]
 }
 
 export interface ModuleScopeView {
@@ -88,6 +91,15 @@ type ViewMetadata = Pick<
   'propsObjectName' | 'propsParams' | 'restPropsName' | 'localConstants' | 'localFunctions' | 'signals' | 'memos'
 >
 
+/**
+ * What `replicaRole` reads besides the const: the names the component binds,
+ * and the module consts a module function assigns (`FunctionInfo.assignedIdentifiers`).
+ */
+interface RoleEnv {
+  componentNames: ReadonlySet<string>
+  writtenByFunction: ReadonlySet<string>
+}
+
 /** How the replica treats a module const that a replica member reads. */
 type ReplicaRole = 'declared' | 'shared' | 'blocked'
 
@@ -96,15 +108,15 @@ type ReplicaRole = 'declared' | 'shared' | 'blocked'
  *   replica. One the component only mutates (`box.n = 2`) is declared there
  *   too: the component reads the same object through `<replica>.<name>`, so
  *   its writes and the replica's reads share one storage.
- * - `shared`: a binding the component reassigns (and does not hide: a hidden
- *   one is written only as the component's own binding). The storage stays
+ * - `shared`: a binding the component or a module function reassigns (and the
+ *   component does not hide: a hidden one is written only as the component's own binding). The storage stays
  *   at client-module level, where the component writes it (#3932).
  * - `blocked`: a value the replica has nothing to evaluate (JSX, a system
  *   construct, a bare `let` nobody writes).
  */
-function replicaRole(c: ConstantInfo, componentNames: ReadonlySet<string>): ReplicaRole {
+function replicaRole(c: ConstantInfo, env: RoleEnv): ReplicaRole {
   if (c.isJsx || c.isJsxFunction || c.systemConstructKind) return 'blocked'
-  if (c.reassigned && !componentNames.has(c.name)) return 'shared'
+  if ((c.reassigned || env.writtenByFunction.has(c.name)) && !env.componentNames.has(c.name)) return 'shared'
   return c.value !== undefined && c.value !== '' ? 'declared' : 'blocked'
 }
 
@@ -137,8 +149,9 @@ function replicaCanDeclareFunction(f: FunctionInfo): boolean {
 function scopeSensitiveClosure(
   moduleConstants: ReadonlyMap<string, ConstantInfo>,
   moduleFunctions: ReadonlyMap<string, FunctionInfo>,
-  componentNames: ReadonlySet<string>,
+  env: RoleEnv,
 ): Set<string> {
+  const { componentNames } = env
   const freeOf = (name: string): ReadonlySet<string> => {
     const c = moduleConstants.get(name)
     if (c) return freeIdentifiersOfConstant(c)
@@ -150,7 +163,7 @@ function scopeSensitiveClosure(
   // hidden) that itself reads a name the component binds.
   for (const [name, c] of moduleConstants) {
     if (componentNames.has(name)) continue
-    if (replicaRole(c, componentNames) !== 'blocked' && intersects(freeIdentifiersOfConstant(c), componentNames)) pending.push(name)
+    if (replicaRole(c, env) !== 'blocked' && intersects(freeIdentifiersOfConstant(c), componentNames)) pending.push(name)
   }
   for (const [name, f] of moduleFunctions) {
     if (componentNames.has(name)) continue
@@ -164,7 +177,50 @@ function scopeSensitiveClosure(
       if (!closure.has(read) && (moduleConstants.has(read) || moduleFunctions.has(read))) pending.push(read)
     }
   }
-  return dropUndeclarableMembers(closure, moduleConstants, freeOf, componentNames)
+  addReadersOfSharedStorage(closure, moduleConstants, env)
+  return dropUndeclarableMembers(closure, moduleConstants, freeOf, env)
+}
+
+/**
+ * A module const evaluates in source order, so one that reads a shared binding
+ * (directly or through another such const) must run in the replica, after the
+ * shared initializers before it: at module level it would run before the
+ * replica gave the binding its value. Add each such const, with what it reads,
+ * once the closure holds a shared binding.
+ */
+function addReadersOfSharedStorage(
+  closure: Set<string>,
+  moduleConstants: ReadonlyMap<string, ConstantInfo>,
+  env: RoleEnv,
+): void {
+  const tainted = new Set([...closure].filter(n => {
+    const c = moduleConstants.get(n)
+    return c !== undefined && replicaRole(c, env) === 'shared'
+  }))
+  if (tainted.size === 0) return
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const [name, c] of moduleConstants) {
+      if (tainted.has(name) || env.componentNames.has(name) || replicaRole(c, env) !== 'declared') continue
+      if (!intersects(freeIdentifiersOfConstant(c), tainted)) continue
+      tainted.add(name)
+      closure.add(name)
+      changed = true
+    }
+  }
+  // What the added consts read joins the closure too.
+  const pending = [...closure]
+  while (pending.length > 0) {
+    const c = moduleConstants.get(pending.pop()!)
+    if (!c) continue
+    for (const read of freeIdentifiersOfConstant(c)) {
+      if (moduleConstants.has(read) && !closure.has(read)) {
+        closure.add(read)
+        pending.push(read)
+      }
+    }
+  }
 }
 
 /**
@@ -179,11 +235,11 @@ function dropUndeclarableMembers(
   closure: Set<string>,
   moduleConstants: ReadonlyMap<string, ConstantInfo>,
   freeOf: (name: string) => ReadonlySet<string>,
-  componentNames: ReadonlySet<string>,
+  env: RoleEnv,
 ): Set<string> {
   const blocked = (name: string): boolean => {
     const c = moduleConstants.get(name)
-    return c !== undefined && replicaRole(c, componentNames) === 'blocked'
+    return c !== undefined && replicaRole(c, env) === 'blocked'
   }
   const dropped = new Set<string>()
   let changed = true
@@ -236,10 +292,11 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
   const unchanged = { localConstants: visibleConstants, localFunctions: visibleFunctions, replica: null }
   if (moduleConstants.size === 0 && moduleFunctions.size === 0) return unchanged
 
-  const closure = scopeSensitiveClosure(moduleConstants, moduleFunctions, componentNames)
+  const env: RoleEnv = { componentNames, writtenByFunction: namesWrittenByModuleFunctions(metadata.localFunctions) }
+  const closure = scopeSensitiveClosure(moduleConstants, moduleFunctions, env)
   const inClosure = [...moduleConstants.values()].filter(c => closure.has(c.name))
-  const constants = inClosure.filter(c => replicaRole(c, componentNames) === 'declared')
-  const shared = inClosure.filter(c => replicaRole(c, componentNames) === 'shared')
+  const constants = inClosure.filter(c => replicaRole(c, env) === 'declared')
+  const shared = inClosure.filter(c => replicaRole(c, env) === 'shared')
   const declaredConstants = new Set(constants.map(c => c.name))
   const functions = [...moduleFunctions.values()].filter(f => closure.has(f.name) && !declaredConstants.has(f.name))
   if (constants.length === 0 && functions.length === 0 && shared.length === 0) return unchanged
@@ -258,8 +315,17 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
       ...functions.filter(f => exportedNames.has(f.name)).map(f => replicaMemberRead(f, name)),
     ],
     localFunctions: visibleFunctions.filter(f => !(isModuleLexicalFunction(f) && exportedNames.has(f.name))),
-    replica: { name, constants, functions, exported, shared },
+    replica: { name, constants, functions, exported, shared, sourceOrder: inClosure.map(c => c.name) },
   }
+}
+
+/** The names the module-level functions assign. */
+function namesWrittenByModuleFunctions(functions: readonly FunctionInfo[]): Set<string> {
+  const written = new Set<string>()
+  for (const f of functions) {
+    if (isModuleLexicalFunction(f)) for (const id of f.assignedIdentifiers ?? []) written.add(id)
+  }
+  return written
 }
 
 /** The view's entry for a replica member: a const reading `<replica>.<name>`. */
@@ -288,7 +354,7 @@ function replicaMemberRead(d: ConstantInfo | FunctionInfo, replica: string): Con
 export function usedReplicaDeclarations(
   replica: ModuleScopeReplica,
   used: ReadonlySet<string>,
-): Pick<ModuleScopeReplica, 'constants' | 'functions' | 'exported' | 'shared'> | null {
+): Pick<ModuleScopeReplica, 'constants' | 'functions' | 'exported' | 'shared' | 'sourceOrder'> | null {
   const exported = replica.exported.filter(name => used.has(name))
   const sharedRoots = replica.shared.filter(c => used.has(c.name)).map(c => c.name)
   if (exported.length === 0 && sharedRoots.length === 0) return null
@@ -312,6 +378,7 @@ export function usedReplicaDeclarations(
     functions: replica.functions.filter(f => needed.has(f.name)),
     exported,
     shared: replica.shared.filter(c => needed.has(c.name)),
+    sourceOrder: replica.sourceOrder.filter(name => needed.has(name)),
   }
 }
 

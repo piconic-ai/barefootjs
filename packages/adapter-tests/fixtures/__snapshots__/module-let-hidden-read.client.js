@@ -1,13 +1,14 @@
 import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
+var counter
 var __bf_module_ModuleLetHiddenRead = __bf_module_ModuleLetHiddenRead ?? (() => {
   const g = function() {
   return base + counter
 }
   const base = 'm'
-  return { g, counter: 0 }
+  counter = counter ?? 0
+  return { g }
 })()
-var counter = counter ?? __bf_module_ModuleLetHiddenRead.counter
 
 export function initModuleLetHiddenRead(__scope, _p = {}) {
   if (!__scope) return

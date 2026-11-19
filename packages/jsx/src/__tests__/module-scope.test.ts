@@ -322,21 +322,56 @@ export function C({ base }: { base: string }) {
   test('the replica evaluates the function against the module const and the let stays one module variable', () => {
     const { clientJs } = compile(component('let counter = 0', 'counter'))
     expect(lines(clientJs, 'const g = ')).toContain('const g = __bf_module_C.g')
-    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: 0 }'])
-    // One storage: declared once at module level, from the replica's value,
-    // and written by the component's init as the same variable.
-    expect(lines(clientJs, 'var counter')).toEqual(['var counter = counter ?? __bf_module_C.counter'])
+    // One storage: declared at module level, given its value by the replica
+    // at its source-order position, and written by the component's init as the
+    // same variable.
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter'])
+    expect(lines(clientJs, 'counter = counter')).toEqual(['counter = counter ?? 0'])
     expect(lines(clientJs, 'let counter')).toEqual([])
     expect(lines(clientJs, 'counter = 2')).toEqual(['counter = 2'])
   })
 
   test('a let without an initializer starts undefined, as in the module', () => {
     const { clientJs } = compile(component('let counter', 'counter'))
-    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: undefined }'])
+    expect(lines(clientJs, 'counter = counter')).toEqual(['counter = counter ?? undefined'])
   })
 
   test('a let whose initializer reads the hidden const is evaluated in the replica', () => {
     const { clientJs } = compile(component('let counter = base.length', 'counter'))
-    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: base.length }'])
+    expect(lines(clientJs, 'counter = counter')).toEqual(['counter = counter ?? base.length'])
+  })
+
+  test('shared lets and the consts reading them are assigned in source order', () => {
+    const { clientJs } = compile(`
+'use client'
+const base = 'm'
+let first = 1
+let counter = first + 1
+const seed = counter
+function g() { return base + counter + seed }
+export function C({ base }: { base: string }) {
+  first = 3
+  counter++
+  return <button onClick={() => console.log(g())}>{base}</button>
+}
+`)
+    const order = clientJs.split('\n').map(l => l.trim()).filter(l => /^(first|counter) = |^const seed = /.test(l))
+    expect(order.slice(0, 3)).toEqual(['first = first ?? 1', 'counter = counter ?? first + 1', 'const seed = counter'])
+  })
+
+  test('a let only a module function writes is the same variable for the replica and the component', () => {
+    const { clientJs } = compile(`
+'use client'
+const base = 'm'
+let counter = 0
+function bump() { counter += 1 }
+function g() { return base + counter }
+export function C({ base }: { base: string }) {
+  return <button onClick={() => { bump(); console.log(g() + counter) }}>{base}</button>
+}
+`)
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter'])
+    expect(lines(clientJs, 'const counter')).toEqual([])
+    expect(lines(clientJs, 'let counter')).toEqual([])
   })
 })
