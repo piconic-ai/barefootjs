@@ -12,6 +12,9 @@ const VOID_ELEMENTS = new Set([
   'input', 'link', 'meta', 'param', 'source', 'track', 'wbr',
 ])
 
+/** HTML elements whose content is raw text (no tags, no comments inside). */
+const RAW_TEXT_ELEMENTS = new Set(['style', 'script'])
+
 interface Token {
   type: 'open' | 'close' | 'void' | 'text' | 'comment'
   raw: string
@@ -44,6 +47,14 @@ function tokenize(html: string): Token[] {
         tokens.push({ type: 'void', raw, tagName })
       } else {
         tokens.push({ type: 'open', raw, tagName })
+        // The content of a `<style>` / `<script>` is raw text: a `<` in it
+        // opens no tag (`a < b`, `"<\/style>"`), so it is one text token up
+        // to the element's end tag rather than something to tokenize.
+        const end = RAW_TEXT_ELEMENTS.has(tagName) ? html.indexOf(`</${tagName}>`, re.lastIndex) : -1
+        if (end > re.lastIndex) {
+          tokens.push({ type: 'text', raw: html.slice(re.lastIndex, end) })
+          re.lastIndex = end
+        }
       }
     } else {
       tokens.push({ type: 'text', raw })

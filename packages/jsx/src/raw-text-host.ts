@@ -20,6 +20,61 @@
  * text or RCDATA by name (Go `html/template`) can refuse the shapes it cannot
  * render (#3937).
  *
+ * `style` and `script` are raw text in the stricter sense: the parser decodes
+ * no character reference there either, so an HTML-escaped value reaches the
+ * CSS / JS parser with its entities (`a[href=&quot;x&quot;]`). Their text is
+ * printed as written, and each `<` that could begin markup (one followed by
+ * an ASCII letter, `/`, `!` or `?`) and each `&` that could begin a
+ * character reference (one followed by an ASCII letter or `#`) is rewritten
+ * to the CSS / JS escape of that character (`escapeRawText`,
+ * `@barefootjs/shared`, #3934). `textarea` and `title`
+ * decode references and keep the HTML escape.
+ *
+ * That rewrite is the only thing between a value and the markup around the
+ * element, so this is the argument for it, seam by seam:
+ *   - Split across children. `{'<'}{v}` with `v` = `/style><img onerror=…>`
+ *     holds `</style` in no single child, and the same goes for a static
+ *     `</sty` before a dynamic `le>`, for three or more pieces, and for a
+ *     fragment's children. So this pass lists the text and expression
+ *     children in source order (fragments flattened) as
+ *     `IRElement.rawTextContent`, and every emitter (each adapter's element
+ *     door, the client template, the reactive update) joins the list's
+ *     values and encodes the WHOLE text in ONE call. Each listed child is
+ *     marked `rawText`; a child emitter handed a marked node throws rather
+ *     than print it alone.
+ *   - Other child kinds. An element, conditional, loop, component or slot
+ *     child is refused below, and a read of `children` (rendered markup)
+ *     after it, so no part of the text is produced outside that one call.
+ *   - Parsed as raw text. Only `</style` / `</script` ends the element, and
+ *     in a `<script>` a `<!--` followed by `<script` reaches the
+ *     double-escaped state, where the real end tag no longer closes it. Each
+ *     starts with `</`, `<!` or `<s`, so none is left, in any letter case.
+ *   - Parsed as foreign content. A component cannot see where its markup
+ *     lands: `<svg>{children}</svg>` puts a `<style>` written in HTML inside
+ *     SVG, and so does a caller that places a `<style>`-rooted component
+ *     there. In SVG the text is ordinary data: `<img onerror=…>` in it is a
+ *     tag, and `&quot;` is decoded to `"`, which ends the JS / JSON string a
+ *     value was serialized into. That is why the rule covers EVERY `<` that
+ *     can begin a tag, an end tag, a comment, a declaration or a bogus
+ *     comment, and every `&` that can begin a reference, not only the
+ *     element's own end tag: the tokenizer finds neither under either
+ *     parse, and the element's text is the same bytes in both.
+ *   - A backslash before the character. `"\<b"` already spells `<b` in a
+ *     CSS / JS string, so the encoder counts the backslashes directly before
+ *     a rewritten character: after an even run the escape is inserted, in an
+ *     odd run it replaces the last backslash and the character together.
+ *     The text reads back as written either way, and the `<` / `&` itself is
+ *     never left in place. The count runs over the joined text, so a
+ *     backslash in one child and the character in the next are one run.
+ *   - The end of the text. It is followed by the element's own end tag: a
+ *     trailing `<` gives `<</style>`, where the first `<` is text.
+ *   - Values that are not strings (number, null, array, an object's
+ *     `toString`) are turned into their text first and encoded afterwards,
+ *     so the encoder always sees the characters that are printed.
+ *   - The client computes the text from the same values and encodes it
+ *     again on every update; nothing is read back from the DOM, and the
+ *     encoding leaves its own output unchanged.
+ *
  * Shapes the element-level update cannot express are refused rather than
  * left to diverge silently:
  *   - a child that is not text or an expression (an element, a conditional,
@@ -30,12 +85,16 @@
  *     row) in a loop row: the element-level update is wired only for hosts in
  *     the component body, and a branch template runs untracked (`insert()`
  *     owns its effects through the branch's own wiring), so a content change
- *     would be dropped silently.
+ *     would be dropped silently;
+ *   - a read of the component's `children` in a `<style>` / `<script>`: the
+ *     children arrive as rendered, HTML-escaped markup, which cannot be turned
+ *     back into the text they were written as.
  */
 
+import { isRawTextTag } from '@barefootjs/shared'
 import { createError, ErrorCodes } from './errors.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
-import type { CompilerError, IRElement, IRExpression, IRNode } from './types.ts'
+import type { CompilerError, IRElement, IRExpression, IRNode, IRText } from './types.ts'
 
 const RAW_TEXT_HOST_TAGS: ReadonlySet<string> = new Set(['style', 'script', 'textarea', 'title'])
 
@@ -156,14 +215,46 @@ function splitHostChildren(
   return null
 }
 
+/**
+ * Collects the text and expression children of a `<style>` / `<script>`
+ * (fragments flattened) into `parts`, in source order, marking each with the
+ * element it is the raw text of.
+ */
+function collectRawText(
+  children: readonly IRNode[],
+  tag: NonNullable<IRText['rawText']>,
+  parts: (IRText | IRExpression)[],
+): void {
+  for (const child of children) {
+    if (child.type === 'text' || child.type === 'expression') {
+      child.rawText = tag
+      parts.push(child)
+    } else if (child.type === 'fragment') {
+      collectRawText(child.children, tag, parts)
+    }
+  }
+}
+
+/** Sets `rawTextContent` on a `<style>` / `<script>` that has text to print. */
+function lowerRawTextContent(el: IRElement): void {
+  if (!isRawTextTag(el.tag)) return
+  const parts: (IRText | IRExpression)[] = []
+  collectRawText(el.children, el.tag, parts)
+  if (parts.length > 0) el.rawTextContent = parts
+}
+
 function refusal(el: IRElement, node: IRNode, why: string): CompilerError {
-  return createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, node.type === 'element' || node.type === 'expression' ? node.loc : el.loc, {
+  return tagRefusal(el.tag, node.type === 'element' || node.type === 'expression' ? node.loc : el.loc, why)
+}
+
+function tagRefusal(tag: string, loc: IRElement['loc'], why: string): CompilerError {
+  return createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
     message:
-      `<${el.tag}> holds ${el.tag === 'textarea' || el.tag === 'title' ? 'RCDATA' : 'raw text'}, where the HTML parser ` +
+      `<${tag}> holds ${tag === 'textarea' || tag === 'title' ? 'RCDATA' : 'raw text'}, where the HTML parser ` +
       `reads no comment, so ${why}`,
     suggestion: {
       message:
-        `Give <${el.tag}> a single string expression (or text) as its child, and keep reactive text out of loop rows, ` +
+        `Give <${tag}> a single string expression (or text) as its child, and keep reactive text out of loop rows, ` +
         "conditional branches and a component's children (render it in the component body, or use another element).",
       escape: [{ kind: 'rewrite' }],
     },
@@ -208,8 +299,12 @@ export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
   walkIR<HostScope>(root, { place: 'body', namespace: 'html' }, {
     element: ({ node, scope, descend }) => {
       if (isRawTextHostTag(node.tag)) {
-        if (scope.namespace === 'html') lowerHost(node, scope.place, errors)
-        else node.foreignRawTextTag = true
+        if (scope.namespace === 'html') {
+          lowerRawTextContent(node)
+          lowerHost(node, scope.place, errors)
+        } else {
+          node.foreignRawTextTag = true
+        }
       }
       descend(childScope(node, scope))
     },
@@ -220,6 +315,28 @@ export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
       const inner: HostScope = { ...scope, place: nest(scope.place, 'children') }
       descend(inner)
       descendJsxChildren(inner)
+    },
+  })
+}
+
+/**
+ * Refuses a read of the component's `children` in the text of a `<style>` /
+ * `<script>` (#3934). The children arrive as rendered, HTML-escaped markup,
+ * which cannot be turned back into the text they were written as, and the
+ * element decodes no character reference. Runs after the expressions are
+ * parsed, which is when `childrenRead` is known.
+ */
+export function refuseChildrenInRawText(root: IRNode, errors: CompilerError[]): void {
+  walkIR<null>(root, null, {
+    expression: ({ node }) => {
+      if (!node.rawText || !node.childrenRead) return
+      errors.push(
+        tagRefusal(node.rawText, node.loc, "the component's children, which arrive as rendered markup, cannot be its text."),
+      )
+    },
+    component: ({ descend, descendJsxChildren }) => {
+      descend()
+      descendJsxChildren()
     },
   })
 }

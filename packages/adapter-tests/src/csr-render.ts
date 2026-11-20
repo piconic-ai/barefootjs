@@ -434,6 +434,27 @@ const escapeAttr = (value) =>
 // An array child renders its items one after another (\`childText\`).
 const childText = (value) => value == null || typeof value === 'boolean' ? '' : Array.isArray(value) ? value.map(childText).join('') : String(value)
 const escapeText = (value) => value == null || typeof value === 'boolean' ? '' : escapeAttr(Array.isArray(value) ? childText(value) : value)
+// Mirror @barefootjs/client/runtime escapeRawTextContent (#3934): the text of
+// a \`<style>\` / \`<script>\` is not HTML-escaped; each \`<\` that could begin
+// markup and each \`&\` that could begin a character reference is rewritten
+// over the WHOLE joined text (\`escapeRawText\`, @barefootjs/shared).
+const RAW_TEXT_ESCAPES = {
+  style: { '<': '\\\\3c ', '&': '\\\\26 ' },
+  script: { '<': '\\\\u003c', '&': '\\\\u0026' },
+}
+const escapeRawTextContent = (tag, value) => {
+  const text = childText(value)
+  let out = ''
+  let copied = 0
+  for (const match of text.matchAll(/<(?=[A-Za-z/!?])|&(?=[A-Za-z#])/g)) {
+    const at = match.index
+    let run = 0
+    while (at - run > copied && text.charCodeAt(at - run - 1) === 92) run++
+    out += text.slice(copied, run % 2 === 1 ? at - 1 : at) + RAW_TEXT_ESCAPES[tag][match[0]]
+    copied = at + 1
+  }
+  return out + text.slice(copied)
+}
 // Mirror @barefootjs/client/runtime escapeCommentText (#2795 follow-up): the
 // whole-item-conditional loop's \`bf-loop-i:<key>\` anchor comment neutralizes
 // \`-\` (the only character that matters inside an HTML comment — the literal

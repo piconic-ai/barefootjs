@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createSignal, escapeText, hydrate } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeRawTextContent, hydrate } from '@barefootjs/client/runtime'
 
 
 export function initRawTextHostAnnotationXmlSvg(__scope, _p = {}) {
@@ -12,7 +12,7 @@ export function initRawTextHostAnnotationXmlSvg(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __x = [escapeText('x' + n())].join('')
+      { const __x = escapeRawTextContent('style', [('x' + n())])
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         _s1.innerHTML = String(__x)
       }
@@ -23,5 +23,5 @@ export function initRawTextHostAnnotationXmlSvg(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', () => setN(n() + 1))
 }
 
-hydrate('RawTextHostAnnotationXmlSvg', { init: initRawTextHostAnnotationXmlSvg, template: (_p) => `<div><math><annotation-xml><svg><title><style class="deep" bf="s1">${escapeText('x' + (1))}</style></title></svg></annotation-xml></math><button class="go" bf="s2">go</button></div>` })
+hydrate('RawTextHostAnnotationXmlSvg', { init: initRawTextHostAnnotationXmlSvg, template: (_p) => `<div><math><annotation-xml><svg><title><style class="deep" bf="s1">${escapeRawTextContent('style', [('x' + (1))])}</style></title></svg></annotation-xml></math><button class="go" bf="s2">go</button></div>` })
 export function RawTextHostAnnotationXmlSvg(_p, __bfKey) { return createComponent('RawTextHostAnnotationXmlSvg', _p, __bfKey) }

@@ -40,6 +40,32 @@ export function T() {
     })
   }
 
+  test('literal <style> / <script> text is not HTML-escaped (#3934)', () => {
+    const { errors, files } = compile(`
+export function T() {
+  return <div><style>.a &gt; .b[x=&quot;y&quot;] &amp; &lt;/style&gt;</style><script>if (1 &lt; 2) s = &quot;&lt;/Script&gt;&quot;</script><p>a &gt; b</p></div>
+}
+`)
+    expect(errors).toEqual([])
+    const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('<style>.a > .b[x="y"] & \\3c /style></style>')
+    expect(template).toContain('<script>if (1 < 2) s = "\\u003c/Script>"</script>')
+    // Ordinary text keeps the HTML escape.
+    expect(template).toContain('<p>a &gt; b</p>')
+  })
+
+  test('a literal end tag split across text nodes is still rewritten (#3934)', () => {
+    const { errors, files } = compile(`
+export function T() {
+  return <div><style>&lt;/sty<>le&gt;&lt;i&gt;</></style><script>&lt;/SCR<>ipt&gt;&lt;i&gt;</></script></div>
+}
+`)
+    expect(errors).toEqual([])
+    const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('<style>\\3c /style>\\3c i></style>')
+    expect(template).toContain('<script>\\u003c/SCRipt>\\u003ci></script>')
+  })
+
   test('a /* @client */ expression in <style> is refused too', () => {
     const { errors } = compile(`
 export function T({ v }: { v: string }) {

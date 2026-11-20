@@ -16819,6 +16819,116 @@
       }
     }
   ],
+  "raw-text-backslash-escape": [
+    {
+      "name": "gen:bs:empty",
+      "props": {
+        "bs": "",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:bs:markup",
+      "props": {
+        "bs": "<b>&\"'</b>",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:bs:multibyte",
+      "props": {
+        "bs": "日本語",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<b>&\"'</b>",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "日本語",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "<b>&\"'</b>",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "日本語",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:whole:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": ""
+      }
+    },
+    {
+      "name": "gen:whole:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:whole:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "日本語"
+      }
+    }
+  ],
   "raw-text-host-dynamic": [
     {
       "name": "gen:label:empty",
@@ -16924,6 +17034,280 @@
       "name": "gen:label:multibyte",
       "props": {
         "label": "日本語"
+      }
+    }
+  ],
+  "raw-text-split-boundary": [
+    {
+      "name": "gen:tail:empty",
+      "props": {
+        "tail": "",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:tail:markup",
+      "props": {
+        "tail": "<b>&\"'</b>",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:tail:multibyte",
+      "props": {
+        "tail": "日本語",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:head:empty",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:head:markup",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "<b>&\"'</b>",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:head:multibyte",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "日本語",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:rest:empty",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:rest:markup",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "<b>&\"'</b>",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:rest:multibyte",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "日本語",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sTail:empty",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sTail:markup",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "<b>&\"'</b>",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sTail:multibyte",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "日本語",
+        "sHead": "</scr",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sHead:empty",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sHead:markup",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "<b>&\"'</b>",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sHead:multibyte",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "日本語",
+        "sRest": "ipt><i class=\"pwn\">"
+      }
+    },
+    {
+      "name": "gen:sRest:empty",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": ""
+      }
+    },
+    {
+      "name": "gen:sRest:markup",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:sRest:multibyte",
+      "props": {
+        "tail": "/style><i class=\"pwn\">",
+        "head": "</sty",
+        "rest": "le><i class=\"pwn\">",
+        "sTail": "/script><i class=\"pwn\">",
+        "sHead": "</scr",
+        "sRest": "日本語"
+      }
+    }
+  ],
+  "raw-text-style-script-escape": [
+    {
+      "name": "gen:sel:empty",
+      "props": {
+        "sel": "",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:sel:markup",
+      "props": {
+        "sel": "<b>&\"'</b>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:sel:multibyte",
+      "props": {
+        "sel": "日本語",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:empty",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "<b>&\"'</b>",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "日本語",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:json:empty",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": ""
+      }
+    },
+    {
+      "name": "gen:json:markup",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:json:multibyte",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "日本語"
       }
     }
   ],

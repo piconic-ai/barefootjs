@@ -910,6 +910,50 @@ final class BarefootJS
         return '[object Object]'; // stdClass or a non-list (assoc) array
     }
 
+    /**
+     * The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
+     * decodes no character reference there, so the value is NOT HTML-escaped
+     * (`a[href="x"]` must reach the CSS parser as written); the template
+     * prints the result raw (`| raw`, `{!! !!}`). Each `<` that could begin
+     * markup (one followed by an ASCII letter, `/`, `!` or `?`) and each `&`
+     * that could begin a character reference (one followed by an ASCII
+     * letter or `#`) is rewritten instead, in a form CSS / JS reads back as
+     * the same character: `\3c ` / `\26 ` in a `<style>`, `\u003c` /
+     * `\u0026` in a `<script>`. That leaves no end tag, no `<!--` /
+     * `<script`, no tag and no reference at all, so the text is the same
+     * both as raw text and where the element lands in foreign content
+     * (inside an `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
+     *
+     * `$parts` is the element's WHOLE text as the list of its pieces (static
+     * text and each expression's value): joined first and encoded once,
+     * because markup can be spelled across pieces (`['<', '/style>']`).
+     */
+    public function raw_text(string $tag, $parts): string
+    {
+        $text = '';
+        foreach (is_array($parts) && array_is_list($parts) ? $parts : [$parts] as $part) {
+            $text .= (string) $this->string($part);
+        }
+        $escape = $tag === 'style'
+            ? ['<' => '\\3c ', '&' => '\\26 ']
+            : ['<' => '\\u003c', '&' => '\\u0026'];
+        // The run of backslashes directly before the character is matched
+        // too: an odd run means the last backslash already escapes it
+        // (`"\<b"` is `<b`), so the escape replaces that pair instead of
+        // following the backslash.
+        $out = preg_replace_callback(
+            '~(?<!\\\\)(\\\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))~',
+            static fn (array $match): string =>
+                (strlen($match[1]) % 2 === 1 ? substr($match[1], 1) : $match[1]) . $escape[$match[2]],
+            $text,
+        );
+        // Never fall back to the unencoded text: it could end the element.
+        if ($out === null) {
+            throw new \RuntimeException('raw_text: ' . preg_last_error_msg());
+        }
+        return $out;
+    }
+
     /** JS `Number(v)` mirror for a display sink. Deliberate divergence
      * (matches the Perl/Python ports): `null`, `undefined` and
      * non-numeric/empty strings yield real NaN (not 0), so an unset prop /
