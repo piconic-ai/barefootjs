@@ -3169,6 +3169,190 @@
           ]
         }
       },
+      "body-statement-write-sibling-getter-spread": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        }
+      },
+      "body-statement-write-through-holder": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        }
+      },
       "callback-index-param": {
         "blade": {
           "kind": "refusal",
@@ -14814,6 +14998,14 @@
         "description": "A binding a body statement writes, read by the markup, is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-direct-read.ts"
       },
+      "body-statement-write-sibling-getter-spread": {
+        "description": "A spread of a literal whose getter calls a closure over a written binding is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-sibling-getter-spread.ts"
+      },
+      "body-statement-write-through-holder": {
+        "description": "A call of a closure another constant holds, after a body statement writes what it reads, is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-through-holder.ts"
+      },
       "callback-index-param": {
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
@@ -15957,6 +16149,8 @@
         "body-statement-write-block-shadowed-callback",
         "body-statement-write-computed-method-name",
         "body-statement-write-direct-read",
+        "body-statement-write-sibling-getter-spread",
+        "body-statement-write-through-holder",
         "destructure-default-body-mutated-memo"
       ],
       "adapters": [

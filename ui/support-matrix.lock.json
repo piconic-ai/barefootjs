@@ -42,6 +42,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -71,6 +83,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -308,6 +332,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -523,6 +559,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -814,6 +862,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1046,6 +1106,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1273,6 +1345,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -1516,6 +1600,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1737,6 +1833,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -1969,6 +2077,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -3065,6 +3185,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -3074,6 +3200,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -3235,6 +3367,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -3376,6 +3514,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -3543,6 +3687,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -3702,6 +3852,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -3863,6 +4019,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -4010,6 +4172,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -4171,6 +4339,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -4330,6 +4504,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -6145,6 +6325,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6182,6 +6368,12 @@
               "fixture": "attr-spread-key-overlap",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -6663,6 +6855,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7126,6 +7324,12 @@
               "fixture": "attr-spread-key-overlap",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -7757,6 +7961,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -8232,6 +8442,12 @@
               "fixture": "attr-spread-key-overlap",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -8713,6 +8929,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9179,6 +9401,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9642,6 +9870,12 @@
               "fixture": "attr-spread-key-overlap",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -10120,6 +10354,12 @@
               "fixture": "attr-spread-key-overlap",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -11631,6 +11871,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11732,6 +11978,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -12407,6 +12659,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13042,6 +13300,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -13987,6 +14251,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -14646,6 +14916,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -15315,6 +15591,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15973,6 +16255,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -16614,6 +16902,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -17284,6 +17578,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -18374,6 +18674,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -18433,6 +18745,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -18970,6 +19294,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -19491,6 +19827,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -20238,6 +20586,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -20770,6 +21130,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -21297,6 +21669,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -21852,6 +22236,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -22361,6 +22757,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -22893,6 +23301,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -24165,6 +24585,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -24230,6 +24656,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -24737,6 +25169,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -25204,6 +25642,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -25873,6 +26317,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -26364,6 +26814,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -26865,6 +27321,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -27355,6 +27817,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -27840,6 +28308,12 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -28347,6 +28821,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -28832,6 +29312,18 @@
               "limitations": [
                 "body-destructure-without-const-form"
               ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
             }
           ]
         },
@@ -28853,6 +29345,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29094,6 +29598,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -29329,6 +29845,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29612,6 +30140,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -29850,6 +30390,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -30085,6 +30637,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -30344,6 +30908,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -30573,6 +31149,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -30811,6 +31399,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -31718,6 +32318,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
@@ -31729,6 +32335,12 @@
           "gaps": [
             {
               "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -31816,6 +32428,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
               "limitations": [
                 "array-literal-element-spread"
@@ -31893,6 +32511,12 @@
           "gaps": [
             {
               "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -31980,6 +32604,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
               "limitations": [
                 "array-literal-element-spread"
@@ -32062,6 +32692,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
               "limitations": [
                 "array-literal-element-spread"
@@ -32139,6 +32775,12 @@
           "gaps": [
             {
               "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -32232,6 +32874,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
               "limitations": [
                 "array-literal-element-spread"
@@ -32314,6 +32962,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
               "limitations": [
                 "array-literal-element-spread"
@@ -32391,6 +33045,12 @@
           "gaps": [
             {
               "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -38973,6 +39633,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -39020,6 +39692,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -39461,6 +40145,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -39886,6 +40582,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -40513,6 +41221,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -40949,6 +41669,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -41380,6 +42112,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -41839,6 +42583,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -42258,6 +43014,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
@@ -42694,6 +43462,18 @@
             },
             {
               "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-sibling-getter-spread",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]

@@ -1367,6 +1367,33 @@
         "text"
       ]
     },
+    "body-statement-write-sibling-getter-spread": {
+      "kinds": [
+        "array-literal",
+        "literal",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "body-statement-write-through-holder": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "boolean-attr-literals": {
       "kinds": [
         "literal"
