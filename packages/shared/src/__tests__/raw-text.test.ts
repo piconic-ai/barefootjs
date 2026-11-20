@@ -60,6 +60,22 @@ describe('escapeRawText', () => {
     expect(new Function(`return ${encoded}`)()).toBe(value)
   })
 
+  test('the rewritten script text is the same template literal and regular expression', () => {
+    const value = '</script><img>&quot;&#60;<!--'
+    const template = escapeRawText('script', `\`${value}\``)
+    expect(template).not.toMatch(MARKUP)
+    expect(new Function(`return ${template}`)()).toBe(value)
+    const regex = new Function(`return ${escapeRawText('script', '/^<a&b<\\/c>&amp;$/')}`)() as RegExp
+    expect(regex.test('<a&b</c>&amp;')).toBe(true)
+    expect(regex.test('\\u003ca')).toBe(false)
+  })
+
+  test('operators written with a space are left alone, so the code still runs', () => {
+    const code = 'var i = 1, n = 2, a = true, b = 3; return i < n && a & b && i <= n && n << 1'
+    expect(escapeRawText('script', code)).toBe(code)
+    expect(new Function(code)()).toBe(4)
+  })
+
   test('the rewritten style text is the same CSS string', () => {
     // `\3c ` is the code point U+003C; the space ends the escape.
     const encoded = escapeRawText('style', '"</style><a>"')
