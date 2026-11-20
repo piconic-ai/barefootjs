@@ -59,7 +59,7 @@ export function initLoopParamNamedProps(__scope, _p = {}) {
   mapArray(() => items(), _s13, (props) => String(props), (props, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(props())}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props())}<!--/--><!--bf:s10-->${escapeTextOrMarkup(_p.suffix)}<!--/--></span><div data-bf-ph="s12"></div></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(props())}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props())}<!--/--><!--bf:s10-->${escapeTextOrMarkup(_p.suffix)}<!--/--></span><template data-bf-ph="s12"></template></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Tag__e7d377f0', 's12', { get label() { return props() }, get mark() { return _p.suffix } }, undefined, __scope)

@@ -3529,6 +3529,15 @@
       }
     }
   ],
+  "composite-row-child-restricted-parent": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "__instanceId": "CompositeRowChildRestrictedParent_test"
+      }
+    }
+  ],
   "computed-const-loop-source-parenthesized-precomputed": [
     {
       "name": "gen:keys:empty",

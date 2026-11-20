@@ -27,7 +27,7 @@ export function initTextareaRowBreakoutComposite(__scope, _p = {}) {
   mapArray(() => ids(), _s3, (id) => String(id), (id, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(id())}"><div data-bf-ph="s1"></div><textarea class="ta" bf="s2">${escapeText(value())}</textarea></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(id())}"><template data-bf-ph="s1"></template><textarea class="ta" bf="s2">${escapeText(value())}</textarea></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Tag__515bc416', 's1', { get id() { return id() } }, undefined, __scope)

@@ -53,7 +53,7 @@ export function initLoopRowChildChildrenInnerLoopComponent(__scope, _p = {}) {
       { const __ic1_0 = qsa(__existing, '[bf="^s9"]')
       if (__ic1_0) mapArray(() => o().tags || [], __ic1_0, (tag, j) => String(tag), (tag, __innerIdx1_0, __existing) => {
         const j = __innerIdx1_0
-        let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(tag())}"><div data-bf-ph="s8"></div></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+        let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(tag())}"><template data-bf-ph="s8"></template></li>`; return __t.content.firstElementChild.cloneNode(true) })()
         __innerEl1_0.setAttribute('data-key-1', String(tag()))
         upsertChild(__innerEl1_0, 'Btn__f3568064', 's8', { get label() { return tag() }, onPick: () => setPicked(`${o().id}-${tag()}@${i()}.${j()}`) }, undefined, __scope)
         return __innerEl1_0
@@ -65,7 +65,7 @@ export function initLoopRowChildChildrenInnerLoopComponent(__scope, _p = {}) {
     { const __ic1_0 = qsa(__csrEl, '[bf="^s9"]')
     if (__ic1_0) mapArray(() => o().tags || [], __ic1_0, (tag, j) => String(tag), (tag, __innerIdx1_0, __existing) => {
       const j = __innerIdx1_0
-      let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(tag())}"><div data-bf-ph="s8"></div></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+      let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(tag())}"><template data-bf-ph="s8"></template></li>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(tag()))
       upsertChild(__innerEl1_0, 'Btn__f3568064', 's8', { get label() { return tag() }, onPick: () => setPicked(`${o().id}-${tag()}@${i()}.${j()}`) }, undefined, __scope)
       return __innerEl1_0
@@ -79,12 +79,12 @@ export function initLoopRowChildChildrenInnerLoopComponent(__scope, _p = {}) {
       // Reactive inner loop: o.groups
       { const __ic1_0 = qsa(__existing, '[bf="^s14"]')
       if (__ic1_0) mapArray(() => o().groups || [], __ic1_0, (g) => String(g.id), (g, __innerIdx1_0, __existing) => {
-        let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(g().id)}"><ol bf="^s13"><!--bf-loop:l4-->${g().tags.map((t) => `<li data-key-2="${escapeAttr(t)}"><div data-bf-ph="s12"></div></li>`).join('')}<!--bf-/loop:l4--></ol></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+        let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(g().id)}"><ol bf="^s13"><!--bf-loop:l4-->${g().tags.map((t) => `<li data-key-2="${escapeAttr(t)}"><template data-bf-ph="s12"></template></li>`).join('')}<!--bf-/loop:l4--></ol></li>`; return __t.content.firstElementChild.cloneNode(true) })()
         __innerEl1_0.setAttribute('data-key-1', String(g().id))
         // Reactive inner loop: g.tags
         { const __ic2_0 = qsa(__innerEl1_0, '[bf="^s13"]')
         if (__ic2_0) mapArray(() => g().tags || [], __ic2_0, (t) => String(t), (t, __innerIdx2_0, __existing) => {
-          let __innerEl2_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-2="${escapeAttr(t())}"><div data-bf-ph="s12"></div></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+          let __innerEl2_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-2="${escapeAttr(t())}"><template data-bf-ph="s12"></template></li>`; return __t.content.firstElementChild.cloneNode(true) })()
           __innerEl2_0.setAttribute('data-key-2', String(t()))
           upsertChild(__innerEl2_0, 'Btn__f3568064', 's12', { get label() { return t() }, onPick: () => setPicked(`${o().id}${g().id}${t()}`) }, undefined, __scope)
           return __innerEl2_0
@@ -97,12 +97,12 @@ export function initLoopRowChildChildrenInnerLoopComponent(__scope, _p = {}) {
     // Reactive inner loop: o.groups
     { const __ic1_0 = qsa(__csrEl, '[bf="^s14"]')
     if (__ic1_0) mapArray(() => o().groups || [], __ic1_0, (g) => String(g.id), (g, __innerIdx1_0, __existing) => {
-      let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(g().id)}"><ol bf="^s13"><!--bf-loop:l4-->${g().tags.map((t) => `<li data-key-2="${escapeAttr(t)}"><div data-bf-ph="s12"></div></li>`).join('')}<!--bf-/loop:l4--></ol></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+      let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(g().id)}"><ol bf="^s13"><!--bf-loop:l4-->${g().tags.map((t) => `<li data-key-2="${escapeAttr(t)}"><template data-bf-ph="s12"></template></li>`).join('')}<!--bf-/loop:l4--></ol></li>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(g().id))
       // Reactive inner loop: g.tags
       { const __ic2_0 = qsa(__innerEl1_0, '[bf="^s13"]')
       if (__ic2_0) mapArray(() => g().tags || [], __ic2_0, (t) => String(t), (t, __innerIdx2_0, __existing) => {
-        let __innerEl2_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-2="${escapeAttr(t())}"><div data-bf-ph="s12"></div></li>`; return __t.content.firstElementChild.cloneNode(true) })()
+        let __innerEl2_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-2="${escapeAttr(t())}"><template data-bf-ph="s12"></template></li>`; return __t.content.firstElementChild.cloneNode(true) })()
         __innerEl2_0.setAttribute('data-key-2', String(t()))
         upsertChild(__innerEl2_0, 'Btn__f3568064', 's12', { get label() { return t() }, onPick: () => setPicked(`${o().id}${g().id}${t()}`) }, undefined, __scope)
         return __innerEl2_0

@@ -41,7 +41,7 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
   mapArray(() => rows(), _s11, (o) => String(o.id), (o, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<div data-key="${escapeAttr(o().id)}" class="row"><div data-bf-ph="s10"></div></div>`
+      __tpl.innerHTML = `<div data-key="${escapeAttr(o().id)}" class="row"><template data-bf-ph="s10"></template></div>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Chip__8c71a327', 's10', { get children() { return `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o().label)}<!--/--></button>` } }, undefined, __scope)

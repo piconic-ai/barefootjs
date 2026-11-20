@@ -95,7 +95,7 @@ export function initConstObjectPropIdentityHydrate(__scope, _p = {}) {
   mapArray(() => rows(), _s10, (r) => String(r.id), (r, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(r().id)}"><div data-bf-ph="s9"></div></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(r().id)}"><template data-bf-ph="s9"></template></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Same__bb81634c', 's9', { get token() { return obj } }, undefined, __scope)

@@ -3271,6 +3271,19 @@
         "text"
       ]
     },
+    "composite-row-child-restricted-parent": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "computed-array-const-read": {
       "kinds": [
         "array-literal",
@@ -4924,6 +4937,37 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "deferred-child-phrasing-parent": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "deferred-child-table-svg-parent": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
