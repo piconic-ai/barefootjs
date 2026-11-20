@@ -203,6 +203,7 @@ import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemo
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
+import { refuseTemplateTimeDeliveryToDerivedField } from "./props/derived-field-delivery.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -7045,6 +7046,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (this.extractScopedHtmlChildren(effectiveChildren) !== null) return null
     const name = `${this.state.componentName}__children_${comp.slotId}`
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
+      this.refuseTemplateTimeChildren(comp)
       this.state.pendingChildrenDefines.push({
         name,
         content: this.renderWrapperRowDefine(effectiveChildren),
@@ -7089,6 +7091,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.extractScopedHtmlChildren(children) !== null) continue
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
+        refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.childDerivedFieldDeps.get(declaredName), prop.name, prop.loc)
         this.state.pendingChildrenDefines.push({
           name,
           content: this.renderWrapperRowDefine(children),
@@ -7125,6 +7128,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return { fieldArgs: args.length > 0 ? args.join(' ') : null, bagEntries }
   }
 
+  /**
+   * BF101 when `comp`'s JSX children, about to be delivered through a
+   * companion define at template execute time, feed one of the child's
+   * constructor-derived fields, which never sees them (#3961).
+   */
+  private refuseTemplateTimeChildren(comp: IRComponent): void {
+    const declaredName = this.resolveChildName(comp.name)
+    refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.childDerivedFieldDeps.get(declaredName), 'children', comp.loc)
+  }
+
   /** Whether one of the static bake paths turns `children` into a `Children` value. */
   private hasBakedStaticChildren(children: IRNode[]): boolean {
     return this.extractTextChildren(children) !== null ||
@@ -7155,6 +7168,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!wrapperRow && this.hasBakedStaticChildren(effectiveChildren)) return null
     const name = `${this.state.componentName}__loop_children_${comp.slotId}`
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
+      this.refuseTemplateTimeChildren(comp)
       if (wrapperRow) this.queueWrapperRowChildrenDefine(name, effectiveChildren)
       else this.queueRangeRowChildrenDefine(name, effectiveChildren)
     }

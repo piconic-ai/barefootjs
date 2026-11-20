@@ -87,6 +87,7 @@ describe('compileForCompat', () => {
           'prop-member-chain-signal-seed',
           'static-literal-loop-absent-row-field',
           'static-literal-loop-component-row',
+          'template-time-children-read-into-state',
           'uninlinable-local-function-call',
           'unlowerable-loop-filter-predicate',
           'unlowered-method-call',

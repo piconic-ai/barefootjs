@@ -449,4 +449,13 @@ export const conformancePins: ConformancePins = {
   // const the IR passes as the literal) has no spelling as the child's
   // prop value here; the server cannot render the child's rows.
   'module-const-object-array-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'object-array-literal-child-prop', unescapable: true }],
+  // JSX children (or a JSX prop) the template renders through a companion
+  // define reach the child after its constructor computed its signal seeds
+  // and memos from them (#3961).
+  'children-dynamic-read-into-state': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  'children-read-into-state-forms': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // The children-seeded signal of a call that also spreads an open rest bag:
+  // refused for its children before the dropped spread can render (the
+  // spread is `open-rest-spread-onto-child-component`).
+  'open-rest-spread-child-children': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
 }
