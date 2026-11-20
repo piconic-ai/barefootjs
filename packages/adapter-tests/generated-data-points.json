@@ -6277,6 +6277,54 @@
       }
     }
   ],
+  "destructure-default-spread-const-memo": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-memo-client": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-signal-seed": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-signal-seed-client": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-memo-body": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-memo-body-client": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "destructured-object-prop-nested": [
     {
       "name": "gen:user:object:minimal",
