@@ -25,10 +25,19 @@ function irFor(body: string): ComponentIR {
 
 /** The subject of each refusal, up to the shared wording. */
 function refused(body: string): string[] {
+  return errorsOf(body).map(e => e.message.slice(0, e.message.indexOf(' an array literal')))
+}
+
+function errorsOf(body: string): CompilerError[] {
   const errors: CompilerError[] = []
   refuseUnloweredArrayElements(irFor(body), { errors, componentName: 'C' })
-  expect(errors.every(e => e.code === 'BF101' && e.suggestion?.escape?.[0]?.kind === 'client-directive')).toBe(true)
-  return errors.map(e => e.message.slice(0, e.message.indexOf(' an array literal')))
+  expect(errors.every(e => e.code === 'BF101')).toBe(true)
+  return errors
+}
+
+/** The escape kinds each refusal claims. */
+function escapes(body: string): string[][] {
+  return errorsOf(body).map(e => (e.suggestion?.escape ?? []).map(x => x.kind))
 }
 
 describe('refuseUnloweredArrayElements', () => {
@@ -41,6 +50,12 @@ describe('refuseUnloweredArrayElements', () => {
     expect(refused(`const n = createMemo(() => [...b, 'z'].length); return <p>{n()}</p>`)).toEqual([`Memo 'n' computes`])
     expect(refused(`const [n] = createSignal([...b].length); return <p>{n()}</p>`)).toEqual([`Signal 'n' is seeded from`])
     expect(refused(`const local = [...b, 'z']; return <div><Kid n={local.length} /></div>`)).toEqual([`'local' is initialized from`])
+  })
+
+  test('only a declaration no child prop reads claims the /* @client */ escape', () => {
+    expect(escapes(`const n = createMemo(() => [...b, 'z'].length); return <p>{n()}</p>`)).toEqual([['client-directive']])
+    expect(escapes(`const local = [...b, 'z']; return <div><Kid n={local.length} /></div>`)).toEqual([[]])
+    expect(escapes(`const local = [...b, 'z']; return <div>{local.length}<Kid n={local.length} /></div>`)).toEqual([[]])
   })
 
   test('a spread inside a callback the expression runs', () => {

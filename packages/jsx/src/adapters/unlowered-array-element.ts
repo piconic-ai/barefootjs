@@ -23,17 +23,25 @@
 import { parsedExprChildren } from '../action-accessor.ts'
 import type { ParsedExpr } from '../expression-parser.ts'
 import { walkServerReads, type ServerRead } from '../server-read-walk.ts'
-import type { ComponentIR, SourceLocation } from '../types.ts'
+import type { ComponentIR } from '../types.ts'
 import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
 
 /** Record BF101 for each declaration the server render reads that holds an array literal with an unlowered element. */
 export function refuseUnloweredArrayElements(ir: ComponentIR, sink: UninlinableSeedCallSink): void {
+  // A component renders on the server whatever directive its prop carries, so
+  // a declaration a child prop reads has no `/* @client */` escape.
+  const readByProp = new Set<string>()
+  walkServerReads(ir, read => readByProp.add(readKey(read)), { startsAt: position => position.role === 'prop' })
   walkServerReads(ir, (read) => {
     // A module-scope declaration (`const ALL = [...BASE, 'z']` at the top of
     // the file) is out of this refusal's scope: its reads are left as they are.
     if (read.scope === 'module') return
-    if (read.expr && holdsUnloweredArrayElement(read.expr, 'value')) record(read.kind, read.name, read.loc, sink)
+    if (read.expr && holdsUnloweredArrayElement(read.expr, 'value')) record(read, !readByProp.has(readKey(read)), sink)
   })
+}
+
+function readKey(read: ServerRead): string {
+  return `${read.scope}:${read.kind}:${read.name}`
 }
 
 /** How the expression being visited is used: its value, or a function a call runs. */
@@ -55,19 +63,22 @@ const SUBJECT: Record<ServerRead['kind'], (name: string) => string> = {
   function: name => `Function '${name}' returns`,
 }
 
-function record(kind: ServerRead['kind'], name: string, loc: SourceLocation, sink: UninlinableSeedCallSink): void {
+function record(read: ServerRead, deferrable: boolean, sink: UninlinableSeedCallSink): void {
+  const { name } = read
   const message =
-    `${SUBJECT[kind](name)} an array literal with an element no template lowers (a spread, \`[...xs, y]\`). ` +
+    `${SUBJECT[read.kind](name)} an array literal with an element no template lowers (a spread, \`[...xs, y]\`). ` +
     `The server render would show '${name}' empty where JS shows the computed array.`
   if (sink.errors.some(e => e.code === 'BF101' && e.message === message)) return
   sink.errors.push({
     code: 'BF101',
     severity: 'error',
     message,
-    loc,
-    suggestion: {
-      message: `List the elements without a spread, or defer the reads of '${name}' to the client with /* @client */.`,
-      escape: [{ kind: 'client-directive' }],
-    },
+    loc: read.loc,
+    suggestion: deferrable
+      ? {
+          message: `List the elements without a spread, or defer the reads of '${name}' to the client with /* @client */.`,
+          escape: [{ kind: 'client-directive' }],
+        }
+      : { message: 'List the elements without a spread.' },
   })
 }
