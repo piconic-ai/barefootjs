@@ -1291,6 +1291,19 @@
       ],
       "contexts": []
     },
+    "body-statement-write-copy-read-later": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "body-statement-write-direct-read": {
       "kinds": [
         "array-literal",
