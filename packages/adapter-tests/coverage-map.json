@@ -19951,6 +19951,59 @@
         "text"
       ]
     },
+    "spread-closed-rest-attr-names": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-attr-names-overlap": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-attr-names": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "spread-open-bag-hono-renamed-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "stateless-rest-spread-forward": {
       "kinds": [
         "identifier"

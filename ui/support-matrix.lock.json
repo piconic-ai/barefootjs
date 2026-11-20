@@ -14173,6 +14173,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14894,6 +14900,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -15915,6 +15927,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -16693,6 +16711,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17441,6 +17465,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18168,6 +18198,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -19667,6 +19703,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20400,6 +20442,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {

@@ -14808,6 +14808,56 @@
           }
         }
       },
+      "spread-open-bag-hono-renamed-keys": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -17125,6 +17175,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-open-bag-hono-renamed-keys": {
+        "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
+      },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
@@ -19042,6 +19096,26 @@
         "minijinja",
         "mojolicious",
         "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "spread-bag-camel-key-name": {
+      "title": "An open spread bag key in camelCase outside the spread renames",
+      "kind": "silent",
+      "given": "an open spread (`{...rest}` with an index-signature props type) whose bag holds a camelCase key other than `className`, `htmlFor` and `httpEquiv`: one the reference renames (`crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`) or one it writes as it is (`tabIndex`, `ariaLabel`, `dataTestId`, `strokeWidth`)",
+      "expected": "the five renamed keys render lowercased (`crossorigin`, `itemprop`, `fetchpriority`, `nomodule`, `formaction`) and every other key renders with the bag's spelling (`tabIndex`, `ariaLabel`, `dataTestId`, `strokeWidth`)",
+      "actual": "Renders every camelCase key kebab-cased (`cross-origin`, `tab-index`, `aria-label`, `data-test-id`, `stroke-width`)",
+      "fixtures": [
+        "spread-open-bag-hono-renamed-keys"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
         "twig",
         "xslate"
       ]

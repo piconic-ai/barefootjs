@@ -40,6 +40,10 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
+  // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
+  // writes it as it is or renames only its own few keys (`crossorigin`).
+  'spread-open-bag-hono-renamed-keys': { limitation: 'spread-bag-camel-key-name' },
   // A binding a body statement mutates (`items.push('z')`) handed to a
   // child as a prop: the template runs no body statement and does not pass
   // on a binding whose declared value a statement changes, so the child

@@ -122,6 +122,10 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
+  // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
+  // writes it as it is or renames only its own few keys (`crossorigin`).
+  'spread-open-bag-hono-renamed-keys': { limitation: 'spread-bag-camel-key-name' },
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },

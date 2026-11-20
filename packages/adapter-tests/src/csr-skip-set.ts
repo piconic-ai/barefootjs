@@ -167,6 +167,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same class: the spread bags reach their elements only through
   // `applyRestAttrs`; `attr-spread-key-overlap` pins the SSR contract.
   'attr-spread-key-overlap',
+  // Same class: the open bags reach their elements only through
+  // `applyRestAttrs`; these fixtures pin the SSR spread-key names.
+  'spread-open-bag-attr-names',
+  'spread-open-bag-hono-renamed-keys',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

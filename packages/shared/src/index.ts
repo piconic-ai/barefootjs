@@ -38,6 +38,8 @@ export {
   classifyDOMProp,
   toHTMLAttrName,
   toHTMLAttrNameRuntime,
+  toSpreadAttrName,
+  SPREAD_KEY_ATTR_NAMES,
   isBooleanAttr,
   isEventProp,
   BOOLEAN_ATTRS,
