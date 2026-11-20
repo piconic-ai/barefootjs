@@ -193,6 +193,16 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // is not inlined and the slot is emitted empty. Its `/* @client */` twin
   // (`opaque-local-accessor-call-client`) is NOT skipped.
   'opaque-local-accessor-call',
+  // Same harness-configuration artifact (#3952): whether the CSR template
+  // may evaluate the zero-argument helper call `mk()` through the inlined
+  // module const `B` is decided by the adapter's `acceptsTemplateCall`,
+  // which this harness does not pass, so the text slot is emitted empty.
+  // Production CSR compiles with Hono's (accepts any call), inlines
+  // `(mk()).k` and declares `mk` at module level, rendering `v` (the
+  // client-JS scope gate compiles with Hono and checks the declaration);
+  // every DSL adapter refuses the shape (BF101). Its sibling with an
+  // argument (`module-const-helper-call-spread-inlined`) is NOT skipped.
+  'module-const-helper-call-inlined',
   // Same harness-configuration artifact: whether the CSR template may
   // evaluate `Date.UTC()` through the computed const `stamp` is decided by
   // the adapter's `acceptsTemplateCall`, which this harness does not pass,
