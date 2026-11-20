@@ -146,6 +146,82 @@ describe('escapeRawText over the whole text', () => {
   })
 })
 
+describe('escapeRawText after a backslash', () => {
+  const BS = '\\'
+
+  test('an odd run already escapes the character: the escape replaces that pair', () => {
+    expect(escapeRawText('script', `var s = "${BS}<b";`)).toBe(`var s = "${BS}u003cb";`)
+    expect(escapeRawText('style', `${BS}&b ${BS}<a`)).toBe(`${BS}26 b ${BS}3c a`)
+    expect(escapeRawText('script', `${BS}${BS}${BS}<b`)).toBe(`${BS}${BS}${BS}u003cb`)
+  })
+
+  test('an even run is complete pairs: the escape follows it', () => {
+    expect(escapeRawText('script', `"${BS}${BS}<b"`)).toBe(`"${BS}${BS}${BS}u003cb"`)
+    expect(escapeRawText('style', `${BS}${BS}&b`)).toBe(`${BS}${BS}${BS}26 b`)
+  })
+
+  test('a backslash before a `<` / `&` that is not rewritten is left alone', () => {
+    for (const text of [`${BS}< a`, `${BS}& `, `${BS}<1`, `a${BS}`, `${BS}${BS}`, `${BS}<`, `${BS}&`]) {
+      expect(escapeRawText('script', text)).toBe(text)
+      expect(escapeRawText('style', text)).toBe(text)
+    }
+  })
+
+  test('JavaScript reads the same string for every run length', () => {
+    for (const tail of ['<b>', '</script>', '&amp;', '&#60;', '<!--', '<a&b<c']) {
+      for (let n = 0; n <= 6; n++) {
+        for (const quote of ['"', "'", '`']) {
+          const source = `${quote}x${BS.repeat(n)}${tail}${BS.repeat(n)}${tail}${quote}`
+          const encoded = escapeRawText('script', source)
+          expect(encoded).not.toMatch(MARKUP)
+          expect(new Function(`return ${encoded}`)()).toBe(new Function(`return ${source}`)())
+        }
+      }
+    }
+  })
+
+  test('a regular expression matches the same text for every run length', () => {
+    for (let n = 0; n <= 5; n++) {
+      const source = `/^x${BS.repeat(n)}<b${BS.repeat(n)}&c$/`
+      const before = new Function(`return ${source}`)() as RegExp
+      const after = new Function(`return ${escapeRawText('script', source)}`)() as RegExp
+      for (const probe of ['x<b&c', `x${BS}<b${BS}&c`, `x${BS}${BS}<b${BS}${BS}&c`, 'xu003cb']) {
+        expect(after.test(probe)).toBe(before.test(probe))
+      }
+    }
+  })
+
+  test('CSS reads the same text for every run length', () => {
+    // A CSS string: `\\` is a backslash, `\<` is `<`, `\3c ` is `<`, `\26 ` is `&`.
+    const cssText = (css: string): string =>
+      css.replace(/\\(?:([0-9a-fA-F]{1,6}) ?|([\s\S]))/g, (_all, hex?: string, ch?: string) =>
+        hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : (ch as string),
+      )
+    for (const tail of ['<b>', '</style>', '&amp;', '&#60;', '<a&b<c']) {
+      for (let n = 0; n <= 6; n++) {
+        const source = `x${BS.repeat(n)}${tail}${BS.repeat(n)}${tail}`
+        const encoded = escapeRawText('style', source)
+        expect(encoded).not.toMatch(MARKUP)
+        expect(cssText(encoded)).toBe(cssText(source))
+      }
+    }
+  })
+
+  test('the backslash and the character may sit in different pieces of the text', () => {
+    const pieces = [`var s = "`, BS, '<img src=x onerror=alert(1)>', BS, BS, '&quot;"']
+    const encoded = escapeRawText('script', pieces.join(''))
+    expect(encoded).toBe(`var s = "${BS}u003cimg src=x onerror=alert(1)>${BS}${BS}${BS}u0026quot;"`)
+    expect(new Function(`${encoded}; return s`)()).toBe(`<img src=x onerror=alert(1)>${BS}&quot;`)
+  })
+
+  test('a long backslash run costs linear time', () => {
+    const run = BS.repeat(200_000)
+    const started = performance.now()
+    expect(escapeRawText('script', `${run}x${run}<a`).length).toBe(400_000 + 1 + 6 + 1)
+    expect(performance.now() - started).toBeLessThan(2000)
+  })
+})
+
 describe('isRawTextTag', () => {
   test('names only style and script', () => {
     expect(isRawTextTag('style')).toBe(true)

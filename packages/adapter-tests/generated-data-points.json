@@ -16819,6 +16819,116 @@
       }
     }
   ],
+  "raw-text-backslash-escape": [
+    {
+      "name": "gen:bs:empty",
+      "props": {
+        "bs": "",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:bs:markup",
+      "props": {
+        "bs": "<b>&\"'</b>",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:bs:multibyte",
+      "props": {
+        "bs": "日本語",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<b>&\"'</b>",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:lt:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "日本語",
+        "amp": "&quot;",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "<b>&\"'</b>",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:amp:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "日本語",
+        "whole": "x = \"\\<b \\\\<c \\&amp; \\\\&#60; \\< d \\\";"
+      }
+    },
+    {
+      "name": "gen:whole:empty",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": ""
+      }
+    },
+    {
+      "name": "gen:whole:markup",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:whole:multibyte",
+      "props": {
+        "bs": "\\",
+        "lt": "<img class=\"pwn\">",
+        "amp": "&quot;",
+        "whole": "日本語"
+      }
+    }
+  ],
   "raw-text-host-dynamic": [
     {
       "name": "gen:label:empty",

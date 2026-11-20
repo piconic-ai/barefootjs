@@ -89,6 +89,24 @@ describe('escapeRawTextContent', () => {
     expect(JSON.parse(host.querySelector('script')!.textContent!)).toEqual(value)
   })
 
+  test('a backslash in one part and the character in the next keep the string they spelled', () => {
+    const BS = '\\'
+    // `"\<img …>"` is the text `<img …>`: the escape replaces the pair.
+    const one = escapeRawTextContent('script', ['var s = "', BS, '<img class=pwn>', '"'])
+    expect(one).toBe(`var s = "${BS}u003cimg class=pwn>"`)
+    expect(new Function(`${one}; return s`)()).toBe('<img class=pwn>')
+    // An even run is complete pairs: the escape follows it.
+    const two = escapeRawTextContent('script', ['var s = "', BS, BS, '&quot;', '"'])
+    expect(two).toBe(`var s = "${BS}${BS}${BS}u0026quot;"`)
+    expect(new Function(`${two}; return s`)()).toBe(`${BS}&quot;`)
+    expect(escapeRawTextContent('style', ['"', BS, '<b', BS, '&c"'])).toBe(`"${BS}3c b${BS}26 c"`)
+    // Still no markup for either parse.
+    const host = document.createElement('div')
+    host.innerHTML = `<style>${escapeRawTextContent('style', [BS, PWN, BS, BS, PWN])}</style><b></b>`
+    expect(host.querySelector('.pwn')).toBeNull()
+    expect(Array.from(host.children).map(el => el.tagName)).toEqual(['STYLE', 'B'])
+  })
+
   test('encoding an already encoded text changes nothing', () => {
     for (const tag of ['style', 'script'] as const) {
       const once = escapeRawTextContent(tag, ['<', '/style></script><script><!--'])

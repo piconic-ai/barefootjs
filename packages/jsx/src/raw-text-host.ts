@@ -59,6 +59,13 @@
  *     comment, and every `&` that can begin a reference, not only the
  *     element's own end tag: the tokenizer finds neither under either
  *     parse, and the element's text is the same bytes in both.
+ *   - A backslash before the character. `"\<b"` already spells `<b` in a
+ *     CSS / JS string, so the encoder counts the backslashes directly before
+ *     a rewritten character: after an even run the escape is inserted, in an
+ *     odd run it replaces the last backslash and the character together.
+ *     The text reads back as written either way, and the `<` / `&` itself is
+ *     never left in place. The count runs over the joined text, so a
+ *     backslash in one child and the character in the next are one run.
  *   - The end of the text. It is followed by the element's own end tag: a
  *     trailing `<` gives `<</style>`, where the first `<` is text.
  *   - Values that are not strings (number, null, array, an object's

@@ -42,6 +42,17 @@
  * followed by the element's own `</…>`, where it is text and the end tag is
  * read normally.
  *
+ * A backslash in front of the character. Inside a CSS / JS string a `\`
+ * already escapes what follows, so `"\<b"` is the text `<b`. Writing the
+ * escape after that backslash would turn it into a literal backslash
+ * followed by `u003cb`. The run of backslashes directly before a rewritten
+ * character therefore decides how it is written: an EVEN run (none
+ * included) is complete pairs, and the escape is inserted as it is; in an
+ * ODD run the last backslash belongs to the character, and that pair
+ * (`\<`) is replaced by the escape as a whole (`\\\<` becomes `\\` and
+ * `\u003c`). Both read back as the same character, and a `<` / `&` is still
+ * never left in place, so the two guarantees above are unchanged.
+ *
  * What the rule costs: a `<` or `&` written directly before a letter OUTSIDE
  * a string is no longer the operator (`i<n`, `a&&b`, `(400px<width)`); write
  * it with a space (`i < n`, `a && b`), which is left alone. Code that must
@@ -77,5 +88,16 @@ const SCRIPT_ESCAPE: Readonly<Record<string, string>> = { '<': '\\u003c', '&': '
  */
 export function escapeRawText(tag: RawTextTag, text: string): string {
   const escapes = tag === 'style' ? STYLE_ESCAPE : SCRIPT_ESCAPE
-  return text.replace(MARKUP_OPEN, ch => escapes[ch])
+  let out = ''
+  let copied = 0
+  for (const match of text.matchAll(MARKUP_OPEN)) {
+    const at = match.index
+    // The backslashes directly before the character (after the last rewrite).
+    let run = 0
+    while (at - run > copied && text[at - run - 1] === '\\') run++
+    // Odd: the last backslash escapes this character; the escape replaces the pair.
+    out += text.slice(copied, run % 2 === 1 ? at - 1 : at) + escapes[match[0]]
+    copied = at + 1
+  }
+  return out + text.slice(copied)
 }

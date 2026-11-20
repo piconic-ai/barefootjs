@@ -937,9 +937,14 @@ final class BarefootJS
         $escape = $tag === 'style'
             ? ['<' => '\\3c ', '&' => '\\26 ']
             : ['<' => '\\u003c', '&' => '\\u0026'];
+        // The run of backslashes directly before the character is matched
+        // too: an odd run means the last backslash already escapes it
+        // (`"\<b"` is `<b`), so the escape replaces that pair instead of
+        // following the backslash.
         $out = preg_replace_callback(
-            '~<(?=[A-Za-z/!?])|&(?=[A-Za-z#])~',
-            static fn (array $match): string => $escape[$match[0]],
+            '~(?<!\\\\)(\\\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))~',
+            static fn (array $match): string =>
+                (strlen($match[1]) % 2 === 1 ? substr($match[1], 1) : $match[1]) . $escape[$match[2]],
             $text,
         );
         // Never fall back to the unencoded text: it could end the element.

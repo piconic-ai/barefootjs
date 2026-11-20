@@ -637,7 +637,9 @@ module BarefootJS
     # followed by an ASCII letter, `/`, `!` or `?`), or an `&` it could take
     # as the start of a character reference (one followed by an ASCII letter
     # or `#`).
-    RAW_TEXT_MARKUP_OPEN = %r{<(?=[A-Za-z/!?])|&(?=[A-Za-z#])}
+    # The run of backslashes directly before it is captured too: an odd run
+    # means the last backslash already escapes the character.
+    RAW_TEXT_MARKUP_OPEN = %r{(?<!\\)(\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))}
     RAW_TEXT_STYLE_ESCAPE = { '<' => '\\3c ', '&' => '\\26 ' }.freeze
     RAW_TEXT_SCRIPT_ESCAPE = { '<' => '\\u003c', '&' => '\\u0026' }.freeze
     private_constant :RAW_TEXT_MARKUP_OPEN, :RAW_TEXT_STYLE_ESCAPE, :RAW_TEXT_SCRIPT_ESCAPE
@@ -658,7 +660,13 @@ module BarefootJS
     # once, because markup can be spelled across pieces (`['<', '/style>']`).
     def raw_text(tag, parts)
       text = parts.is_a?(Array) ? parts.map { |part| string(part) }.join : string(parts)
-      text.gsub(RAW_TEXT_MARKUP_OPEN, tag == 'style' ? RAW_TEXT_STYLE_ESCAPE : RAW_TEXT_SCRIPT_ESCAPE)
+      escapes = tag == 'style' ? RAW_TEXT_STYLE_ESCAPE : RAW_TEXT_SCRIPT_ESCAPE
+      # An odd backslash run already escapes the character (`"\<b"` is `<b`):
+      # the escape replaces that pair instead of following the backslash.
+      text.gsub(RAW_TEXT_MARKUP_OPEN) do
+        run = Regexp.last_match(1)
+        (run.length.odd? ? run[1..] : run) + escapes[Regexp.last_match(2)]
+      end
     end
 
     # JS `/`: always a Number quotient. Ruby's `/` on two Integers is

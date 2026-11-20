@@ -16500,6 +16500,37 @@
         "text"
       ]
     },
+    "raw-text-backslash-escape": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-backslash-escape-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "raw-text-backslash-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "raw-text-foreign-content": {
       "kinds": [
         "identifier",

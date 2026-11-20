@@ -841,7 +841,11 @@ sub raw_text ($self, $tag, $parts) {
     my %escape = $tag eq 'style'
         ? ('<' => '\\3c ', '&' => '\\26 ')
         : ('<' => '\\u003c', '&' => '\\u0026');
-    $text =~ s{(<(?=[A-Za-z/!?])|&(?=[A-Za-z\#]))}{$escape{$1}}g;
+    # The run of backslashes directly before the character is matched too: an
+    # odd run means the last backslash already escapes it (`"\<b"` is `<b`),
+    # so the escape replaces that pair instead of following the backslash.
+    $text =~ s{(?<!\\)(\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z\#]))}
+              {(length($1) % 2 ? substr($1, 1) : $1) . $escape{$2}}ge;
     return $text;
 }
 

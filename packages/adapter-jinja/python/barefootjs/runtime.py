@@ -399,7 +399,10 @@ _CAMEL_TO_KEBAB_RE = re.compile(r"([A-Z])")
 # by an ASCII letter, `/`, `!` or `?`), or an `&` it could take as the start
 # of a character reference (one followed by an ASCII letter or `#`), and what
 # `raw_text` writes in its place.
-_RAW_TEXT_MARKUP_OPEN_RE = re.compile(r"<(?=[A-Za-z/!?])|&(?=[A-Za-z#])")
+# The run of backslashes directly before it is captured too: an odd run means
+# the last backslash already escapes the character (`"\\<b"` is `<b`), so the
+# escape replaces that pair instead of following the backslash.
+_RAW_TEXT_MARKUP_OPEN_RE = re.compile(r"(?<!\\)(\\*)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))")
 _RAW_TEXT_STYLE_ESCAPE = {"<": "\\3c ", "&": "\\26 "}
 _RAW_TEXT_SCRIPT_ESCAPE = {"<": "\\u003c", "&": "\\u0026"}
 
@@ -1147,7 +1150,12 @@ class BarefootJS:
         else:
             text = str(js_string(parts))
         escapes = _RAW_TEXT_STYLE_ESCAPE if tag == "style" else _RAW_TEXT_SCRIPT_ESCAPE
-        return _RAW_TEXT_MARKUP_OPEN_RE.sub(lambda match: escapes[match.group(0)], text)
+
+        def rewrite(match: "re.Match[str]") -> str:
+            run = match.group(1)
+            return (run[1:] if len(run) % 2 else run) + escapes[match.group(2)]
+
+        return _RAW_TEXT_MARKUP_OPEN_RE.sub(rewrite, text)
 
     def number(self, value: Any) -> float:
         return js_number(value)

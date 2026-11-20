@@ -1566,18 +1566,24 @@ pub(crate) fn raw_text(tag: &str, text: &str) -> String {
     let ampersand = if style { "\\26 " } else { "\\u0026" };
     let mut out = String::with_capacity(text.len());
     let mut chars = text.chars().peekable();
+    // The backslashes directly before the current character. An odd run means
+    // the last one already escapes it (`"\\<b"` is `<b`), so the escape
+    // replaces that pair instead of following the backslash.
+    let mut run = 0usize;
     while let Some(ch) = chars.next() {
         let next = chars.peek().copied();
         let opens_markup =
             ch == '<' && next.is_some_and(|c| c.is_ascii_alphabetic() || matches!(c, '/' | '!' | '?'));
         let opens_reference = ch == '&' && next.is_some_and(|c| c.is_ascii_alphabetic() || c == '#');
-        if opens_markup {
-            out.push_str(less_than);
-        } else if opens_reference {
-            out.push_str(ampersand);
+        if opens_markup || opens_reference {
+            if run % 2 == 1 {
+                out.pop();
+            }
+            out.push_str(if opens_markup { less_than } else { ampersand });
         } else {
             out.push(ch);
         }
+        run = if ch == '\\' { run + 1 } else { 0 };
     }
     out
 }

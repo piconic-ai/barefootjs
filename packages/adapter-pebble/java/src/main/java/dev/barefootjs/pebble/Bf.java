@@ -1977,7 +1977,8 @@ public final class Bf {
    * A less-than sign the HTML tokenizer could take as the start of markup,
    * or an ampersand it could take as the start of a character reference.
    */
-  private static final Pattern RAW_TEXT_MARKUP_OPEN = Pattern.compile("<(?=[A-Za-z/!?])|&(?=[A-Za-z#])");
+  private static final Pattern RAW_TEXT_MARKUP_OPEN =
+      Pattern.compile("(?<!\\\\)(\\\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))");
 
   /**
    * The text of a `<style>` / `<script>` element (`tag`). The HTML parser
@@ -2009,9 +2010,16 @@ public final class Bf {
     String backslash = "\\";
     String lessThan = style ? backslash + "3c " : backslash + "u003c";
     String ampersand = style ? backslash + "26 " : backslash + "u0026";
+    // The run of backslashes directly before the character is matched too: an
+    // odd run means the last backslash already escapes it, so the escape
+    // replaces that pair instead of following the backslash.
     return RAW_TEXT_MARKUP_OPEN
         .matcher(joined)
-        .replaceAll(match -> Matcher.quoteReplacement("<".equals(match.group()) ? lessThan : ampersand));
+        .replaceAll(match -> {
+          String run = match.group(1);
+          String kept = run.length() % 2 == 1 ? run.substring(1) : run;
+          return Matcher.quoteReplacement(kept + ("<".equals(match.group(2)) ? lessThan : ampersand));
+        });
   }
 
   /** Text-slot hydration anchor. Mirrors the Jinja/Rust ports' `text_start` byte-for-byte (`<!--bf:<slot>-->`, NOT this class's own `comment()` wire shape — the client's text-patch walker matches this exact prefix, see `packages/client/src/runtime`). */

@@ -952,6 +952,9 @@ import { fixture as foreignTitleSlot } from './foreign-title-slot'
 import { fixture as foreignTitleBareText } from './foreign-title-bare-text'
 import { fixture as foreignTitleMarkupChild } from './foreign-title-markup-child'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
+import { fixture as rawTextBackslashEscape } from './raw-text-backslash-escape'
+import { fixture as rawTextBackslashEscapeStatic } from './raw-text-backslash-escape-static'
+import { fixture as rawTextBackslashReactive } from './raw-text-backslash-reactive'
 import { fixture as rawTextForeignContent } from './raw-text-foreign-content'
 import { fixture as rawTextForeignContentReactive } from './raw-text-foreign-content-reactive'
 import { fixture as rawTextSplitBoundary } from './raw-text-split-boundary'
@@ -2388,6 +2391,9 @@ export const jsxFixtures: JSXFixture[] = [
   foreignTitleBareText,
   foreignTitleMarkupChild,
   rawTextHostReactive,
+  rawTextBackslashEscape,
+  rawTextBackslashEscapeStatic,
+  rawTextBackslashReactive,
   rawTextForeignContent,
   rawTextForeignContentReactive,
   rawTextSplitBoundary,

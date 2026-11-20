@@ -22,6 +22,8 @@ export const conformancePins: ConformancePins = {
   'raw-text-host-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-svg-style': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-annotation-xml-svg': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  'raw-text-backslash-escape': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  'raw-text-backslash-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-foreign-content': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-foreign-content-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-split-boundary': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
