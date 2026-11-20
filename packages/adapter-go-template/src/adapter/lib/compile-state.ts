@@ -15,6 +15,7 @@
  */
 
 import type {
+  IRProp,
   CompilerError,
   ComputedConstContext,
   ConstantInfo,
@@ -153,6 +154,13 @@ export class CompileState {
    * instead of reporting it twice.
    */
   refusedLoopArrayConsts: Set<string> = new Set()
+
+  /**
+   * JSX props of loop-row components already refused because no per-row
+   * delivery reaches them (`refuseUndeliveredLoopRowJsxProps`), so a row
+   * rendered more than once reports each once.
+   */
+  refusedLoopRowJsxProps: Set<IRProp> = new Set()
 
   /**
    * Names of component-scope arrow-const helpers (`const sortClass = …`),

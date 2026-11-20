@@ -627,6 +627,15 @@ import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child
 import { fixture as propsObjectSpreadChildChildren } from './props-object-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
+import { fixture as childrenDynamicReadIntoState } from './children-dynamic-read-into-state'
+import { fixture as childrenReadIntoStateForms } from './children-read-into-state-forms'
+import { fixture as childrenReadIntoStateDelivered } from './children-read-into-state-delivered'
+import { fixture as childrenReadIntoStateShadowTransform } from './children-read-into-state-shadow-transform'
+import { fixture as jsxPropLoopRowElementDynamic } from './jsx-prop-loop-row-element-dynamic'
+import { fixture as jsxPropLoopRowComponentDynamic } from './jsx-prop-loop-row-component-dynamic'
+import { fixture as jsxPropLoopRowSpreadRequired } from './jsx-prop-loop-row-spread-required'
+import { fixture as jsxPropLoopRowElementSpreadOptional } from './jsx-prop-loop-row-element-spread-optional'
+import { fixture as jsxPropLoopRowComponentSpreadOptional } from './jsx-prop-loop-row-component-spread-optional'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
 import { fixture as filterPredicateRenamedDestructuredProp } from './filter-predicate-renamed-destructured-prop'
 import { fixture as filterPredicateBlockShadowedProp } from './filter-predicate-block-shadowed-prop'
@@ -2210,6 +2219,15 @@ export const jsxFixtures: JSXFixture[] = [
   propsObjectSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
+  childrenDynamicReadIntoState,
+  childrenReadIntoStateForms,
+  childrenReadIntoStateDelivered,
+  childrenReadIntoStateShadowTransform,
+  jsxPropLoopRowElementDynamic,
+  jsxPropLoopRowComponentDynamic,
+  jsxPropLoopRowSpreadRequired,
+  jsxPropLoopRowElementSpreadOptional,
+  jsxPropLoopRowComponentSpreadOptional,
   filterPredicateOnPrefixedProp,
   filterPredicateRenamedDestructuredProp,
   filterPredicateBlockShadowedProp,

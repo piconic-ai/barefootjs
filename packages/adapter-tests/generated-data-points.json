@@ -2522,6 +2522,85 @@
       }
     }
   ],
+  "children-read-into-state-delivered": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "hi",
+        "items": []
+      }
+    }
+  ],
+  "children-read-into-state-forms": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "children-read-into-state-shadow-transform": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "client-handler-keyword-prop": [
     {
       "name": "gen:default:zero",
@@ -8390,6 +8469,137 @@
       "props": {
         "n": 1,
         "items": []
+      }
+    }
+  ],
+  "jsx-prop-loop-row-component-dynamic": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "jsx-prop-loop-row-component-spread-optional": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:header:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": ""
+      }
+    },
+    {
+      "name": "gen:header:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:header:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "日本語"
+      }
+    }
+  ],
+  "jsx-prop-loop-row-element-dynamic": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "jsx-prop-loop-row-element-spread-optional": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:header:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": ""
+      }
+    },
+    {
+      "name": "gen:header:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:header:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "日本語"
+      }
+    }
+  ],
+  "jsx-prop-loop-row-spread-required": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "header": "given"
+      }
+    },
+    {
+      "name": "gen:header:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": ""
+      }
+    },
+    {
+      "name": "gen:header:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:header:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "header": "日本語"
       }
     }
   ],

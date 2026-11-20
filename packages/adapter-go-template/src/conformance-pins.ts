@@ -449,4 +449,24 @@ export const conformancePins: ConformancePins = {
   // const the IR passes as the literal) has no spelling as the child's
   // prop value here; the server cannot render the child's rows.
   'module-const-object-array-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'object-array-literal-child-prop', unescapable: true }],
+  // JSX children (or a JSX prop) the template renders through a companion
+  // define reach the child after its constructor computed its signal seeds
+  // and memos from them (#3961).
+  'children-dynamic-read-into-state': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  'children-read-into-state-forms': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // The children-seeded signal of a call that also spreads an open rest bag:
+  // refused for its children before the dropped spread can render (the
+  // spread is `open-rest-spread-onto-child-component`).
+  'open-rest-spread-child-children': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // A same-named signal / memo shares the prop's field, so a late delivery
+  // overwrites what it computed from the prop.
+  'children-read-into-state-shadow-transform': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // A JSX prop that reads the loop row has no per-row delivery to a
+  // component in that row, in either loop position.
+  'jsx-prop-loop-row-element-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  'jsx-prop-loop-row-component-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  // The same, when a later `{...props}` carries the key only if the caller
+  // passed it: the row's JSX is the value when the key is absent.
+  'jsx-prop-loop-row-element-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  'jsx-prop-loop-row-component-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
 }

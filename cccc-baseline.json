@@ -193,7 +193,7 @@
     },
     "packages/adapter-tests/src/marker-conformance.ts": {
       "walkIRNode": [
-        40
+        29
       ]
     },
     "packages/adapter-twig/src/test-render.ts": {
