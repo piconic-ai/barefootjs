@@ -16300,6 +16300,34 @@
         "text"
       ]
     },
+    "raw-text-foreign-content": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-foreign-content-reactive": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "raw-text-host-annotation-xml": {
       "kinds": [
         "binary",

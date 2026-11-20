@@ -10789,6 +10789,34 @@
           ]
         }
       },
+      "raw-text-foreign-content": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-foreign-content-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "raw-text-host-annotation-xml-encodings": {
         "go-template": {
           "kind": "refusal",
@@ -14591,6 +14619,14 @@
         "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
       },
+      "raw-text-foreign-content": {
+        "description": "A component-rooted <style> / <script> placed in an <svg> holds no markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-foreign-content.ts"
+      },
+      "raw-text-foreign-content-reactive": {
+        "description": "A <style> / <script> passed as children into an <svg> creates no element from its text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-foreign-content-reactive.ts"
+      },
       "raw-text-host-annotation-xml-encodings": {
         "description": "A title under a MathML annotation-xml keeps its slot markers without an HTML encoding and renders…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-encodings.ts"
@@ -14624,7 +14660,7 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-escape-reactive.ts"
       },
       "raw-text-style-script-escape": {
-        "description": "Dynamic <style> / <script> text prints unescaped, with the element-ending sequences rewritten",
+        "description": "Dynamic <style> / <script> text prints unescaped, with each markup-opening < rewritten",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-script-escape.ts"
       },
       "record-const-index-inherited-key": {
@@ -15690,6 +15726,8 @@
       "expected": "the value as written inside the element",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "raw-text-foreign-content",
+        "raw-text-foreign-content-reactive",
         "raw-text-host-annotation-xml-svg",
         "raw-text-host-reactive",
         "raw-text-host-style-script",

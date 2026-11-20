@@ -4680,6 +4680,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -7246,6 +7252,12 @@
               "fixture": "prop-member-length-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -13164,6 +13176,18 @@
               "fixture": "prop-member-length-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -19145,6 +19169,18 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -33235,6 +33271,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -36242,6 +36284,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -38556,6 +38604,18 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
