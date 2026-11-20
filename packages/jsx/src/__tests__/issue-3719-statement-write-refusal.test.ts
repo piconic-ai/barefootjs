@@ -614,10 +614,75 @@ describe('#3719: a read through another declaration that holds the binding', () 
     'a function that calls the held function later': `local.push('z')
   const box = { read: () => local.length }
   const m = () => box.read()`,
+    // A copy made before the statement is its own array: the push does not change it.
+    'a read of a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const m = copy.length`,
+    'a read of an alias of a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const alias = copy
+  const m = alias.length`,
+    'an alias of a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const m = copy`,
+    'a read of a copy through two aliases': `const copy = local.slice()
+  local.push('z')
+  const a = copy
+  const b = a
+  const m = b.length`,
+    'a spread of a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const m = [...copy]`,
+    'a memo over a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const m = createMemo(() => copy.length)`,
+    'a memo over a signal seeded with a copy made before the statement': `const copy = [...local]
+  local.push('z')
+  const [s] = createSignal(copy)
+  const m = createMemo(() => s().length)`,
+    'a call of a function that reads a copy made before the statement': `const copy = [...local]
+  const f = () => copy.length
+  local.push('z')
+  const m = f()`,
+    'a primitive derived from a copy made before the statement': `const copy = [...local]
+  const len = copy.length
+  local.push('z')
+  const m = len + 1`,
   }
   for (const [name, declarations] of Object.entries(accepted)) {
     test(`${name}: compiles`, () => {
-      expect(refusals(component(declarations))).toEqual([])
+      expect(refusals(component(declarations, name.startsWith('a memo') ? 'm()' : 'm'))).toEqual([])
+    })
+  }
+
+  test('a read of an alias taken before the binding is reassigned: compiles', () => {
+    expect(refusals(`${CLIENT}export function C() {
+  let local = ['y']
+  const alias = local
+  local = ['y', 'z']
+  const m = alias.length
+  return <button onClick={() => console.log(m, local)}>x</button>
+}`)).toEqual([])
+  })
+
+  // A shallow copy shares the original's elements: a write to one of them
+  // shows through the copy, also when another declaration reads the copy.
+  const deep = (declarations: string, markup = '<button onClick={() => console.log(m)}>x</button>'): string => `${CLIENT}export function C() {
+  const rows = [{ done: false }]
+  const copy = [...rows]
+  rows[0].done = true
+  ${declarations}
+  return ${markup}
+}`
+  const deepRefused: Record<string, string> = {
+    'a client read of a shared element through the copy': deep(`const m = copy[0].done`),
+    'a client read of a shared element through an alias of the copy': deep(`const alias = copy
+  const m = alias[0].done`),
+    'a server read of a shared element through an alias of the copy': deep(`const alias = copy`, '<p>{String(alias[0].done)}</p>'),
+  }
+  for (const [name, source] of Object.entries(deepRefused)) {
+    test(`${name}: refused`, () => {
+      expect(refusals(source)).toHaveLength(1)
     })
   }
 })

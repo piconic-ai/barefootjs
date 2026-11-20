@@ -45,7 +45,10 @@
  * (`usesThroughOthers`): `box.read()` after `const box = { read: () =>
  * local.length }` runs the closure where it stands, and `alias.length` after
  * `const alias = local` reads `local`, wherever `box` and `alias` are
- * declared.
+ * declared. What such a declaration took BEFORE the write keeps what it
+ * took: `copy.length` after `const copy = [...local]` and `local.push('z')`
+ * reads a copy the push does not change (a write to an element the copy
+ * shares, `rows[0].done = true`, does show through it).
  *
  * A write to one member of the props object (`props.items.push('z')`) is
  * observed only by a read of that member: `props.title` beside it compiles.
@@ -130,7 +133,7 @@ export function checkStatementWrites(ir: ComponentIR, errors: CompilerError[]): 
   const refused = new Set<string>()
   const eager = eagerDeclarations(ir.metadata)
   const others: Others = {
-    holders: new Map(eager.map(d => [d.name, d.uses instanceof Map ? d.uses : opaqueUses(d.reads)])),
+    holders: new Map(eager.map(d => [d.name, { uses: d.uses instanceof Map ? d.uses : opaqueUses(d.reads), loc: d.loc }])),
     functions: lazyReads(ir.metadata),
   }
   const check: Check = {
@@ -239,14 +242,14 @@ function writtenReadsOf(
   propsObject: string | null,
 ): WrittenRead[] {
   const found: WrittenRead[] = []
-  const throughOthers = usesThroughOthers(declaration, others)
   for (const [name, writer] of writers) {
     const uses = new Set(usesOf(declaration, name))
-    for (const use of throughOthers.get(name) ?? []) uses.add(use)
+    const through = usesThroughOthers(declaration, others, name, writer)
+    for (const use of through) uses.add(use)
     if (uses.size === 0) continue
     // A member read is told apart only on the props object, and only when
     // the declaration's own expression is all that reads it.
-    const members = name === propsObject && !throughOthers.has(name) ? membersRead(declaration.expr, name) : null
+    const members = name === propsObject && through.size === 0 ? membersRead(declaration.expr, name) : null
     if (overlaps(writer, members)) found.push({ name, writer, after: isAfter(declaration.loc, writer.statement.loc), uses })
   }
   return found
@@ -260,8 +263,8 @@ function usesOf(declaration: EagerDeclaration, name: string): Iterable<ValueUse>
 
 /** The component's other declarations a declaration can reach a written binding through. */
 interface Others {
-  /** The names each signal, memo and constant init evaluates in place uses, with how (`usesOf`). */
-  holders: ReadonlyMap<string, ReadonlyMap<string, ReadonlySet<ValueUse>>>
+  /** Each signal, memo and constant init evaluates in place: the names it uses, with how (`usesOf`), and where it is declared. */
+  holders: ReadonlyMap<string, { uses: ReadonlyMap<string, ReadonlySet<ValueUse>>; loc: SourceLocation }>
   /** The names each of the component's functions reads, by the function's name. */
   functions: ReadonlyMap<string, ReadonlySet<string> | undefined>
 }
@@ -276,42 +279,60 @@ interface Others {
 type Reach = 'alias' | 'deferred' | 'read' | 'opaque'
 
 /**
- * What `declaration` does, through the other declarations it uses, with
- * the names they hold or read: what it uses ITSELF is `usesOf`'s, but a
- * name another declaration holds is used too when `declaration` uses that
- * one (`const box = { read: () => local.length }` then `box.read()`, or
+ * Which writes a path through other declarations observes: any (`0`); only
+ * one in place, when a declaration on it took the object before the write
+ * (`1`: a reassignment leaves it the object it took); only one in place to
+ * an object the written value holds, when a declaration on it took a shallow
+ * copy before the write (`2`: the copy's own slots are its own).
+ */
+type Observes = 0 | 1 | 2
+
+/** One step of a path: a name a declaration reaches, how, and which writes the path so far observes. */
+interface Step {
+  name: string
+  reach: Reach
+  observes: Observes
+}
+
+/**
+ * What `declaration` does with `target`, which `writer` writes, through the
+ * other declarations it uses: what it uses ITSELF is `usesOf`'s, but a name
+ * another declaration holds is used too when `declaration` uses that one
+ * (`const box = { read: () => local.length }` then `box.read()`, or
  * `const alias = local` then `alias.length`), transitively. A signal, memo
  * or constant holds what its own value keeps of a name (an `alias`, a
  * `copy`, an `opaque` or a `deferred` use of it), not a primitive it
  * computed from it; a function reads every name it mentions when it runs.
+ * What a declaration took before the write keeps what it took
+ * ({@link Observes}): `copy.length` after `const copy = [...local]` and
+ * `local.push('z')` reads the copy, which the push does not change.
  */
-function usesThroughOthers(declaration: EagerDeclaration, others: Others): Map<string, Set<ValueUse>> {
-  const found = new Map<string, Set<ValueUse>>()
-  const record = (name: string, use: ValueUse): void => {
-    const known = found.get(name) ?? new Set<ValueUse>()
-    known.add(use)
-    found.set(name, known)
-  }
+function usesThroughOthers(declaration: EagerDeclaration, others: Others, target: string, writer: Writer): Set<ValueUse> {
+  const found = new Set<ValueUse>()
   const seen = new Set<string>()
-  const pending: Array<[string, Reach]> = []
-  const enter = (name: string, reach: Reach): void => {
-    const key = `${reach} ${name}`
-    if (name === declaration.name || seen.has(key)) return
+  const pending: Step[] = []
+  const enter = (step: Step): void => {
+    const key = `${step.reach} ${step.observes} ${step.name}`
+    if (step.name === declaration.name || seen.has(key)) return
     seen.add(key)
-    pending.push([name, reach])
+    pending.push(step)
   }
   const own = declaration.uses instanceof Map ? declaration.uses : opaqueUses(declaration.reads)
   for (const [name, uses] of own) {
-    for (const reach of reachesOf(uses, others.functions.has(name))) enter(name, reach)
+    for (const reach of reachesOf(uses, others.functions.has(name))) enter({ name, reach, observes: 0 })
   }
-  for (let next = pending.pop(); next; next = pending.pop()) {
-    const [name, reach] = next
-    for (const [inner, uses] of heldBy(name, reach, others)) {
-      for (const use of uses) record(inner, use)
-      for (const innerReach of reachesOf(uses, false)) enter(inner, innerReach)
+  for (let step = pending.pop(); step; step = pending.pop()) {
+    for (const edge of heldBy(step, others, writer)) {
+      if (edge.name === target && observed(writer, edge.observes)) found.add(edge.use)
+      for (const reach of reachesOf(new Set([edge.use]), false)) enter({ name: edge.name, reach, observes: edge.observes })
     }
   }
   return found
+}
+
+function observed(writer: Writer, observes: Observes): boolean {
+  if (observes === 0) return true
+  return writer.inPlace && (observes === 1 || writer.deep)
 }
 
 function opaqueUses(reads: ReadonlySet<string> | undefined): Map<string, ReadonlySet<ValueUse>> {
@@ -334,25 +355,52 @@ function reachesOf(uses: ReadonlySet<ValueUse>, isFunction: boolean): Reach[] {
   return reaches
 }
 
-/** The names `name`, reached as `reach`, holds or reads, each with the use the reaching declaration then makes of it. */
-function heldBy(name: string, reach: Reach, others: Others): Map<string, ReadonlySet<ValueUse>> {
-  const held = new Map<string, ReadonlySet<ValueUse>>()
-  const holder = others.holders.get(name)
+/** A name a reached declaration holds or reads: the use the reaching declaration then makes of it, and which writes it observes. */
+interface Edge {
+  name: string
+  use: ValueUse
+  observes: Observes
+}
+
+/**
+ * The names `step.name` holds or reads. Held, a name is held as the holder
+ * holds it; anything else done to the holder is done to what it keeps. A
+ * function held is a function kept uncalled; one called reads every name it
+ * mentions as it stands then.
+ */
+function heldBy(step: Step, others: Others, writer: Writer): Edge[] {
+  const edges: Edge[] = []
+  const holder = others.holders.get(step.name)
   if (holder) {
-    for (const [inner, uses] of holder) {
-      const kept = [...uses].filter(use => HOLDING_USES.includes(use) || use === 'copy')
-      if (kept.length === 0) continue
-      // Held, it is held as the holder holds it; anything else done to the holder is done to what it keeps.
-      held.set(inner, new Set<ValueUse>(reach === 'alias' ? kept : [reach]))
+    const before = !isAfter(holder.loc, writer.statement.loc)
+    for (const [name, uses] of holder.uses) {
+      for (const kept of uses) {
+        if (!KEPT_USES.includes(kept)) continue
+        const observes = Math.max(step.observes, before ? keptObserves(kept) : 0) as Observes
+        edges.push({ name, use: step.reach === 'alias' ? kept : step.reach, observes })
+      }
     }
   }
-  const reads = others.functions.get(name)
+  const reads = others.functions.get(step.name)
   if (reads instanceof Set) {
-    // A function held is a function kept uncalled; one called reads all it mentions.
-    const use: ValueUse = reach === 'alias' || reach === 'deferred' ? 'deferred' : reach
-    for (const inner of reads) held.set(inner, new Set<ValueUse>([use]))
+    const use: ValueUse = step.reach === 'alias' || step.reach === 'deferred' ? 'deferred' : step.reach
+    for (const name of reads) edges.push({ name, use, observes: step.observes })
   }
-  return held
+  return edges
+}
+
+/** What a declaration's value keeps of a name it uses: not a primitive it computed from it. */
+const KEPT_USES: readonly ValueUse[] = ['alias', 'opaque', 'deferred', 'copy']
+
+/**
+ * Which writes what a declaration took BEFORE the write observes: the object
+ * itself or something taken from it (`alias`, `opaque`) only in-place writes;
+ * a shallow copy only in-place writes to an object it shares; a function it
+ * keeps reads the binding when it is called, so every write.
+ */
+function keptObserves(kept: ValueUse): Observes {
+  if (kept === 'deferred') return 0
+  return kept === 'copy' ? 2 : 1
 }
 
 /**

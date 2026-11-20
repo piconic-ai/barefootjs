@@ -1437,6 +1437,7 @@ import { fixture as bodyStatementWriteRewrite } from './body-statement-write-rew
 import { fixture as bodyStatementWriteChildProp } from './body-statement-write-child-prop'
 import { fixture as bodyStatementWriteSiblingGetterSpread } from './body-statement-write-sibling-getter-spread'
 import { fixture as bodyStatementWriteThroughHolder } from './body-statement-write-through-holder'
+import { fixture as bodyStatementWriteCopyReadLater } from './body-statement-write-copy-read-later'
 import { fixture as bodyStatementWriteComputedMethodName } from './body-statement-write-computed-method-name'
 import { fixture as bodyStatementWriteBlockShadowedCallback } from './body-statement-write-block-shadowed-callback'
 import { fixture as bodyStatementWriteEarlierMemo } from './body-statement-write-earlier-memo'
@@ -2702,6 +2703,7 @@ export const jsxFixtures: JSXFixture[] = [
   bodyStatementWriteChildProp,
   bodyStatementWriteSiblingGetterSpread,
   bodyStatementWriteThroughHolder,
+  bodyStatementWriteCopyReadLater,
   bodyStatementWriteComputedMethodName,
   bodyStatementWriteBlockShadowedCallback,
   bodyStatementWriteEarlierMemo,
