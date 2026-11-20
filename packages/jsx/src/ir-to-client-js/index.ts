@@ -407,17 +407,18 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   lines.push(IMPORT_PLACEHOLDER)
   lines.push('')
-  // The template reads a module-scope replica member by name, so the
-  // replica is declared here as it is on the init path (#3739).
-  const replicaCode = emitModuleScopeReplica(ctx.moduleScopeReplica, graphUsedIdentifiers(graph))
-  if (replicaCode) lines.push(replicaCode)
   // The module-level helpers the template reaches are declared here as the
   // init path declares them: an inlined const initializer that calls one
   // (`const B = mk()` read as `{B.k}`) puts `mk()` into the template, and
   // the same scope classification routes `mk` to module level (#3952).
-  const classification = classifyLocalDeclarations(ctx, graph)
-  const moduleCode = emitModuleLevelDeclarations(classification.moduleLevelConstants, classification.moduleLevelFunctions)
+  // They precede the replica, in the init path's order.
+  const { moduleLevelConstants, moduleLevelFunctions } = classifyLocalDeclarations(ctx, graph)
+  const moduleCode = emitModuleLevelDeclarations(moduleLevelConstants, moduleLevelFunctions)
   if (moduleCode) lines.push(moduleCode)
+  // The template reads a module-scope replica member by name, so the
+  // replica is declared here as it is on the init path (#3739).
+  const replicaCode = emitModuleScopeReplica(ctx.moduleScopeReplica, graphUsedIdentifiers(graph))
+  if (replicaCode) lines.push(replicaCode)
   const initName = initFunctionName(name)
   lines.push(`function ${initName}() {}`)
   lines.push('')
@@ -452,7 +453,9 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // same — without it, a constant whose value got inlined into the
   // template (e.g. `useYjs(_p.x)`) leaves the template referencing a
   // bare module-import name that's no longer imported (#1138 / #1133).
-  ctx.warnings.push(...runtimeNameCollisions([], ir.metadata.imports, generatedCode))
+  ctx.warnings.push(
+    ...runtimeNameCollisions([...moduleLevelConstants, ...moduleLevelFunctions], ir.metadata.imports, generatedCode),
+  )
   const externalImports = collectExternalImports(ir, generatedCode)
   const allImports = externalImports.length > 0
     ? `${importLine}\n${externalImports.join('\n')}`
