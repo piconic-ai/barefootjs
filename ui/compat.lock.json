@@ -7073,6 +7073,244 @@
           }
         }
       },
+      "module-const-helper-call-inlined": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        }
+      },
+      "module-const-helper-call-spread-inlined": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-client"
+          }
+        }
+      },
       "module-const-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -14714,6 +14952,14 @@
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
       },
+      "module-const-helper-call-inlined": {
+        "description": "a module const initialized by a module helper call (`const B = mk()`) renders on a client mount…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-inlined.ts"
+      },
+      "module-const-helper-call-spread-inlined": {
+        "description": "a module const spreading a module helper call (`{ ...mk('v') }`) renders on a client mount (#3952)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-spread-inlined.ts"
+      },
       "module-const-inherited-key": {
         "description": "a module const read with a key only its prototype has reads the inherited function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key.ts"
@@ -15214,6 +15460,14 @@
         "description": "The /* @client */ escape of a memo calling a local function a template cannot inline",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop-client.ts"
       },
+      "module-const-helper-call-client": {
+        "description": "a /* @client */ read of a module const initialized by a module helper call defers to the browser",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-client.ts"
+      },
+      "module-const-object-spread-unresolved-client": {
+        "description": "a /* @client */ read of a module const that spreads a call defers to the browser",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-client.ts"
+      },
       "module-const-inherited-key-client": {
         "description": "a /* @client */ read of a module const key only its prototype has defers to the browser",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-client.ts"
@@ -15233,10 +15487,6 @@
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
-      },
-      "module-const-object-spread-unresolved-client": {
-        "description": "a /* @client */ read of a module const that spreads a call defers to the browser",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-client.ts"
       },
       "module-const-object-spread-unresolved-computed-client": {
         "description": "a /* @client */ computed read of a const with an unresolved spread defers to the browser",
@@ -15883,6 +16133,7 @@
       "expected": "the value the spread brings for that key",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "module-const-helper-call-spread-inlined",
         "module-const-object-spread-unresolved-array",
         "module-const-object-spread-unresolved-call",
         "module-const-object-spread-unresolved-computed-local",
@@ -16345,12 +16596,13 @@
     "module-scope-helper-call": {
       "title": "Module-scope helper called from a template position",
       "kind": "refusal",
-      "given": "a template expression calling a module-scope helper by bare name (an arrow-valued `const`, a `function` declaration, or a chain of them), in text or boolean-test position",
+      "given": "a template expression calling a module-scope helper by bare name (an arrow-valued `const`, a `function` declaration, or a chain of them), in text or boolean-test position, directly or through a module const whose initializer calls it (`const B = mk()` read as `B.k`)",
       "expected": "the helper runs at render time and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101 / BF102",
       "fixtures": [
         "keyed-row-branch-call",
         "module-const-arrow-helper",
+        "module-const-helper-call-inlined",
         "module-function-helper-chain",
         "module-helper-boolcontext-call"
       ],
