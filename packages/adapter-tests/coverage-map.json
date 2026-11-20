@@ -8356,6 +8356,17 @@
         "text"
       ]
     },
+    "jsx-prop-loop-row-component-spread-optional": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "jsx-prop-loop-row-element-dynamic": {
       "kinds": [
         "binary",
@@ -8373,6 +8384,30 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "jsx-prop-loop-row-element-spread-optional": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "jsx-prop-loop-row-spread-required": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]

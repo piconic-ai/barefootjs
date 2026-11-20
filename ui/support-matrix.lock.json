@@ -15453,7 +15453,19 @@
               ]
             },
             {
+              "fixture": "jsx-prop-loop-row-component-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
               "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-spread-optional",
               "limitations": [
                 "loop-row-dynamic-jsx-prop"
               ]
@@ -29679,7 +29691,19 @@
               ]
             },
             {
+              "fixture": "jsx-prop-loop-row-component-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
               "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-spread-optional",
               "limitations": [
                 "loop-row-dynamic-jsx-prop"
               ]

@@ -7619,7 +7619,35 @@
           }
         }
       },
+      "jsx-prop-loop-row-component-spread-optional": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-dynamic-jsx-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "jsx-prop-loop-row-element-dynamic": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-dynamic-jsx-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "jsx-prop-loop-row-element-spread-optional": {
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -16825,9 +16853,17 @@
         "description": "A JSX prop reading the loop row reaches a component that is the row itself",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-component-dynamic.ts"
       },
+      "jsx-prop-loop-row-component-spread-optional": {
+        "description": "A loop row JSX prop stays the value when a later {...props} leaves its optional key out, on a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-component-spread-optional.ts"
+      },
       "jsx-prop-loop-row-element-dynamic": {
         "description": "A JSX prop reading the loop row reaches a component nested in the row element",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-element-dynamic.ts"
+      },
+      "jsx-prop-loop-row-element-spread-optional": {
+        "description": "A loop row JSX prop stays the value when a later {...props} leaves its optional key out, on a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-element-spread-optional.ts"
       },
       "jsx-prop-nested-component-forwarded": {
         "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
@@ -18545,12 +18581,14 @@
     "loop-row-dynamic-jsx-prop": {
       "title": "A JSX prop that reads the loop row, on a component in that row",
       "kind": "refusal",
-      "given": "a JSX-valued prop other than `children` whose JSX reads the loop row (`header={<i>{x}</i>}`), on a component nested in the row's element (`items.map((x) => <li><Head header={<i>{x}</i>} /></li>)`) or returned as the row (`items.map((x) => <Head key={x} header={<i>{x}</i>} />)`)",
+      "given": "a JSX-valued prop other than `children` whose JSX reads the loop row (`header={<i>{x}</i>}`), on a component nested in the row's element (`items.map((x) => <li><Head header={<i>{x}</i>} /></li>)`) or returned as the row (`items.map((x) => <Head key={x} header={<i>{x}</i>} />)`), including one a later `{...props}` replaces only when the caller passes its optional key",
       "expected": "each row's component receives its row's JSX, rendered directly or read into state (`<h2><i>a</i></h2>`)",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "jsx-prop-loop-row-component-dynamic",
-        "jsx-prop-loop-row-element-dynamic"
+        "jsx-prop-loop-row-component-spread-optional",
+        "jsx-prop-loop-row-element-dynamic",
+        "jsx-prop-loop-row-element-spread-optional"
       ],
       "adapters": [
         "go-template"
