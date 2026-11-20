@@ -284,23 +284,23 @@ export function toSpreadAttrName(key: string): string {
 
 /**
  * The {@link SPREAD_KEY_ATTR_NAMES} keys every template adapter's native
- * spread helper renames to the same attribute today. The other five
- * (`crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`)
- * are renamed by Pebble's helper only; the rest kebab-case them
- * (`cross-origin`, limitation `spread-bag-camel-key-name`). Grows to the
- * whole table when that limitation graduates.
+ * spread helper renames to the same attribute today: the default for an
+ * adapter that declares no `spreadKeyRenames`. The other five
+ * (`crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`) are
+ * kebab-cased by most helpers (`cross-origin`, limitation
+ * `spread-bag-camel-key-name`); Pebble's helper renames all eight.
  */
-const SPREAD_KEYS_RENAMED_EVERYWHERE: ReadonlySet<string> = new Set(['className', 'htmlFor', 'httpEquiv'])
+export const SPREAD_KEYS_RENAMED_EVERYWHERE: ReadonlySet<string> = new Set(['className', 'htmlFor', 'httpEquiv'])
 
 /**
- * The spread bag keys every template adapter renders as the attribute
- * `attrName` ({@link SPREAD_KEY_ATTR_NAMES} reversed, limited to
- * {@link SPREAD_KEYS_RENAMED_EVERYWHERE}): `['htmlFor']` for `for`, `[]`
- * for `crossorigin` or a name no key is renamed to. A key spelled as the
- * attribute itself (`for`) is not listed.
+ * The spread bag keys a spread helper that renames `renamed` renders as the
+ * attribute `attrName` ({@link SPREAD_KEY_ATTR_NAMES} reversed, limited to
+ * `renamed`): `['htmlFor']` for `for`; `['crossOrigin']` for `crossorigin`
+ * only when the helper renames `crossOrigin`. A key spelled as the attribute
+ * itself (`for`) is not listed.
  */
-export function spreadKeysRenamedEverywhere(attrName: string): string[] {
-  return Object.keys(SPREAD_KEY_ATTR_NAMES).filter(key => SPREAD_KEY_ATTR_NAMES[key] === attrName && SPREAD_KEYS_RENAMED_EVERYWHERE.has(key))
+export function spreadKeysRenamedTo(attrName: string, renamed: ReadonlySet<string> = SPREAD_KEYS_RENAMED_EVERYWHERE): string[] {
+  return Object.keys(SPREAD_KEY_ATTR_NAMES).filter(key => SPREAD_KEY_ATTR_NAMES[key] === attrName && renamed.has(key))
 }
 
 /**

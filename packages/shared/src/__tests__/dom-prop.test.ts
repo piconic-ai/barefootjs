@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedEverywhere, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -262,17 +262,26 @@ describe('toSpreadAttrName', () => {
   })
 })
 
-describe('spreadKeysRenamedEverywhere', () => {
-  test('lists the bag keys every spread helper renders as the attribute', () => {
-    expect(spreadKeysRenamedEverywhere('for')).toEqual(['htmlFor'])
-    expect(spreadKeysRenamedEverywhere('class')).toEqual(['className'])
-    expect(spreadKeysRenamedEverywhere('http-equiv')).toEqual(['httpEquiv'])
-  })
-
-  test('lists nothing for a key only some helpers rename, or a name no key renames to', () => {
-    expect(spreadKeysRenamedEverywhere('crossorigin')).toEqual([])
-    expect(spreadKeysRenamedEverywhere('formaction')).toEqual([])
-    expect(spreadKeysRenamedEverywhere('id')).toEqual([])
-    expect(spreadKeysRenamedEverywhere('htmlFor')).toEqual([])
-  })
+describe('spreadKeysRenamedTo', () => {
+  const all = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
+  // [attribute, keys by default (every helper), keys for a helper renaming all eight]
+  const matrix: Array<[string, string[], string[]]> = [
+    ['class', ['className'], ['className']],
+    ['for', ['htmlFor'], ['htmlFor']],
+    ['http-equiv', ['httpEquiv'], ['httpEquiv']],
+    ['crossorigin', [], ['crossOrigin']],
+    ['itemprop', [], ['itemProp']],
+    ['fetchpriority', [], ['fetchPriority']],
+    ['nomodule', [], ['noModule']],
+    ['formaction', [], ['formAction']],
+    ['id', [], []],
+    ['tabindex', [], []],
+    ['htmlFor', [], []],
+  ]
+  for (const [attr, byDefault, byAll] of matrix) {
+    test(`${attr}`, () => {
+      expect(spreadKeysRenamedTo(attr)).toEqual(byDefault)
+      expect(spreadKeysRenamedTo(attr, all)).toEqual(byAll)
+    })
+  }
 })

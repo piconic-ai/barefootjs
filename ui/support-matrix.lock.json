@@ -5626,6 +5626,12 @@
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
             }
           ]
         },
@@ -12486,6 +12492,12 @@
               "limitations": [
                 "authored-format-date-call"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
             }
           ]
         },
@@ -19126,12 +19138,6 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "spread-open-bag-literal-renamed-elsewhere",
-              "limitations": [
-                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -41316,7 +41322,16 @@
     },
     "binary:==": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
+            }
+          ]
+        },
         "blade": {},
         "erb": {},
         "go-template": {},
@@ -42992,7 +43007,16 @@
     },
     "literal:null": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
             {

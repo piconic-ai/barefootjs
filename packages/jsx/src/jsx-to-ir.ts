@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedEverywhere, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -7486,8 +7486,9 @@ function refuseBodyRestSpreadUnderShadowedProps(attr: ts.JsxSpreadAttribute, ctx
  * earlier value that has no source form (a JSX element prop) or may have an
  * effect (`isReadOnlyAttrValue`) is refused with BF021. `ref`, `key` and
  * event handlers are not attribute writes and are left as they are; an
- * open spread (`{...obj}`) writes keys nothing knows statically, so no
- * fallback reaches across it.
+ * open spread (`{...obj}`) writes keys nothing knows statically, so only an
+ * earlier closed rest's key reaches across it, guarded by the bag lacking
+ * the key ({@link carryRestWritesAcrossOpenSpread}).
  */
 function closedRestFallbacks(
   properties: readonly ts.JsxAttributeLike[],
@@ -7509,7 +7510,7 @@ function closedRestFallbacks(
     if (constEntries) {
       for (const e of constEntries) lastWrite.set(e.key, { value: { text: e.text, templateText: e.text, freeIdentifiers: new Set() } })
     } else if (source === null) {
-      lastWrite.clear()
+      carryRestWritesAcrossOpenSpread(attr, lastWrite, ctx)
     } else {
       const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
       if (keyFallbacks.size > 0) fallbacks.set(attr, keyFallbacks)
@@ -7577,6 +7578,46 @@ function isClientOnlyAttr(attr: ts.JsxAttribute, ctx: TransformContext): boolean
   return hasLeadingClientDirective(init.expression, ctx.sourceFile) || shouldAutoDeferReactiveBrand(init.expression, ctx)
 }
 
+/**
+ * The writes an open spread (`{...bag}`) leaves for a later closed rest
+ * spread to fall back to ({@link closedRestFallbacks}). The bag writes keys
+ * nothing knows statically, so an explicit attribute's or a const spread's
+ * write is forgotten, as before. A closed rest's expanded key is kept,
+ * guarded by the bag lacking it (`bag.k == null ? (earlier) : undefined`):
+ * in `<p title="f" {...rest} {...bag} {...rest}>` the last rest then reads
+ * `rest.title ?? (bag.title == null ? (rest.title ?? ("f")) : undefined)`,
+ * so `title` renders once, the literal when neither bag carries it and
+ * nothing beside the bag's own when the middle bag does. The earlier
+ * expansion is dropped ({@link closedRestKeysWrittenLater}). A bag the
+ * template cannot read a key of (`spreadBagReader`) forgets every write.
+ */
+function carryRestWritesAcrossOpenSpread(
+  attr: ts.JsxSpreadAttribute,
+  lastWrite: Map<string, KeyWrite>,
+  ctx: TransformContext,
+): void {
+  const value = AttrValueOf.spread(ctx.getJS(attr.expression), ctx.getTemplateJS(attr.expression))
+  const bag = spreadBagReader(value, ctx)
+  const templateBag = bag === null || value.templateExpr === undefined ? bag : spreadBagReader({ ...value, expr: value.templateExpr }, ctx)
+  const bagIds = extractFreeIdentifiersFromNode(attr.expression)
+  for (const [key, write] of [...lastWrite]) {
+    if (bag === null || !write.fromRest || write.value === null) {
+      lastWrite.delete(key)
+      continue
+    }
+    if (bagLacksKeys(value.expr, [key], ctx)) continue
+    const guarded = (read: string, earlier: string): string => `${read} == null ? (${earlier}) : undefined`
+    lastWrite.set(key, {
+      fromRest: true,
+      value: {
+        text: guarded(bag(key), write.value.text),
+        templateText: guarded((templateBag ?? bag)(key), write.value.templateText),
+        freeIdentifiers: new Set([...write.value.freeIdentifiers, ...bagIds]),
+      },
+    })
+  }
+}
+
 /** {@link closedRestFallbacks} for one closed rest spread reading its keys off `source`. */
 function closedRestKeyFallbacks(
   attr: ts.JsxSpreadAttribute,
@@ -7589,7 +7630,7 @@ function closedRestKeyFallbacks(
   for (const key of ctx.analyzer.restPropsExpandedKeys) {
     const read = `${source}.${key}`
     const earlier = lastWrite.get(key)
-    lastWrite.set(key, { value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
+    lastWrite.set(key, { fromRest: true, value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
     if (!earlier) continue
     if (earlier.value === null || (earlier.attr && !isReadOnlyAttrValue(earlier.attr.initializer))) {
       const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
@@ -7601,6 +7642,7 @@ function closedRestKeyFallbacks(
     }
     keyFallbacks.set(key, earlier.value)
     lastWrite.set(key, {
+      fromRest: true,
       value: {
         text: restKeyWithFallback(read, earlier.value.text),
         templateText: restKeyWithFallback(read, earlier.value.templateText),
@@ -7624,6 +7666,8 @@ interface RestKeyFallback {
 interface KeyWrite {
   attr?: ts.JsxAttribute
   value: RestKeyFallback | null
+  /** The write is a closed rest spread's expanded key ({@link carryRestWritesAcrossOpenSpread}). */
+  fromRest?: true
 }
 
 /**
@@ -8077,12 +8121,13 @@ function markAttrsOverridableBySpread(
     const value = attr.value
     if (value.kind !== 'literal' && value.kind !== 'boolean-attr') return
     // The keys a spread bag writes the attribute under: the name as the IR
-    // has it, and every bag key each adapter's spread helper renders as that
-    // attribute (`spreadKeysRenamedEverywhere`: `htmlFor` for `for`). A key
-    // only some helpers rename (`crossOrigin`) is left out, so the literal
-    // stays where the bag writes another attribute (`cross-origin`). `class`
-    // is read only as `className`, the key the reference writes it under.
-    const aliases = spreadKeysRenamedEverywhere(attr.name)
+    // has it, and every bag key the target adapter's spread helper renames
+    // to that attribute (`spreadKeysRenamedTo` over its `spreadKeyRenames`:
+    // `htmlFor` for `for` everywhere, `crossOrigin` for `crossorigin` on
+    // Pebble only). Where the helper writes the key as another attribute
+    // (`cross-origin`) the literal stays. `class` is read only as
+    // `className`, the key the reference writes it under.
+    const aliases = spreadKeysRenamedTo(attr.name, ctx.analyzer.spreadKeyRenames)
     const keys = attr.name === 'class' ? aliases : [attr.name, ...aliases]
     const missing: string[] = []
     const templateMissing: string[] = []

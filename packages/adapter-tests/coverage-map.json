@@ -20160,7 +20160,9 @@
     },
     "spread-closed-rest-repeated": {
       "kinds": [
+        "binary",
         "call",
+        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -20168,6 +20170,8 @@
         "object-literal"
       ],
       "axes": [
+        "binary:==",
+        "literal:null",
         "literal:string",
         "logical:??"
       ],

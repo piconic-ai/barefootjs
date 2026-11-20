@@ -173,9 +173,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-hono-renamed-keys',
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
-  // The CSR template, like the Hono render, writes the later closed rest's
-  // omitted `title` over the literal (limitation
-  // `closed-rest-after-open-spread-omitted-key`).
+  // Open bags reach their elements only through `applyRestAttrs`, so the
+  // CSR template renders the third element without the bag's `title`
+  // (`closed-rest-after-open-spread-omitted-key` pins the SSR contract).
   'spread-closed-rest-repeated',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
