@@ -1252,6 +1252,21 @@
         "text"
       ]
     },
+    "body-statement-write-aliased-closure-reassigned": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "body-statement-write-block-shadowed-callback": {
       "kinds": [
         "array-literal",
@@ -1285,6 +1300,21 @@
         "array-literal",
         "literal",
         "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
+    "body-statement-write-copied-closure-holder": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
       ],
       "axes": [
         "literal:string"

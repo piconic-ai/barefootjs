@@ -2831,6 +2831,98 @@
           ]
         }
       },
+      "body-statement-write-aliased-closure-reassigned": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        }
+      },
       "body-statement-write-block-shadowed-callback": {
         "blade": {
           "kind": "refusal",
@@ -2986,6 +3078,98 @@
         }
       },
       "body-statement-write-computed-method-name": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        }
+      },
+      "body-statement-write-copied-closure-holder": {
         "blade": {
           "kind": "refusal",
           "codes": [
@@ -15014,6 +15198,10 @@
         "description": "A read of a taken key through a props-object body rest is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-taken-key-read.ts"
       },
+      "body-statement-write-aliased-closure-reassigned": {
+        "description": "A call of a closure an alias of an earlier constant keeps, after a body statement reassigns what it…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-aliased-closure-reassigned.ts"
+      },
       "body-statement-write-block-shadowed-callback": {
         "description": "A write in an in-place callback, after a block that declares the same name, is a write to the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-block-shadowed-callback.ts"
@@ -15025,6 +15213,10 @@
       "body-statement-write-computed-method-name": {
         "description": "A computed method name that reads a binding after a body statement writes it is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-computed-method-name.ts"
+      },
+      "body-statement-write-copied-closure-holder": {
+        "description": "A call of a closure a copy of an earlier constant keeps, after a body statement writes what it…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-copied-closure-holder.ts"
       },
       "body-statement-write-direct-read": {
         "description": "A binding a body statement writes, read by the markup, is refused",
@@ -16194,8 +16386,10 @@
       "expected": "the read sees what the statement wrote (`2`), as JS does",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "body-statement-write-aliased-closure-reassigned",
         "body-statement-write-block-shadowed-callback",
         "body-statement-write-computed-method-name",
+        "body-statement-write-copied-closure-holder",
         "body-statement-write-direct-read",
         "body-statement-write-sibling-getter-spread",
         "body-statement-write-through-holder",
