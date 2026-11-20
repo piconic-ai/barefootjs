@@ -254,6 +254,7 @@ export const conformancePins: ConformancePins = {
   'module-const-helper-call-inlined': [{ code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' }],
   'module-const-helper-call-spread-inlined': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
   'module-const-helper-call-child': [{ code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' }],
+  'module-const-helper-call-runtime-alias': [{ code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-mixed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],

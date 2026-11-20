@@ -1595,6 +1595,7 @@ import { fixture as moduleConstHelperCallInlined } from './module-const-helper-c
 import { fixture as moduleConstHelperCallSpreadInlined } from './module-const-helper-call-spread-inlined'
 import { fixture as moduleConstHelperCallClient } from './module-const-helper-call-client'
 import { fixture as moduleConstHelperCallChild } from './module-const-helper-call-child'
+import { fixture as moduleConstHelperCallRuntimeAlias } from './module-const-helper-call-runtime-alias'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
@@ -2842,6 +2843,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstHelperCallSpreadInlined,
   moduleConstHelperCallClient,
   moduleConstHelperCallChild,
+  moduleConstHelperCallRuntimeAlias,
   moduleConstObjectSpreadUnresolvedComputedProps,
   moduleConstObjectSpreadUnresolvedComputedLocal,
   moduleConstObjectSpreadUnresolvedComputedOptional,

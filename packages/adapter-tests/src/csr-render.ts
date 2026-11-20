@@ -173,6 +173,32 @@ export function stripTopLevelImports(code: string): string {
 }
 
 /**
+ * The local bindings an aliased runtime import declares (`import { untrack
+ * as read } from '@barefootjs/client/runtime'` → `const read = untrack`).
+ * `stripTopLevelImports` drops every import and the mock runtime below
+ * stands in for each runtime export under its own name, so an aliased one
+ * needs this line to reach the mock (#3952). Read off the TypeScript AST's
+ * top-level import declarations, as `stripTopLevelImports` does.
+ */
+export function runtimeImportAliasBindings(code: string): string {
+  const runtimeSources = new Set(['@barefootjs/client/runtime', '@barefootjs/client'])
+  const statements = ts.createSourceFile('client.js', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS).statements
+  // One line per binding: the harness joins several components' modules,
+  // which may each import the same alias.
+  const lines = new Set<string>()
+  for (const statement of statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue
+    if (!runtimeSources.has(statement.moduleSpecifier.text)) continue
+    const bindings = statement.importClause?.namedBindings
+    if (!bindings || !ts.isNamedImports(bindings)) continue
+    for (const spec of bindings.elements) {
+      if (spec.propertyName) lines.add(`const ${spec.name.text} = ${spec.propertyName.text}`)
+    }
+  }
+  return [...lines].join('\n')
+}
+
+/**
  * Build a self-contained ES module that evaluates CSR template functions.
  *
  * Strategy:
@@ -183,6 +209,7 @@ export function stripTopLevelImports(code: string): string {
 function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>, componentName?: string): string {
   // The mock runtime below stands in for every imported binding.
   const strippedCode = stripTopLevelImports(clientJs)
+  const aliasBindings = runtimeImportAliasBindings(clientJs)
 
   // Root scope id for the rendered tree. Shared / UI fixtures pass a
   // deterministic `__instanceId` (`<ComponentName>_test`) so the CSR
@@ -610,6 +637,13 @@ function queryHref(base, params) {
   const qs = u.toString()
   return qs ? \`\${base}?\${qs}\` : base
 }
+
+// Mirror @barefootjs/client's untrack: runs the read without tracking it,
+// which a template evaluation (no effect is running) does by calling it.
+const untrack = (fn) => fn()
+
+// --- Aliased runtime imports, bound to the mocks above ---
+${aliasBindings}
 
 // --- Execute client JS (registers templates via hydrate()) ---
 ${strippedCode}
