@@ -1973,6 +1973,55 @@ public final class Bf {
     return "<div bf-async=\"" + htmlEscape(JsValue.jsString(id)) + "\">" + JsValue.jsString(fallbackHtml) + "</div>";
   }
 
+  /**
+   * A less-than sign the HTML tokenizer could take as the start of markup,
+   * or an ampersand it could take as the start of a character reference.
+   */
+  private static final Pattern RAW_TEXT_MARKUP_OPEN =
+      Pattern.compile("(?<!\\\\)(\\\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))");
+
+  /**
+   * The text of a `<style>` / `<script>` element (`tag`). The HTML parser
+   * decodes no character reference there, so the value is NOT HTML-escaped
+   * (`a[href="x"]` must reach the CSS parser as written); the template prints
+   * the result with `| raw`. Each less-than sign that could begin markup (one
+   * followed by an ASCII letter, `/`, `!` or `?`) and each ampersand that
+   * could begin a character reference (one followed by an ASCII letter or
+   * `#`) is rewritten instead, as the CSS escape of that character in a
+   * `<style>` and its JavaScript / JSON escape in a `<script>`. That leaves
+   * no end tag, no comment or nested script start, no tag and no reference at
+   * all, so the text is the same both as raw text and where the element lands
+   * in foreign content (inside an `<svg>`). Mirrors `escapeRawText` in
+   * `@barefootjs/shared`.
+   */
+  public String raw_text(Object tag, Object parts) {
+    // The element's WHOLE text as the list of its pieces (static text and
+    // each expression's value): joined first and encoded once, because
+    // markup can be spelled across pieces (a lone "<", then "/style>").
+    StringBuilder joined = new StringBuilder();
+    if (parts instanceof List<?> list) {
+      for (Object part : list) {
+        joined.append(String.valueOf(string(part)));
+      }
+    } else {
+      joined.append(String.valueOf(string(parts)));
+    }
+    boolean style = "style".equals(tag);
+    String backslash = "\\";
+    String lessThan = style ? backslash + "3c " : backslash + "u003c";
+    String ampersand = style ? backslash + "26 " : backslash + "u0026";
+    // The run of backslashes directly before the character is matched too: an
+    // odd run means the last backslash already escapes it, so the escape
+    // replaces that pair instead of following the backslash.
+    return RAW_TEXT_MARKUP_OPEN
+        .matcher(joined)
+        .replaceAll(match -> {
+          String run = match.group(1);
+          String kept = run.length() % 2 == 1 ? run.substring(1) : run;
+          return Matcher.quoteReplacement(kept + ("<".equals(match.group(2)) ? lessThan : ampersand));
+        });
+  }
+
   /** Text-slot hydration anchor. Mirrors the Jinja/Rust ports' `text_start` byte-for-byte (`<!--bf:<slot>-->`, NOT this class's own `comment()` wire shape — the client's text-patch walker matches this exact prefix, see `packages/client/src/runtime`). */
   public String text_start(Object slotId) {
     return "<!--bf:" + JsValue.jsString(slotId) + "-->";

@@ -819,6 +819,36 @@ sub string ($self, $value) {
     return "$value";
 }
 
+# The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
+# decodes no character reference there, so the value is NOT HTML-escaped
+# (`a[href="x"]` must reach the CSS parser as written); the template prints
+# the result raw. Each `<` that could begin markup (one followed by an ASCII
+# letter, `/`, `!` or `?`) and each `&` that could begin a character
+# reference (one followed by an ASCII letter or `#`) is rewritten instead, in
+# a form CSS / JS reads back as the same character: `\3c ` / `\26 ` in a
+# `<style>`, `\u003c` / `\u0026` in a `<script>`. That leaves no end tag, no
+# `<!--` / `<script`, no tag and no reference at all, so the text is the same
+# both as raw text and where the element lands in foreign content (inside an
+# `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
+#
+# `$parts` is the element's WHOLE text as the list of its pieces (static text
+# and each expression's value): they are joined first and encoded once,
+# because markup can be spelled across pieces (`['<', '/style>']`).
+sub raw_text ($self, $tag, $parts) {
+    my $text = ref($parts) eq 'ARRAY'
+        ? CORE::join('', map { $self->string($_) } @$parts)
+        : $self->string($parts);
+    my %escape = $tag eq 'style'
+        ? ('<' => '\\3c ', '&' => '\\26 ')
+        : ('<' => '\\u003c', '&' => '\\u0026');
+    # The run of backslashes directly before the character is matched too: an
+    # odd run means the last backslash already escapes it (`"\<b"` is `<b`),
+    # so the escape replaces that pair instead of following the backslash.
+    $text =~ s{(?<!\\)(\\*+)(<(?=[A-Za-z/!?])|&(?=[A-Za-z\#]))}
+              {(length($1) % 2 ? substr($1, 1) : $1) . $escape{$2}}ge;
+    return $text;
+}
+
 # A JS boolean as a value the JSON encoder writes as `true` / `false`
 # (`JSON.stringify([n, true])`): Perl holds a boolean as `1` / `''` / `0`,
 # which encodes as a number or a string.

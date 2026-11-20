@@ -395,6 +395,17 @@ _SVG_CAMEL_CASE_ATTRS = frozenset(
 
 _CAMEL_TO_KEBAB_RE = re.compile(r"([A-Z])")
 
+# A `<` the HTML tokenizer could take as the start of markup (one followed
+# by an ASCII letter, `/`, `!` or `?`), or an `&` it could take as the start
+# of a character reference (one followed by an ASCII letter or `#`), and what
+# `raw_text` writes in its place.
+# The run of backslashes directly before it is captured too: an odd run means
+# the last backslash already escapes the character (`"\\<b"` is `<b`), so the
+# escape replaces that pair instead of following the backslash.
+_RAW_TEXT_MARKUP_OPEN_RE = re.compile(r"(?<!\\)(\\*)(<(?=[A-Za-z/!?])|&(?=[A-Za-z#]))")
+_RAW_TEXT_STYLE_ESCAPE = {"<": "\\3c ", "&": "\\26 "}
+_RAW_TEXT_SCRIPT_ESCAPE = {"<": "\\u003c", "&": "\\u0026"}
+
 
 def _to_attr_name(key: str) -> str:
     if key == "className":
@@ -1114,6 +1125,37 @@ class BarefootJS:
 
     def string(self, value: Any) -> str:
         return js_string(value)
+
+    def raw_text(self, tag: str, parts: Any) -> str:
+        """The text of a `<style>` / `<script>` element (`tag`).
+
+        The HTML parser decodes no character reference there, so the value
+        is NOT HTML-escaped (`a[href="x"]` must reach the CSS parser as
+        written); the template prints the result with `| safe`. Each `<`
+        that could begin markup and each `&` that could begin a character
+        reference is rewritten instead, in a form CSS / JS reads back as the
+        same character: `\\3c ` / `\\26 ` in a `<style>`, `\\u003c` /
+        `\\u0026` in a `<script>`. That leaves no end tag, no `<!--` /
+        `<script`, no tag and no reference at all, so the text is the same
+        both as raw text and where the element lands in foreign content
+        (inside an `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
+
+        `parts` is the element's WHOLE text as the list of its pieces (static
+        text and each expression's value): they are joined first and encoded
+        once, because markup can be spelled across pieces
+        (`['<', '/style>']`).
+        """
+        if isinstance(parts, (list, tuple)):
+            text = "".join(str(js_string(part)) for part in parts)
+        else:
+            text = str(js_string(parts))
+        escapes = _RAW_TEXT_STYLE_ESCAPE if tag == "style" else _RAW_TEXT_SCRIPT_ESCAPE
+
+        def rewrite(match: "re.Match[str]") -> str:
+            run = match.group(1)
+            return (run[1:] if len(run) % 2 else run) + escapes[match.group(2)]
+
+        return _RAW_TEXT_MARKUP_OPEN_RE.sub(rewrite, text)
 
     def number(self, value: Any) -> float:
         return js_number(value)

@@ -16615,6 +16615,65 @@
         "text"
       ]
     },
+    "raw-text-backslash-escape": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-backslash-escape-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "raw-text-backslash-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "raw-text-foreign-content": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-foreign-content-reactive": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "raw-text-host-annotation-xml": {
       "kinds": [
         "binary",
@@ -16729,6 +16788,70 @@
       "contexts": [
         "text"
       ]
+    },
+    "raw-text-split-boundary": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-split-boundary-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-split-boundary-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "raw-text-style-escape-reactive": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-style-script-escape": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-style-script-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
     },
     "reactive-factory-object-return": {
       "kinds": [

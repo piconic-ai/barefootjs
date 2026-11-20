@@ -120,8 +120,9 @@ import {
   planPrimitive,
   operandFacts,
   planTextDisplay,
+  rawTextChildError,
 } from '@barefootjs/jsx'
-import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, escapeRawText, isRawTextTag as isSharedRawTextTag, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
   capitalize,
@@ -4460,7 +4461,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission, then
-    // keep any `{{` away from Go's action lexer.
+    // keep any `{{` away from Go's action lexer. A `<style>` / `<script>`
+    // text child prints only as part of the whole text
+    // (`renderElementContent`, #3934).
+    if (node.rawText) throw rawTextChildError()
     return escapeGoStaticText(escapeHtml(node.value))
   }
 
@@ -4542,6 +4546,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     })
   }
 
+  /**
+   * The element's content. A `<style>` / `<script>` prints its WHOLE literal
+   * text through one `escapeRawText` (`IRElement.rawTextContent`, #3934): it
+   * is not HTML-escaped, and an end tag spelled across text nodes
+   * (`</sty` + `le>`) is still rewritten. An expression part was refused by
+   * `refuseDynamicRawText`, so it contributes nothing here.
+   */
+  private renderElementContent(element: IRElement): string {
+    if (!element.rawTextContent || !isSharedRawTextTag(element.tag)) return this.renderChildren(element.children)
+    const text = element.rawTextContent.map(part => (part.type === 'text' ? part.value : '')).join('')
+    return escapeGoStaticText(escapeRawText(element.tag, text))
+  }
+
   renderElement(element: IRElement): string {
     const tag = element.tag
     if (isRawTextTag(tag)) this.refuseDynamicRawText(element)
@@ -4549,7 +4566,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (foreignRcdata) this.refuseForeignRcdataMarkup(element)
     const attrs = renderElementAttributes(element, this.elementAttrEmitter)
     const dangerousHtml = this.renderDangerousInnerHtml(element)
-    const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
+    const children = dangerousHtml !== null ? dangerousHtml : this.renderElementContent(element)
 
     let hydrationAttrs = ''
     if (element.needsScope) {
@@ -4722,6 +4739,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   renderExpression(expr: IRExpression): string {
+    if (expr.rawText) throw rawTextChildError()
     // @client: an ordinary claimed 'text' slot pair (slot unification A3,
     // spec/slot-unification.md §5-A3), empty at SSR since the expression
     // can't be evaluated server-side — the client's claim creates the

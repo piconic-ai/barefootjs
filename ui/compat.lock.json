@@ -11356,6 +11356,62 @@
           ]
         }
       },
+      "raw-text-backslash-escape": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-backslash-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-foreign-content": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-foreign-content-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "raw-text-host-annotation-xml-encodings": {
         "go-template": {
           "kind": "refusal",
@@ -11413,6 +11469,62 @@
         }
       },
       "raw-text-host-svg-style": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-split-boundary": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-split-boundary-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-style-escape-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-style-script-escape": {
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -15130,6 +15242,22 @@
         "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
       },
+      "raw-text-backslash-escape": {
+        "description": "A backslash before a rewritten < / & in <style> / <script> keeps the text it spelled",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-backslash-escape.ts"
+      },
+      "raw-text-backslash-reactive": {
+        "description": "A backslash-escaped < / & split across the children of <style> still reads as the same CSS string",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-backslash-reactive.ts"
+      },
+      "raw-text-foreign-content": {
+        "description": "A component-rooted <style> / <script> placed in an <svg> holds no markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-foreign-content.ts"
+      },
+      "raw-text-foreign-content-reactive": {
+        "description": "A <style> / <script> passed as children into an <svg> creates no element from its text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-foreign-content-reactive.ts"
+      },
       "raw-text-host-annotation-xml-encodings": {
         "description": "A title under a MathML annotation-xml keeps its slot markers without an HTML encoding and renders…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-encodings.ts"
@@ -15149,6 +15277,22 @@
       "raw-text-host-svg-style": {
         "description": "A dynamic child of an SVG <style> keeps its slot markers",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-svg-style.ts"
+      },
+      "raw-text-split-boundary": {
+        "description": "An end tag split across the children of <style> / <script> is still rewritten",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-split-boundary.ts"
+      },
+      "raw-text-split-boundary-reactive": {
+        "description": "An end tag split across the children of <style> / <script> never ends the element, before or after…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-split-boundary-reactive.ts"
+      },
+      "raw-text-style-escape-reactive": {
+        "description": "Signal-driven <style> / <script> text with >, \" and </script> is written unescaped and keeps the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-escape-reactive.ts"
+      },
+      "raw-text-style-script-escape": {
+        "description": "Dynamic <style> / <script> text prints unescaped, with each markup-opening < rewritten",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-script-escape.ts"
       },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
@@ -16289,10 +16433,18 @@
       "expected": "the value as written inside the element",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "raw-text-backslash-escape",
+        "raw-text-backslash-reactive",
+        "raw-text-foreign-content",
+        "raw-text-foreign-content-reactive",
         "raw-text-host-annotation-xml-svg",
         "raw-text-host-reactive",
         "raw-text-host-style-script",
         "raw-text-host-svg-style",
+        "raw-text-split-boundary",
+        "raw-text-split-boundary-reactive",
+        "raw-text-style-escape-reactive",
+        "raw-text-style-script-escape",
         "style-script-text-dynamic"
       ],
       "adapters": [

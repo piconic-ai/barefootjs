@@ -4980,6 +4980,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -4999,6 +5005,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -7561,6 +7579,18 @@
               ]
             },
             {
+              "fixture": "raw-text-backslash-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -7574,6 +7604,18 @@
             },
             {
               "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -13617,6 +13659,30 @@
               ]
             },
             {
+              "fixture": "raw-text-backslash-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-backslash-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -13642,6 +13708,30 @@
             },
             {
               "fixture": "raw-text-host-svg-style",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -19892,6 +19982,30 @@
               ]
             },
             {
+              "fixture": "raw-text-backslash-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-backslash-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -19911,6 +20025,30 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -34687,6 +34825,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -34706,6 +34850,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -37688,6 +37844,12 @@
               ]
             },
             {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -40143,6 +40305,30 @@
               ]
             },
             {
+              "fixture": "raw-text-backslash-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-backslash-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-foreign-content-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-rcdata-dynamic-child"
@@ -40162,6 +40348,30 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]

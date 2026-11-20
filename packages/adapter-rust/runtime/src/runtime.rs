@@ -1548,6 +1548,46 @@ fn safe(s: impl Into<String>) -> MjValue {
     MjValue::from_safe_string(s.into())
 }
 
+/// The text of a `<style>` / `<script>` element (`tag`). The HTML parser
+/// decodes no character reference there, so the value is NOT HTML-escaped
+/// (`a[href="x"]` must reach the CSS parser as written). Each `<` that could
+/// begin markup (one followed by an ASCII letter, `/`, `!` or `?`) and each
+/// `&` that could begin a character reference (one followed by an ASCII
+/// letter or `#`) is rewritten instead, in a form CSS / JS reads back as the
+/// same character: `\3c ` / `\26 ` in a `<style>`, `\u003c` / `\u0026` in
+/// a `<script>`. That leaves no end tag, no `<!--` / `<script`, no tag and no
+/// reference at all, so the text is the same both as raw text and where the
+/// element lands in foreign content (inside an `<svg>`). Mirrors
+/// `escapeRawText` in `@barefootjs/shared`. `text` is the element's whole
+/// text, joined by the caller.
+pub(crate) fn raw_text(tag: &str, text: &str) -> String {
+    let style = tag == "style";
+    let less_than = if style { "\\3c " } else { "\\u003c" };
+    let ampersand = if style { "\\26 " } else { "\\u0026" };
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    // The backslashes directly before the current character. An odd run means
+    // the last one already escapes it (`"\\<b"` is `<b`), so the escape
+    // replaces that pair instead of following the backslash.
+    let mut run = 0usize;
+    while let Some(ch) = chars.next() {
+        let next = chars.peek().copied();
+        let opens_markup =
+            ch == '<' && next.is_some_and(|c| c.is_ascii_alphabetic() || matches!(c, '/' | '!' | '?'));
+        let opens_reference = ch == '&' && next.is_some_and(|c| c.is_ascii_alphabetic() || c == '#');
+        if opens_markup || opens_reference {
+            if run % 2 == 1 {
+                out.pop();
+            }
+            out.push_str(if opens_markup { less_than } else { ampersand });
+        } else {
+            out.push(ch);
+        }
+        run = if ch == '\\' { run + 1 } else { 0 };
+    }
+    out
+}
+
 impl Object for BfInstance {
     fn call_method(self: &Arc<Self>, state: &State<'_, '_>, method: &str, args: &[MjValue]) -> Result<MjValue, Error> {
         // render_child needs special argument handling (dict-literal
@@ -1673,6 +1713,18 @@ impl Object for BfInstance {
             // needs no decoding.
             "escape_comment_key" => Ok(MjValue::from(js_string(a(0)).replace('-', "‐"))),
             "bool_str" => Ok(MjValue::from(js_bool_str(js_truthy(a(0))))),
+            // The text of a `<style>` / `<script>` element: printed without
+            // the HTML escape (see `raw_text`).
+            // The second argument is the element's WHOLE text as the list
+            // of its pieces: joined first and encoded once, because an end
+            // tag can be spelled across pieces.
+            "raw_text" => {
+                let text = match a(1) {
+                    JsValue::Array(parts) => parts.iter().map(js_string).collect::<String>(),
+                    other => js_string(other),
+                };
+                Ok(safe(raw_text(js_string(a(0)).as_str(), text.as_str())))
+            }
             "text_start" => Ok(safe(format!("<!--bf:{}-->", js_string(a(0))))),
             "text_end" => Ok(safe("<!--/-->".to_string())),
             "scope_comment" => Ok(safe(self.scope_comment())),

@@ -1,3 +1,4 @@
+import { escapeRawText, type RawTextTag } from '@barefootjs/shared'
 import { raw } from 'hono/html'
 
 /**
@@ -42,6 +43,30 @@ export function bfText(slotId: string) {
  */
 export function bfTextEnd() {
   return raw('<!--/-->')
+}
+
+/** The text a value renders as a JSX child: nothing for nullish / boolean, an array's items one after another. */
+function childText(value: unknown): string {
+  if (value == null || typeof value === 'boolean') return ''
+  if (Array.isArray(value)) return value.map(childText).join('')
+  return String(value)
+}
+
+/**
+ * The text of a `<style>` / `<script>` element (#3934). The HTML parser
+ * decodes no character reference in these elements, so Hono's own text
+ * escape would put `&quot;` / `&lt;` into the CSS / JS. The value is written
+ * as it is, with each `<` that could begin markup and each `&` that could
+ * begin a character reference rewritten to its CSS / JS escape
+ * (`escapeRawText`), and handed to Hono as already-safe markup.
+ *
+ * `value` is the element's WHOLE text: the compiler passes the list of its
+ * pieces (static text and each expression's value), which is joined first
+ * and encoded once, because an end tag can be spelled across pieces
+ * (`['<', '/style>']`).
+ */
+export function bfRawText(tag: RawTextTag, value: unknown) {
+  return raw(escapeRawText(tag, childText(value)))
 }
 
 /**

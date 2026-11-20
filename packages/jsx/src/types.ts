@@ -7,6 +7,7 @@
 import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
 import type { SsrSeedPlan } from './ssr-seed-plan.ts'
 import type { ValueUse } from './value-uses.ts'
+import type { RawTextTag } from '@barefootjs/shared'
 
 /**
  * JS/TS source text the IR carries verbatim (an expression, a handler, a
@@ -450,6 +451,20 @@ export interface IRElement {
    */
   rawTextHost?: true
   /**
+   * The complete text of an HTML-namespace `<style>` / `<script>`: its text
+   * and expression children in source order, fragments flattened (#3934).
+   * The HTML parser decodes no character reference in such an element, so
+   * the text is not HTML-escaped; instead each `<` that could begin markup and
+   * each `&` that could begin a character reference is rewritten (`escapeRawText`, `@barefootjs/shared`). That
+   * rewrite is only sound over the WHOLE text: `{'<'}{v}` with `v` =
+   * `/style>` spells an end tag no single child holds. Every emitter
+   * therefore prints this list through ONE encoder call and never renders
+   * the children one by one (each child is marked `rawText`, and a child
+   * emitter that meets the mark refuses to print it). Decided once in
+   * Phase 1 (`raw-text-host.ts`).
+   */
+  rawTextContent?: (IRText | IRExpression)[]
+  /**
    * True for a `<style>`, `<script>`, `<textarea>` or `<title>` that sits in
    * foreign content (SVG, MathML), where its children parse as ordinary
    * content and DO read comments, so the slot markers stay (#3937). An adapter
@@ -521,6 +536,8 @@ export interface IRText {
   type: 'text'
   value: string
   loc: SourceLocation
+  /** See `IRExpression.rawText`. */
+  rawText?: RawTextTag
 }
 
 export interface IRExpression {
@@ -551,6 +568,15 @@ export interface IRExpression {
   reactive: boolean
   slotId: string | null
   loc: SourceLocation
+  /**
+   * Set on a text or expression child of an HTML-namespace `<style>` /
+   * `<script>` (fragments flattened), naming that element (#3934). The child
+   * is part of the element's `rawTextContent`, which is encoded as a whole:
+   * a child emitter must never print a marked node on its own (neither
+   * HTML-escaped nor encoded alone, since an end tag can be split across
+   * children) and throws if it is asked to.
+   */
+  rawText?: RawTextTag
   /** When true, expression should be evaluated on client side only */
   clientOnly?: boolean
   /**

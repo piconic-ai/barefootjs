@@ -25,6 +25,7 @@ import {
 } from '@barefootjs/shared'
 import type { ComponentDef } from './types.ts'
 import { childText } from './child-text.ts'
+import { escapeRawText, type RawTextTag } from '@barefootjs/shared'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
 // When set, renderChild uses the parent's scope ID as prefix instead of a random ID,
@@ -994,6 +995,24 @@ export function escapeText(value: unknown): string {
   if (value == null || typeof value === 'boolean') return ''
   // An array child renders its items one after another (`childText`).
   return escapeAttr(Array.isArray(value) ? childText(value) : value)
+}
+
+/**
+ * The text of a `<style>` / `<script>` element in a client-rendered template
+ * string. The HTML parser decodes no character reference in these elements,
+ * so the value is NOT HTML-escaped; each `<` that could begin markup and
+ * each `&` that could begin a character reference is rewritten to its CSS /
+ * JS escape instead (`escapeRawText`,
+ * `@barefootjs/shared`), exactly as every SSR adapter writes it.
+ *
+ * `value` is the element's WHOLE text: the compiler passes the array of its
+ * parts (static text and each expression's value). They are joined first
+ * and encoded once, because markup can be spelled across parts
+ * (`['<', '/style>']`). Nullish and boolean parts render no text and a
+ * nested array renders its items in order, as for `escapeText`.
+ */
+export function escapeRawTextContent(tag: RawTextTag, value: unknown): string {
+  return escapeRawText(tag, childText(value))
 }
 
 /**

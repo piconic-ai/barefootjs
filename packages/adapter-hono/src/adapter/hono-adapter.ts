@@ -37,6 +37,7 @@ import {
   buildLoopChainExpr,
   propsDestructureBinding,
   isHydrationPayloadPropName,
+  rawTextChildError,
 } from '@barefootjs/jsx'
 
 /**
@@ -49,7 +50,7 @@ type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, escapeHtml } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, escapeHtml, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
 
 /**
  * True when an author attribute on a `.map()` row root has the same name as
@@ -391,7 +392,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only import bfComment/bfText/bfTextEnd/serializeHydrationProps utilities
     // that are actually used
     const utilImports: string[] = []
-    for (const util of ['bfComment', 'escapeCommentKey', 'bfText', 'bfTextEnd', 'serializeHydrationProps']) {
+    for (const util of ['bfComment', 'escapeCommentKey', 'bfText', 'bfTextEnd', 'bfRawText', 'serializeHydrationProps']) {
       if (new RegExp(`\\b${util}\\b`).test(componentCode)) {
         utilImports.push(util)
       }
@@ -880,10 +881,25 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     return this.renderAsync(node)
   }
 
+  /**
+   * The whole text of a `<style>` / `<script>` (`IRElement.rawTextContent`,
+   * #3934) as ONE `bfRawText` call over every part. Hono's own text escape
+   * would put `&quot;` / `&lt;` into the CSS / JS, which the parser does not
+   * decode there; `bfRawText` joins the parts and rewrites each `<`
+   * that could begin markup, which is only sound over the whole text (an
+   * end tag can be spelled across parts: `{'<'}{v}`).
+   */
+  private renderRawTextContent(tag: RawTextTag, parts: readonly (IRText | IRExpression)[]): string {
+    const values = parts.map(part => (part.type === 'text' ? JSON.stringify(part.value) : `(${part.expr})`))
+    return `{bfRawText("${tag}", [${values.join(', ')}])}`
+  }
+
   renderElement(element: IRElement, ctx?: { isLoopItemRoot?: boolean }): string {
     const tag = element.tag
     const attrs = this.renderAttributes(element)
-    const children = this.renderChildren(element.children)
+    const children = element.rawTextContent && isRawTextTag(tag)
+      ? this.renderRawTextContent(tag, element.rawTextContent)
+      : this.renderChildren(element.children)
 
     // Add hydration markers
     let hydrationAttrs = ''
@@ -962,6 +978,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // back; raw `'` is legal JSX text), and `{`/`}` — JSX expression delimiters with no named
     // entity — go numeric. Rendering then re-escapes with Hono's own
     // set, so output bytes match the pre-decode pipeline.
+    // A `<style>` / `<script>` text child prints only as part of the whole
+    // text (`renderRawTextContent`, #3934).
+    if (text.rawText) throw rawTextChildError()
     return escapeHtml(text.value).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
   }
 
@@ -970,6 +989,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (expr.expr === 'null' || expr.expr === 'undefined') {
       return 'null'
     }
+    if (expr.rawText) throw rawTextChildError()
     // Handle @client directive - render an ordinary claimed 'text' slot pair
     // (slot unification A3, spec/slot-unification.md §5-A3). The expression
     // can't be evaluated server-side, so the range is EMPTY at SSR — the

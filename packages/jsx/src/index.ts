@@ -295,7 +295,7 @@ export {
   dangerousInnerHtmlDiagnostic,
   renderDangerousInnerHtml,
 } from './adapters/dangerous-inner-html.ts'
-export { renderElementAttributes, renderElementShell, renderFragmentScope } from './adapters/element-shell.ts'
+export { renderElementAttributes, renderElementShell, renderFragmentScope, rawTextPartList, rawTextChildError } from './adapters/element-shell.ts'
 export type { ElementShellSpelling } from './adapters/element-shell.ts'
 export type { DangerousInnerHtmlResolution } from './adapters/dangerous-inner-html.ts'
 

@@ -36,6 +36,9 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'createPortal',
   'provideContext', 'createContext', 'useContext',
   'forwardProps', 'spreadChildProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
+  // The text of a `<style>` / `<script>` element (#3934): written as it is,
+  // with only the element-ending sequences rewritten.
+  'escapeRawTextContent',
   // Whole-item loop conditional's `bf-loop-i:<key>` anchor comment (#1665,
   // #2795 follow-up) — neutralizes `-` so a key can't close the comment early.
   'escapeCommentText',
