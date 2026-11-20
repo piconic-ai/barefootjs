@@ -69,13 +69,21 @@ export function typeReachesDate(type: TypeInfo | null, meta: IRMetadata, seen: S
   // shape `propsType` itself takes for the common case) and already carries
   // `properties` directly; `kind: 'interface'` is a NAMED reference (`Date`
   // itself, or a local `interface Props { … }`) that needs the Date-name
-  // check plus `derefNamedType` to reach its member list. Anything else
-  // (primitive/array/union/…) is a dead end.
+  // check plus `derefNamedType` to reach its member list; an inline
+  // intersection (`A & B`, carrying `inherits`) reaches its constituents'
+  // members the same way. Anything else (primitive/array/union/…) is a dead
+  // end.
   if (stripped.kind === 'interface') {
     const name = baseTypeName(stripped.raw)
     if (name === 'Date') return true
     if (seen.has(name)) return false
     seen.add(name)
+  } else if (stripped.inherits) {
+    // Keyed by its source text: a member that intersects the type declaring
+    // it (`interface A { next: A & B }`) reaches this same intersection again.
+    const key = `&${stripped.raw}`
+    if (seen.has(key)) return false
+    seen.add(key)
   } else if (stripped.kind !== 'object') {
     return false
   }

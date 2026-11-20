@@ -560,3 +560,131 @@ describe('Date members through an inline intersection props type (#3938)', () =>
     expect(messages[0]).toContain('cannot be reconciled')
   })
 })
+
+describe('Date members through an inline intersection member type (#3949)', () => {
+  function matches(src: string, call: string): boolean {
+    const matcher = datePlugin.prepare(metadata(src))
+    if (!matcher) return false
+    const { callee, args } = callParts(call)
+    return matcher(callee, args) !== null
+  }
+
+  function refusals(src: string): string[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
+  }
+
+  test('the member keeps its kind and carries the constituents', () => {
+    const meta = metadata(`
+      type A = { at: Date }
+      interface B { label: string }
+      export function Foo(props: { data: A & B }) { return <p>{props.data.label}</p> }
+    `)
+    const data = meta.propsType?.properties?.find((p) => p.name === 'data')?.type
+    expect(data?.kind).toBe('unknown')
+    expect(data?.raw).toBe('A & B')
+    expect(data?.inheritance).toBe('intersection')
+    expect(data?.inherits?.map((t) => [t.kind, t.raw])).toEqual([
+      ['interface', 'A'],
+      ['interface', 'B'],
+    ])
+    expect(data?.properties).toBeUndefined()
+  })
+
+  test('a non-intersection member carries no constituents', () => {
+    const meta = metadata(`
+      type A = { at: Date }
+      export function Foo(props: { data: A; list: (A | null)[] }) { return <p>{props.data.at.getTime()}</p> }
+    `)
+    for (const p of meta.propsType?.properties ?? []) expect(p.type.inherits).toBeUndefined()
+  })
+
+  test.each([
+    ['inline props type', `export function Foo(props: { data: A & B }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['props interface', `interface Props { data: A & B }
+     export function Foo(props: Props) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['props alias', `type Props = { data: A & B }
+     export function Foo(props: Props) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['destructured', `export function Foo({ data }: { data: A & B }) { return <p>{data.at.getTime()}</p> }`, 'data.at.getTime()'],
+    ['arm order reversed', `export function Foo(props: { data: B & A }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['parenthesized arms', `export function Foo(props: { data: ((A) & (B & { id: string })) }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['nullable union arm', `export function Foo(props: { data: (A & B) | null }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['deeper member', `export function Foo(props: { outer: { data: A & B } }) { return <p>{props.outer.data.at.getTime()}</p> }`, 'props.outer.data.at.getTime()'],
+    ['literal arm', `export function Foo(props: { data: B & { at: Date } }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['member of an intersection props type', `export function Foo(props: B & { data: A & B }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+  ])('a Date declared on a constituent is lowered: %s', (_label, component, call) => {
+    expect(matches(`type A = { at: Date }\ninterface B { label: string }\n${component}`, call)).toBe(true)
+  })
+
+  test('a member intersecting the type that declares it does not loop the activation walk', () => {
+    const src = (at: string) => `
+      interface B { label: string }
+      interface A { next: A & B; at: ${at} }
+      export function Foo(props: { data: A }) { return <p>{props.data.next.at.getTime()}</p> }`
+    expect(matches(src('string'), 'props.data.next.at.getTime()')).toBe(false)
+    expect(matches(src('Date'), 'props.data.next.at.getTime()')).toBe(true)
+  })
+
+  test('a member that is not a Date on any constituent is not lowered', () => {
+    expect(
+      matches(
+        `type A = { at: string }
+         export function Foo(props: { data: A & { label: string }; d: Date }) { return <p>{props.data.at.getTime()}</p> }`,
+        'props.data.at.getTime()',
+      ),
+    ).toBe(false)
+  })
+
+  test('an imported constituent is refused loudly instead of rendering empty', () => {
+    const messages = refusals(`
+      import type { A } from './a'
+      type B = { label: string }
+      export function Foo(props: { data: A & B }) { return <p>{props.data.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain("'at'")
+    expect(messages[0]).toContain('not declared here')
+  })
+
+  test('a constituent that is not a reference or object literal is refused loudly', () => {
+    const messages = refusals(`
+      type B = { label: string }
+      export function Foo(props: { data: B & ({ at: Date } | { at: string }) }) { return <p>{props.data.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain('not declared here')
+  })
+
+  test('a member visible on a local constituent is not refused next to an imported one', () => {
+    expect(
+      refusals(`
+        import type { A } from './a'
+        type B = { label: string }
+        export function Foo(props: { data: A & B }) { return <p>{props.data.label.toUpperCase()}</p> }
+      `),
+    ).toHaveLength(0)
+  })
+
+  test('a loop row typed as an inline intersection is treated like the alias form', () => {
+    const loop = (element: string) =>
+      refusals(`
+        type A = { at: Date }
+        type B = { label: string }
+        type AB = A & B
+        export function Foo(props: { items: ${element}[] }) {
+          return <ul>{props.items.map((i) => <li key={i.label}>{i.at.getUTCFullYear()}</li>)}</ul>
+        }
+      `)
+    expect(loop('(A & B)')).toEqual(loop('AB'))
+    expect(loop('(A & B)')).toHaveLength(1)
+  })
+
+  test('constituents with irreconcilable declarations of the member are refused', () => {
+    const messages = refusals(`
+      type A = { at: Date }
+      export function Foo(props: { data: A & { at: string } }) { return <p>{props.data.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain('cannot be reconciled')
+  })
+})

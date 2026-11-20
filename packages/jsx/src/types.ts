@@ -83,14 +83,17 @@ export interface TypeInfo {
   properties?: PropertyInfo[]
 
   /**
-   * Set only on the props type of a component whose props parameter is
-   * annotated with an INLINE intersection (`props: Base & { label: string }`):
-   * the intersection's constituents, with the same meaning as
-   * {@link TypeDefinition.inherits}. `kind` is `'object'` and `properties`
-   * stays empty (every constituent is in `inherits`), so a consumer that
-   * reads only `properties` sees what it saw before; type-evidence consumers
-   * resolve the members through `derefNamedType`. Absent everywhere else:
-   * `typeNodeToTypeInfo` still lowers a nested intersection to `unknown`.
+   * Set only on an INLINE intersection type (`A & B`, parenthesized or
+   * nested arms flattened): its constituents, with the same meaning as
+   * {@link TypeDefinition.inherits}. `properties` stays empty (every
+   * constituent is in `inherits`), so a consumer that reads only `kind` /
+   * `properties` sees what it saw before; type-evidence consumers resolve
+   * the members through `derefNamedType`. `kind` is `'unknown'`, as for any
+   * other intersection, except on a component's props type
+   * (`props: Base & { label: string }`), where it is `'object'` (#3938). A
+   * nested intersection (a member typed `A & B`, a union arm, an array
+   * element) keeps `'unknown'` so the adapters' type synthesis is unchanged
+   * (#3949). Absent on types from `tsTypeToTypeInfo` (synthetic nodes).
    */
   inherits?: TypeInfo[]
   /** How `inherits` combines; present exactly when `inherits` is. */

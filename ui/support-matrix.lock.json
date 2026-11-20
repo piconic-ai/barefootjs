@@ -6919,6 +6919,30 @@
               ]
             },
             {
+              "fixture": "date-intersection-member",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-destructured",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-interface",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-literal-arm",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
@@ -12762,6 +12786,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-destructured",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-interface",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-literal-arm",
+              "limitations": [
+                "go-inline-intersection-member"
               ]
             },
             {
@@ -24498,6 +24546,30 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-destructured",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-interface",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-literal-arm",
+              "limitations": [
+                "go-inline-intersection-member"
               ]
             },
             {
@@ -42887,6 +42959,30 @@
         "erb": {},
         "go-template": {
           "gaps": [
+            {
+              "fixture": "date-intersection-member",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-destructured",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-interface",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
+            {
+              "fixture": "date-intersection-member-literal-arm",
+              "limitations": [
+                "go-inline-intersection-member"
+              ]
+            },
             {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [

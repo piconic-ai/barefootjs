@@ -583,7 +583,49 @@ export function typeNodeToTypeInfo(
     }
   }
 
-  return { kind: 'unknown', raw }
+  return opaqueTypeInfo(typeNode, raw, sourceFile, synthetic)
+}
+
+/**
+ * `typeNodeToTypeInfo`'s fallback: `unknown`. An intersection (`A & B`, also
+ * parenthesized) stays `unknown` to every consumer that switches on `kind`,
+ * but its constituents ride along in `inherits` so type-evidence lookups
+ * resolve its members like an intersection alias's (#3949). Synthetic nodes
+ * have no source text for the arms, so they stay bare.
+ */
+function opaqueTypeInfo(typeNode: ts.TypeNode, raw: string, sourceFile: ts.SourceFile, synthetic: boolean): TypeInfo {
+  const inherits = synthetic ? [] : intersectionConstituents(typeNode, sourceFile)
+  return inherits.length > 0 ? { kind: 'unknown', raw, inherits, inheritance: 'intersection' } : { kind: 'unknown', raw }
+}
+
+/** Strip any number of enclosing parentheses: `((Base))` -> `Base`. */
+export function unwrapParenthesizedType(type: ts.TypeNode): ts.TypeNode {
+  return ts.isParenthesizedTypeNode(type) ? unwrapParenthesizedType(type.type) : type
+}
+
+/** The leaf arms of an intersection, parentheses and nested intersections flattened. */
+function intersectionArms(type: ts.TypeNode): ts.TypeNode[] {
+  const inner = unwrapParenthesizedType(type)
+  return ts.isIntersectionTypeNode(inner) ? inner.types.flatMap(intersectionArms) : [inner]
+}
+
+/**
+ * The lowered constituents of `type` when it is an intersection (parentheses
+ * and nested intersections flattened), else empty. An arm that is neither a
+ * named reference nor an object literal (a union, a mapped type, ...) is kept
+ * as `unknown` so consumers know the member set is incomplete rather than
+ * silently missing it. Shared by `typeNodeToTypeInfo` and the analyzer's
+ * intersection-alias collection, so both record the same constituents.
+ */
+export function intersectionConstituents(type: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo[] {
+  if (!ts.isIntersectionTypeNode(unwrapParenthesizedType(type))) return []
+  return intersectionArms(type).map((arm) => constituentTypeInfo(arm, sourceFile))
+}
+
+/** One intersection/alias constituent: a named reference or object literal, else opaque `unknown`. */
+export function constituentTypeInfo(arm: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo {
+  const info = typeNodeToTypeInfo(arm, sourceFile)
+  return info && (info.kind === 'interface' || info.kind === 'object') ? info : { kind: 'unknown', raw: arm.getText(sourceFile) }
 }
 
 // Printer + blank source file reused across calls so checker-driven type
