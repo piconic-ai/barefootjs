@@ -14,7 +14,7 @@ import type {
 import { collectElements, computeLoopSiblingOffsets } from './collect-elements.ts'
 import { generateInitFunction } from './generate-init.ts'
 import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
-import { addConstantPropRefsToSet } from './init-declarations.ts'
+import { addConstantPropRefsToSet, classifyLocalDeclarations } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { PROPS_PARAM, initFunctionName, componentDefScopeFlags, isTransparentFragmentRoot } from './utils.ts'
@@ -26,7 +26,7 @@ import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports, runtimeNameCollisions } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { moduleScopeView } from '../module-scope.ts'
-import { emitModuleScopeReplica } from './emit-module-level.ts'
+import { emitModuleLevelDeclarations, emitModuleScopeReplica } from './emit-module-level.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
 import { isHydrationPayloadPropName } from '../event-handler-name.ts'
@@ -411,6 +411,13 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   // replica is declared here as it is on the init path (#3739).
   const replicaCode = emitModuleScopeReplica(ctx.moduleScopeReplica, graphUsedIdentifiers(graph))
   if (replicaCode) lines.push(replicaCode)
+  // The module-level helpers the template reaches are declared here as the
+  // init path declares them: an inlined const initializer that calls one
+  // (`const B = mk()` read as `{B.k}`) puts `mk()` into the template, and
+  // the same scope classification routes `mk` to module level (#3952).
+  const classification = classifyLocalDeclarations(ctx, graph)
+  const moduleCode = emitModuleLevelDeclarations(classification.moduleLevelConstants, classification.moduleLevelFunctions)
+  if (moduleCode) lines.push(moduleCode)
   const initName = initFunctionName(name)
   lines.push(`function ${initName}() {}`)
   lines.push('')
