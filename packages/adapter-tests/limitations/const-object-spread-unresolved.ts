@@ -18,5 +18,6 @@ export default defineLimitation({
     'module-const-object-spread-unresolved-computed-optional',
     'module-const-object-spread-unresolved-computed-loop',
     'module-const-object-spread-unresolved-computed-signal',
+    'module-const-helper-call-spread-inlined',
   ],
 })

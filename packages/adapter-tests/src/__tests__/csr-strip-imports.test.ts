@@ -5,7 +5,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { stripTopLevelImports } from '../csr-render'
+import { runtimeImportAliasBindings, stripTopLevelImports } from '../csr-render'
 
 describe('stripTopLevelImports', () => {
   test('removes every top-level import form', () => {
@@ -40,5 +40,22 @@ describe('stripTopLevelImports', () => {
   test('leaves a module without imports byte-identical', () => {
     const code = 'hydrate("A", { template: (p) => `<p>${p.x}</p>` })\n'
     expect(stripTopLevelImports(code)).toBe(code)
+  })
+})
+
+describe('runtimeImportAliasBindings', () => {
+  test('binds each aliased runtime import to its mock, once', () => {
+    const code = [
+      "import { createComponent, untrack as read } from '@barefootjs/client/runtime'",
+      "import { untrack as read } from '@barefootjs/client/runtime'",
+      "import { a as b } from './lib'",
+      "import * as ns from '@barefootjs/client'",
+      'const kept = read(() => 1)',
+    ].join('\n')
+    expect(runtimeImportAliasBindings(code)).toBe('const read = untrack')
+  })
+
+  test('is empty for a module without aliased runtime imports', () => {
+    expect(runtimeImportAliasBindings("import { hydrate } from '@barefootjs/client/runtime'\nconst s = \"import { x as y } from '@barefootjs/client'\"")).toBe('')
   })
 })
