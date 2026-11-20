@@ -37,7 +37,7 @@ export function initRowPortalRefComposite(__scope, _p = {}) {
   mapArray(() => _p.rows, _s5, (r) => String(r), (r, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(r())}"><div data-bf-ph="s2"></div><button type="button" class="row" data-key="${escapeAttr(r())}" bf="s4"><!--bf:s3-->${escapeText(r())}<!--/--></button></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(r())}"><template data-bf-ph="s2"></template><button type="button" class="row" data-key="${escapeAttr(r())}" bf="s4"><!--bf:s3-->${escapeText(r())}<!--/--></button></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     if (__existing) claimRowPortals(__existing, __scopeId, ["s4"], _s5)

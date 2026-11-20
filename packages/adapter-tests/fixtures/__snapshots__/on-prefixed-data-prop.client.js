@@ -77,7 +77,7 @@ export function initOnPrefixedDataProp(__scope, _p = {}) {
   mapArray(() => opts(), _s2, (o) => String(o.id), (o, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(o().id)}"><div data-bf-ph="s1"></div></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(o().id)}"><template data-bf-ph="s1"></template></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Badge__cc8941c3', 's1', { get once() { return flag() }, get label() { return o().label } }, undefined, __scope)

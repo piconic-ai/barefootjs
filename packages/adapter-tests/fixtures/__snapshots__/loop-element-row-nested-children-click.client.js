@@ -30,7 +30,7 @@ export function initLoopElementRowNestedChildrenClick(__scope, _p = {}) {
   mapArray(() => fixedRows(), _s7, (o) => String(o.id), (o, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<section data-key="${escapeAttr(o().id)}"><div data-bf-ph="s6"></div></section>`
+      __tpl.innerHTML = `<section data-key="${escapeAttr(o().id)}"><template data-bf-ph="s6"></template></section>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Chip__ab90f7f1', 's6', { get children() { return createComponent('Chip__ab90f7f1', { get children() { return `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's5' }) } }, undefined, __scope)
@@ -44,7 +44,7 @@ export function initLoopElementRowNestedChildrenClick(__scope, _p = {}) {
   mapArray(() => rows(), _s12, (o) => String(o.id), (o, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<section data-key="${escapeAttr(o().id)}"><div data-bf-ph="s11"></div></section>`
+      __tpl.innerHTML = `<section data-key="${escapeAttr(o().id)}"><template data-bf-ph="s11"></template></section>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Chip__ab90f7f1', 's11', { get children() { return createComponent('Chip__ab90f7f1', { get children() { return `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's10' }) } }, undefined, __scope)

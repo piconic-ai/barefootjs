@@ -83,7 +83,7 @@ export function initCard(__scope, _p = {}) {
   mapArray(() => (_p.items ?? []), _s7, (it) => String(it), (it, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(it())}"><div data-bf-ph="s6"></div></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(it())}"><template data-bf-ph="s6"></template></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Chip__70459095', 's6', forwardProps(_p, { get title() { return it() } }, ["title","items"]), undefined, __scope)

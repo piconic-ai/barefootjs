@@ -1408,6 +1408,9 @@ import { fixture as diamondPropagation } from './diamond-propagation'
 // A child-component prop named like a handler but not one (`once`: `on` +
 // lowercase) is reactive data at top level and in loop rows.
 import { fixture as onPrefixedDataProp } from './on-prefixed-data-prop'
+import { fixture as deferredChildPhrasingParent } from './deferred-child-phrasing-parent'
+import { fixture as deferredChildTableSvgParent } from './deferred-child-table-svg-parent'
+import { fixture as compositeRowChildRestrictedParent } from './composite-row-child-restricted-parent'
 // A `ref`-callback `createPortal` on a keyed loop-row element (#3318): the
 // row adopts the portaled element. Top-level, removal, static-array,
 // branch-scoped and composite loop paths.
@@ -2701,6 +2704,9 @@ export const jsxFixtures: JSXFixture[] = [
   nestedChildNegatedProp,
   diamondPropagation,
   onPrefixedDataProp,
+  deferredChildPhrasingParent,
+  deferredChildTableSvgParent,
+  compositeRowChildRestrictedParent,
   rowPortalRef,
   rowPortalRefRemove,
   rowPortalRefStatic,

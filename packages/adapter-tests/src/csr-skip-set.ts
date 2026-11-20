@@ -65,6 +65,15 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The mount renders the child with the mutated array; per-adapter render
   // conformance carries the server divergence this fixture is pinned for.
   'body-statement-write-child-prop',
+  // Children deferred to init (their prop reads an init-only local) under a
+  // `<p>`, a `<tbody>`, a `<tr>` and an `<svg>`: the CSR template holds the
+  // children's placeholders, which this string-level harness does not mount.
+  // What these fixtures pin is where the parser leaves each placeholder and
+  // so where the mounted child lands (#3955); the real-browser
+  // fixture-hydrate suite and the `three-point` oracle's `csr-mount` render
+  // check that.
+  'deferred-child-phrasing-parent',
+  'deferred-child-table-svg-parent',
   // A memo declared before a body statement mutates the binding it reads
   // (`createMemo(() => local.length)`, then `local.push('z')`): the CSR
   // template cannot inline a memo over a binding a statement changes, so its
