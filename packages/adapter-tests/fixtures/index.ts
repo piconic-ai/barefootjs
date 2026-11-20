@@ -1090,6 +1090,12 @@ import { fixture as createQueryActionReadClient } from './create-query-action-re
 import { fixture as createMutationForm } from './create-mutation-form'
 import { fixture as createMutationRequestClientOnly } from './create-mutation-request-client-only'
 import { fixture as memoLengthPropSeededSignal } from './memo-length-prop-seeded-signal'
+import { fixture as memoOverArrayConstLength } from './memo-over-array-const-length'
+import { fixture as destructureDefaultSpreadConstLength } from './destructure-default-spread-const-length'
+import { fixture as memoOverArrayConstShapes } from './memo-over-array-const-shapes'
+import { fixture as memoOverArrayConstIndex } from './memo-over-array-const-index'
+import { fixture as computedArrayConstRead } from './computed-array-const-read'
+import { fixture as destructureDefaultSpreadConstLengthClient } from './destructure-default-spread-const-length-client'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
 import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as emptyArrayConditionShapes } from './empty-array-condition-shapes'
@@ -2471,6 +2477,12 @@ export const jsxFixtures: JSXFixture[] = [
   createMutationForm,
   createMutationRequestClientOnly,
   memoLengthPropSeededSignal,
+  memoOverArrayConstLength,
+  destructureDefaultSpreadConstLength,
+  memoOverArrayConstShapes,
+  memoOverArrayConstIndex,
+  computedArrayConstRead,
+  destructureDefaultSpreadConstLengthClient,
   memoLengthPropSeededSignalShapes,
   emptyArrayCondition,
   emptyArrayConditionShapes,

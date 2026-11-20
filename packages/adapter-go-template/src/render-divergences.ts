@@ -129,6 +129,9 @@ export const renderDivergences: RenderDivergences = {
   // read through a memo: the server render runs no body statement, so it
   // renders the value before the push.
   'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
+  // A memo reading an element of an array literal by a literal index: the
+  // runtime evaluator does not read an array element by a computed key.
+  'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },

@@ -55,6 +55,7 @@ describe('compileForCompat', () => {
         severity: 'error',
         limitations: [
           'array-fill',
+          'array-literal-element-spread',
           'array-self-equality',
           'body-destructure-without-const-form',
           'body-rest-props-name-shadowed',
