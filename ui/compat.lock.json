@@ -7311,6 +7311,125 @@
           }
         }
       },
+      "module-const-helper-call-runtime-alias": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        }
+      },
       "module-const-helper-call-spread-inlined": {
         "blade": {
           "kind": "refusal",
@@ -15079,6 +15198,10 @@
         "description": "a module const initialized by a module helper call (`const B = mk()`) renders on a client mount…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-inlined.ts"
       },
+      "module-const-helper-call-runtime-alias": {
+        "description": "a module helper reading an aliased runtime import (`untrack as read`) keeps the import in a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-runtime-alias.ts"
+      },
       "module-const-helper-call-spread-inlined": {
         "description": "a module const spreading a module helper call (`{ ...mk('v') }`) renders on a client mount (#3952)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-spread-inlined.ts"
@@ -16727,6 +16850,7 @@
         "module-const-arrow-helper",
         "module-const-helper-call-child",
         "module-const-helper-call-inlined",
+        "module-const-helper-call-runtime-alias",
         "module-function-helper-chain",
         "module-helper-boolcontext-call"
       ],

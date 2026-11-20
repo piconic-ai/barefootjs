@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, initChild, lazySlots, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
+import { createComponent, createSignal, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, escapeAttr, escapeText, initChild, lazySlots, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initChip() {}
 

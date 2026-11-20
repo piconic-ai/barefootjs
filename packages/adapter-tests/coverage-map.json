@@ -12016,6 +12016,22 @@
         "text"
       ]
     },
+    "module-const-helper-call-runtime-alias": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-helper-call-spread-inlined": {
       "kinds": [
         "arrow",

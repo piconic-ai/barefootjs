@@ -2943,6 +2943,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -3098,6 +3104,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -3287,6 +3299,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -3460,6 +3478,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -3643,6 +3667,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -3804,6 +3834,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -3987,6 +4023,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -4165,6 +4207,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -4332,6 +4380,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -6305,6 +6359,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -6784,6 +6844,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -7352,6 +7418,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -7955,6 +8027,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -8451,6 +8529,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -8930,6 +9014,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -9425,6 +9515,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -9915,6 +10011,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -10400,6 +10502,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -12055,6 +12163,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -12708,6 +12822,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -13498,6 +13618,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -14329,6 +14455,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -14993,6 +15125,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -15640,6 +15778,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -16309,6 +16453,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -16956,6 +17106,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -17620,6 +17776,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -18696,6 +18858,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -19211,6 +19379,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -19803,6 +19977,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -20478,6 +20658,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -21004,6 +21190,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -21525,6 +21717,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -22068,6 +22266,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -22577,6 +22781,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -23097,6 +23307,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -24433,6 +24649,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -24918,6 +25140,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -25527,6 +25755,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -26095,6 +26329,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -26591,6 +26831,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -27070,6 +27316,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -27577,6 +27829,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -28062,6 +28320,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -28563,6 +28827,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -28922,6 +29192,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -29173,6 +29449,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -29447,6 +29729,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -29732,6 +30020,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -29983,6 +30277,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -30245,6 +30545,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -30518,6 +30824,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -30763,6 +31075,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -31019,6 +31337,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -39271,6 +39595,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -39690,6 +40020,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -40168,6 +40504,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -40741,6 +41083,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -41171,6 +41519,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -41596,6 +41950,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -42043,6 +42403,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -42467,6 +42833,12 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -42886,6 +43258,12 @@
             },
             {
               "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
               "limitations": [
                 "module-scope-helper-call"
               ]
