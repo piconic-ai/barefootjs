@@ -2585,6 +2585,24 @@
         "text"
       ]
     },
+    "children-read-into-state-shadow-transform": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "children-renamed-beside-children-local": {
       "kinds": [
         "identifier",
@@ -8310,6 +8328,47 @@
         "literal:boolean",
         "literal:null",
         "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "jsx-prop-loop-row-component-dynamic": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "jsx-prop-loop-row-element-dynamic": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "attribute",

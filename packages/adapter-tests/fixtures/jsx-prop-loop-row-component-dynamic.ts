@@ -47,6 +47,5 @@ export function Seeded(props: { header?: unknown }) {
         <h3 bf-s="Seeded_*" bf="s2" data-key="b"><!--bf-cond-start:s0--><!--bf:s1-->header<!--/--><!--bf-cond-end:s0--></h3>
       </aside>
     </div>
-  
   `,
 })

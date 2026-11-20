@@ -3742,6 +3742,20 @@
           }
         }
       },
+      "children-read-into-state-shadow-transform": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -7589,6 +7603,34 @@
           "limitations": [
             "jsx-wrapped-in-non-children-prop"
           ]
+        }
+      },
+      "jsx-prop-loop-row-component-dynamic": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-dynamic-jsx-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "jsx-prop-loop-row-element-dynamic": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "loop-row-dynamic-jsx-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "jsx-prop-nested-component-forwarded": {
@@ -16575,6 +16617,10 @@
         "description": "Every way of computing state from dynamic JSX children sees those children",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-forms.ts"
       },
+      "children-read-into-state-shadow-transform": {
+        "description": "A same-named signal or memo that transforms dynamic JSX children holds the transformed value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-shadow-transform.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -16774,6 +16820,14 @@
       "jsx-element-prop-ternary": {
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
+      },
+      "jsx-prop-loop-row-component-dynamic": {
+        "description": "A JSX prop reading the loop row reaches a component that is the row itself",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-component-dynamic.ts"
+      },
+      "jsx-prop-loop-row-element-dynamic": {
+        "description": "A JSX prop reading the loop row reaches a component nested in the row element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-loop-row-element-dynamic.ts"
       },
       "jsx-prop-nested-component-forwarded": {
         "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
@@ -18488,6 +18542,23 @@
         "BF101"
       ]
     },
+    "loop-row-dynamic-jsx-prop": {
+      "title": "A JSX prop that reads the loop row, on a component in that row",
+      "kind": "refusal",
+      "given": "a JSX-valued prop other than `children` whose JSX reads the loop row (`header={<i>{x}</i>}`), on a component nested in the row's element (`items.map((x) => <li><Head header={<i>{x}</i>} /></li>)`) or returned as the row (`items.map((x) => <Head key={x} header={<i>{x}</i>} />)`)",
+      "expected": "each row's component receives its row's JSX, rendered directly or read into state (`<h2><i>a</i></h2>`)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "jsx-prop-loop-row-component-dynamic",
+        "jsx-prop-loop-row-element-dynamic"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "loop-row-key-outer-state": {
       "title": "Loop row key reading outer state on constructor-built component rows",
       "kind": "refusal",
@@ -19192,12 +19263,13 @@
     "template-time-children-read-into-state": {
       "title": "State computed from JSX children the server renders at template time",
       "kind": "refusal",
-      "given": "a component whose signal seed or memo reads its children or another JSX-valued prop (`createSignal(props.children ?? 'missing')`), called with JSX children or a JSX prop that read the caller's data (`<Note>{props.label}!</Note>`, `header={<i>{props.label}</i>}`) or as the element a loop row returns, whatever its children (`items.map((x) => <Note key={x}>own</Note>)`)",
+      "given": "a component whose signal seed or memo reads its children or another JSX-valued prop (`createSignal(props.children ?? 'missing')`, or one named like the prop that transforms it, `const [children] = createSignal(props.children + '!')`), called with JSX children or a JSX prop that read the caller's data (`<Note>{props.label}!</Note>`, `header={<i>{props.label}</i>}`) or as the element a loop row returns, whatever its children (`items.map((x) => <Note key={x}>own</Note>)`)",
       "expected": "the state holds the children the call passes (`hi!` for `<Note>{props.label}!</Note>`), not the fallback (`'missing'`)",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "children-dynamic-read-into-state",
         "children-read-into-state-forms",
+        "children-read-into-state-shadow-transform",
         "open-rest-spread-child-children"
       ],
       "adapters": [

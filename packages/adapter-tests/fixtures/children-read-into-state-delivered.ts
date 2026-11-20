@@ -60,6 +60,5 @@ export function ShadowBare(props: { children?: unknown }) {
       <i bf-s="test_s6" bf="s1"><!--bf-cond-start:s0-->fallback<!--bf-cond-end:s0--></i>
       <s bf-s="test_s8" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></s>
     </div>
-  
   `,
 })

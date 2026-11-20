@@ -2581,6 +2581,26 @@
       }
     }
   ],
+  "children-read-into-state-shadow-transform": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "client-handler-keyword-prop": [
     {
       "name": "gen:default:zero",
@@ -8448,6 +8468,22 @@
       "name": "gen:items:empty",
       "props": {
         "n": 1,
+        "items": []
+      }
+    }
+  ],
+  "jsx-prop-loop-row-component-dynamic": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "jsx-prop-loop-row-element-dynamic": [
+    {
+      "name": "gen:items:empty",
+      "props": {
         "items": []
       }
     }

@@ -42,6 +42,5 @@ export function MemoTail(props: { children?: unknown }) {
       <b bf-s="test_s1" bf="s1"><!--bf-cond-start:s0-->transformed<!--bf-cond-end:s0--></b>
       <i bf-s="test_s3" bf="s1"><!--bf-cond-start:s0-->transformed<!--bf-cond-end:s0--></i>
     </div>
-  
   `,
 })

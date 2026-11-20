@@ -37,6 +37,5 @@ export function Seeded(props: { header?: unknown }) {
   props: { items: ['a', 'b'] },
   expectedHtml: `
     <div bf-s="test"><ul bf="s4"><li data-key="a"><h2 bf-s="test_s1" bf="s1"><!--bf:s0--><i><!--bf:^s0-->a<!--/--></i><!--/--></h2><h3 bf-s="test_s3" bf="s2"><!--bf-cond-start:s0--><!--bf:s1-->header<!--/--><!--bf-cond-end:s0--></h3></li><li data-key="b"><h2 bf-s="test_s1" bf="s1"><!--bf:s0--><i><!--bf:^s0-->b<!--/--></i><!--/--></h2><h3 bf-s="test_s3" bf="s2"><!--bf-cond-start:s0--><!--bf:s1-->header<!--/--><!--bf-cond-end:s0--></h3></li></ul></div>
-  
   `,
 })
