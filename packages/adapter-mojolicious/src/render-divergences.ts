@@ -27,6 +27,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A key an open spread and another attribute or spread both write renders
+  // twice (an expression or template value before the spread, an attribute
+  // after it, two spreads), and an explicit `null` bag value renders the
+  // earlier literal.
+  'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
   // A binding a body statement mutates (`items.push('z')`) handed to a
   // child as a prop: the template runs no body statement and does not pass
   // on a binding whose declared value a statement changes, so the child

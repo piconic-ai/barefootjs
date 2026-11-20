@@ -106,6 +106,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -332,6 +338,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -540,6 +552,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -651,6 +669,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -817,6 +841,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -1043,6 +1073,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -1278,6 +1314,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -1504,6 +1546,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1721,6 +1769,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -1947,6 +2001,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -6101,6 +6161,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -6573,6 +6639,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7033,6 +7105,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7246,6 +7324,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -7624,6 +7708,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -8097,6 +8187,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -8569,6 +8665,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9029,6 +9131,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9488,6 +9596,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -9960,6 +10074,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -11521,6 +11641,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -11638,6 +11764,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -12179,6 +12311,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12302,6 +12440,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -12807,6 +12951,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12942,6 +13092,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -13170,6 +13326,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -13681,6 +13843,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -13798,6 +13966,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -14333,6 +14507,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -14450,6 +14630,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -14985,6 +15171,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15108,6 +15300,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -15631,6 +15829,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15748,6 +15952,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -16265,6 +16475,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -16382,6 +16598,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -16923,6 +17145,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -17040,6 +17268,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -18078,6 +18312,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -18165,6 +18405,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -18598,6 +18844,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -18685,6 +18937,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -19112,6 +19370,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19211,6 +19475,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -19361,6 +19631,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -19788,6 +20064,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19875,6 +20157,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -20308,6 +20596,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20395,6 +20689,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -20828,6 +21128,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20921,6 +21227,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -21366,6 +21678,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -21453,6 +21771,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -21868,6 +22192,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -21955,6 +22285,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -22388,6 +22724,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -22475,6 +22817,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -22975,6 +23323,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23036,6 +23390,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -23118,6 +23478,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -23209,6 +23575,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23273,6 +23645,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23334,6 +23712,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -23407,6 +23791,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23471,6 +23861,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23532,6 +23928,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -23758,6 +24160,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -24263,6 +24671,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -24741,6 +25155,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "element-spread-props-in-signal-loop-row",
               "limitations": [
                 "props-spread-element-in-signal-loop-row"
@@ -24924,6 +25344,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -25372,6 +25798,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -25862,6 +26294,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -26361,6 +26799,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -26836,6 +27280,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -27320,6 +27770,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -27819,6 +28275,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -28238,6 +28700,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28470,6 +28938,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28701,6 +29175,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -28976,6 +29456,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29208,6 +29694,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29439,6 +29931,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -29690,6 +30188,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29915,6 +30419,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -30147,6 +30657,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -30427,6 +30943,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -30473,6 +30995,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -30518,6 +31046,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -30571,6 +31105,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -30616,6 +31156,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -30663,6 +31209,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -30709,6 +31261,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -30748,6 +31306,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -30794,6 +31358,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -31026,6 +31596,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31099,6 +31675,12 @@
               "fixture": "body-statement-write-computed-method-name",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -31178,6 +31760,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31254,6 +31842,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31327,6 +31921,12 @@
               "fixture": "body-statement-write-computed-method-name",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -31412,6 +32012,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31485,6 +32091,12 @@
               "fixture": "body-statement-write-computed-method-name",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -31564,6 +32176,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31637,6 +32255,12 @@
               "fixture": "body-statement-write-computed-method-name",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -37022,6 +37646,12 @@
               ]
             },
             {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -38197,6 +38827,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -38266,6 +38902,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -38621,6 +39263,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -38690,6 +39338,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -39039,6 +39693,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -39108,6 +39768,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -39234,6 +39900,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {
@@ -39595,6 +40267,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -39664,6 +40342,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -40019,6 +40703,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -40088,6 +40778,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -40443,6 +41139,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -40518,6 +41220,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -40885,6 +41593,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -40954,6 +41668,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -41297,6 +42017,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -41366,6 +42092,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -41721,6 +42453,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -41790,6 +42528,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -42426,6 +43170,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -42481,6 +43231,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -42557,6 +43313,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -42642,6 +43404,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -42697,6 +43465,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -42758,6 +43532,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -42813,6 +43593,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -42874,6 +43660,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -42929,6 +43721,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -43146,6 +43944,12 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "memo-over-array-const-index",
+              "limitations": [
+                "memo-array-literal-element-read"
               ]
             },
             {

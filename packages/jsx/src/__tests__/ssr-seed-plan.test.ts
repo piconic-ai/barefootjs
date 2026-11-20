@@ -450,6 +450,32 @@ describe('computeSsrSeedPlan', () => {
     expect(constantOf('both')).toBe(false)
   })
 
+  test('a constant step the static evaluator cannot resolve is computed in-template (#3953)', () => {
+    const plan = planFor(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      const ITEMS = ['p', 'q']
+      function C() {
+        const local = ['y', 'z']
+        const n = createMemo(() => local.length)
+        const m = createMemo(() => ITEMS.length)
+        const k = createMemo(() => [1, 2, 3].filter((x) => x > 1).length)
+        const [c] = createSignal([1, 2].filter((x) => x > 1).length)
+        return <p>{n()}{m()}{k()}{c()}</p>
+      }
+    `)
+    const constantOf = (name: string) => {
+      const s = step(plan, name)
+      return s.kind === 'derived' ? s.constant : null
+    }
+    // `.length` of a resolved array is a static seed; a `.filter()` is not.
+    expect(constantOf('n')).toBe(true)
+    expect(constantOf('k')).toBe(false)
+    expect(constantOf('c')).toBe(false)
+    // A module array is no template variable, so its step is not derived at all.
+    expect(step(plan, 'm').kind).toBe('opaque')
+  })
+
   test('a destructure default reading an earlier prop re-binds the prop first, in parameter order (#3531)', () => {
     const plan = planFor(`
       'use client'

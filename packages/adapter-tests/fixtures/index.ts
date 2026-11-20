@@ -255,6 +255,9 @@ import { fixture as recordConstIndexInheritedKeyClient } from './record-const-in
 import { fixture as recordConstIndexEarlyReturn } from './record-const-index-early-return'
 import { fixture as constObjectSpread } from './const-object-spread'
 import { fixture as constObjectSpreadLastWins } from './const-object-spread-last-wins'
+import { fixture as literalAttrBeforeSpread } from './literal-attr-before-spread'
+import { fixture as attrSpreadKeyOverlap } from './attr-spread-key-overlap'
+import { fixture as literalBooleanAttrBeforeSpread } from './literal-boolean-attr-before-spread'
 import { fixture as propsObjectBodyRestSpread } from './props-object-body-rest-spread'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
@@ -624,6 +627,9 @@ import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
 import { fixture as derivedStringConstSiblingComponent } from './derived-string-const-sibling-component'
 import { fixture as derivedStringConstChildFiles } from './derived-string-const-child-files'
+import { fixture as csrConstLiteralMethodCall } from './csr-const-literal-method-call'
+import { fixture as csrConstLiteralMethodCallShadow } from './csr-const-literal-method-call-shadow'
+import { fixture as searchParamsDerivedConst } from './search-params-derived-const'
 import { fixture as childrenJsxExpression } from './children-jsx-expression'
 import { fixture as fragmentWrappedChildrenJsxExpression } from './fragment-wrapped-children-jsx-expression'
 import { fixture as restDestructureObjectInMap } from './rest-destructure-object-in-map'
@@ -1084,6 +1090,12 @@ import { fixture as createQueryActionReadClient } from './create-query-action-re
 import { fixture as createMutationForm } from './create-mutation-form'
 import { fixture as createMutationRequestClientOnly } from './create-mutation-request-client-only'
 import { fixture as memoLengthPropSeededSignal } from './memo-length-prop-seeded-signal'
+import { fixture as memoOverArrayConstLength } from './memo-over-array-const-length'
+import { fixture as destructureDefaultSpreadConstLength } from './destructure-default-spread-const-length'
+import { fixture as memoOverArrayConstShapes } from './memo-over-array-const-shapes'
+import { fixture as memoOverArrayConstIndex } from './memo-over-array-const-index'
+import { fixture as computedArrayConstRead } from './computed-array-const-read'
+import { fixture as destructureDefaultSpreadConstLengthClient } from './destructure-default-spread-const-length-client'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
 import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as emptyArrayConditionShapes } from './empty-array-condition-shapes'
@@ -1798,6 +1810,9 @@ export const jsxFixtures: JSXFixture[] = [
   recordConstIndexEarlyReturn,
   constObjectSpread,
   constObjectSpreadLastWins,
+  literalAttrBeforeSpread,
+  attrSpreadKeyOverlap,
+  literalBooleanAttrBeforeSpread,
   propsObjectBodyRestSpread,
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
@@ -2470,6 +2485,12 @@ export const jsxFixtures: JSXFixture[] = [
   createMutationForm,
   createMutationRequestClientOnly,
   memoLengthPropSeededSignal,
+  memoOverArrayConstLength,
+  destructureDefaultSpreadConstLength,
+  memoOverArrayConstShapes,
+  memoOverArrayConstIndex,
+  computedArrayConstRead,
+  destructureDefaultSpreadConstLengthClient,
   memoLengthPropSeededSignalShapes,
   emptyArrayCondition,
   emptyArrayConditionShapes,
@@ -2998,4 +3019,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsInNestedLoopRow,
   derivedStringConstSiblingComponent,
   derivedStringConstChildFiles,
+  csrConstLiteralMethodCall,
+  csrConstLiteralMethodCallShadow,
+  searchParamsDerivedConst,
 ]

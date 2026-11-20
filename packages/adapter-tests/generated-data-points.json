@@ -892,6 +892,39 @@
       }
     }
   ],
+  "attr-spread-key-overlap": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "title": "from-spread",
+        "lang": null
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "title": "from-spread",
+        "lang": null
+      }
+    }
+  ],
   "awaits-undefined-plus-shapes": [
     {
       "name": "gen:c:union:1",
@@ -4211,6 +4244,100 @@
       }
     }
   ],
+  "csr-const-literal-method-call": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "word": "beta",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "word": "beta",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "word": "beta",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "kind": "api",
+        "word": "",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "kind": "api",
+        "word": "<b>&\"'</b>",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:word:multibyte",
+      "props": {
+        "kind": "api",
+        "word": "日本語",
+        "slot": "b"
+      }
+    },
+    {
+      "name": "gen:slot:empty",
+      "props": {
+        "kind": "api",
+        "word": "beta",
+        "slot": ""
+      }
+    },
+    {
+      "name": "gen:slot:markup",
+      "props": {
+        "kind": "api",
+        "word": "beta",
+        "slot": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:slot:multibyte",
+      "props": {
+        "kind": "api",
+        "word": "beta",
+        "slot": "日本語"
+      }
+    }
+  ],
+  "csr-const-literal-method-call-shadow": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": ""
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語"
+      }
+    }
+  ],
   "custom-element-child-loop-row": [
     {
       "name": "gen:items:empty",
@@ -6127,6 +6254,22 @@
         "a": []
       }
     },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-length": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-length-client": [
     {
       "name": "gen:b:empty",
       "props": {
@@ -8350,6 +8493,18 @@
         "zero": 0,
         "label": "日本語",
         "__bf_lazy": "fallback"
+      }
+    }
+  ],
+  "literal-attr-before-spread": [
+    {
+      "name": "gen:rows:absent",
+      "props": {
+        "title": "from-spread",
+        "encoding": "text/html",
+        "data-x": "sx",
+        "hidden": false,
+        "dir": ""
       }
     }
   ],
@@ -17660,6 +17815,26 @@
         ],
         "prefix": "日本語",
         "__instanceId": "RowPortalRefScope_test"
+      }
+    }
+  ],
+  "search-params-derived-const": [
+    {
+      "name": "gen:param:empty",
+      "props": {
+        "param": ""
+      }
+    },
+    {
+      "name": "gen:param:markup",
+      "props": {
+        "param": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:param:multibyte",
+      "props": {
+        "param": "日本語"
       }
     }
   ],

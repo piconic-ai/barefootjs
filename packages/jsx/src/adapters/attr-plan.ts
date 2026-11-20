@@ -64,6 +64,14 @@ export interface AttrPlanContext {
 
 /** Plan an `{expr}` attribute value. */
 export function planAttrExpression(value: ExpressionAttr, name: string, ctx: AttrPlanContext): AttrExpressionPlan {
+  // A guarded literal (`ExpressionAttr.literalText`) prints as written: the
+  // ternary decides presence, the text is not a boolean value.
+  if (value.literalText) {
+    // Phase 1 attached the guard's parsed tree: read the branches from it
+    // rather than parsing `value.expr` again at emission.
+    const ternary = value.parsed ? undefinedAlternateOf(value.parsed) : parseUndefinedAlternateTernary(value.expr)
+    if (ternary) return { kind: 'undefined-alternate', ternary }
+  }
   const booleanAttr = isBooleanAttr(name)
   if (!booleanAttr && !value.presenceOrUndefined) {
     const nullable = nullableBareRead(value, ctx)
@@ -121,7 +129,12 @@ export interface UndefinedAlternateTernary {
 /** Parse `cond ? value : undefined` (or `: null`), or `null` for any other shape. */
 export function parseUndefinedAlternateTernary(expr: string): UndefinedAlternateTernary | null {
   const parsed = parseExpression(expr.trim())
-  if (parsed?.kind !== 'conditional') return null
+  return parsed ? undefinedAlternateOf(parsed) : null
+}
+
+/** The `cond ? value : undefined` shape of an already-parsed expression, or `null`. */
+export function undefinedAlternateOf(parsed: ParsedExpr): UndefinedAlternateTernary | null {
+  if (parsed.kind !== 'conditional') return null
   const alt = parsed.alternate
   const isUndef =
     (alt.kind === 'identifier' && (alt.name === 'undefined' || alt.name === 'null')) ||

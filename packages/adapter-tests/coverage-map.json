@@ -996,6 +996,22 @@
         "text"
       ]
     },
+    "attr-spread-key-overlap": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "attr-ternary-title": {
       "kinds": [
         "call",
@@ -3185,6 +3201,31 @@
         "text"
       ]
     },
+    "computed-array-const-read": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "computed-const-loop-source-parenthesized": {
       "kinds": [
         "call",
@@ -4201,6 +4242,45 @@
       ],
       "axes": [
         "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "csr-const-literal-method-call": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:indexOf",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "csr-const-literal-method-call-shadow": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
         "literal:string"
       ],
       "contexts": [
@@ -5647,6 +5727,40 @@
       "axes": [
         "literal:string",
         "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-length": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-length-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
         "logical:??"
       ],
       "contexts": [
@@ -8173,6 +8287,36 @@
         "attribute",
         "loop",
         "text"
+      ]
+    },
+    "literal-attr-before-spread": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "literal-boolean-attr-before-spread": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "literal-const-conditional-shapes": {
@@ -11315,6 +11459,62 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-index": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-length": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-shapes": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:*",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -17679,6 +17879,23 @@
         "logical:??"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "search-params-derived-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

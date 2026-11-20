@@ -19,6 +19,7 @@ import { collectContextConsumers, lookupLiteralConst, resolveStaticConstBinding 
 import { freeIdentifiers, inlineBinding, mapParsedExpr, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
 import type { ConstantInfo, ExpressionAttr, IRMetadata, ParamInfo } from '../types.ts'
 import { componentBindings } from '../relocate.ts'
+import { evaluateStaticLiteral } from '../static-literal.ts'
 import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
 import { readLiteralMember } from '../static-const-member.ts'
 import { localCallBodies, uninlinableLocalCalls, type LocalCallBody } from '../local-call-body.ts'
@@ -41,6 +42,13 @@ export interface ComputedConstContext {
   propReads: ReadonlyMap<string, string>
   /** Component-scope local functions, which shadow a module const of the same name. */
   localFunctions: ReadonlySet<string>
+  /**
+   * Whether a const holding an array of compile-time literals is inlined too.
+   * A template resolves such an array through the adapter's own lookups, so
+   * only a reader with none sets this: a memo body the Go constructor
+   * evaluates ({@link arrayConstInitializer}).
+   */
+  inlineLiteralArrays: boolean
   /**
    * The functions whose zero-argument call a template reads as the
    * expression they return (`localCallBodies`, #3721).
@@ -86,6 +94,7 @@ export function computedConstContext(
   metadata: IRMetadata,
   isShadowed: (name: string) => boolean,
   isAdapterBound: (name: string) => boolean = () => false,
+  options: { inlineLiteralArrays?: boolean } = {},
 ): ComputedConstContext {
   const bindings = componentBindings(metadata)
   return {
@@ -95,6 +104,7 @@ export function computedConstContext(
     propsBindings: propsBindingNames(metadata),
     propReads: propReadKeys(metadata, bindings),
     localFunctions: new Set(metadata.localFunctions.filter(f => !f.isModule).map(f => f.name)),
+    inlineLiteralArrays: options.inlineLiteralArrays ?? false,
     calls: localCallBodies(metadata),
     propNamed: propNamedBindings(metadata),
     uninlinableCalls: uninlinableLocalCalls(metadata),
@@ -227,7 +237,8 @@ function inlineOnce(expr: ParsedExpr, ctx: ComputedConstContext): ParsedExpr {
       result = projectObjectReads(result, name, object, ctx) ?? result
       continue
     }
-    const init = inlinableInitializer(name, ctx)
+    const array = arrayConstInitializer(name, ctx)
+    const init = array ?? inlinableInitializer(name, ctx)
     if (!init) continue
     result = inlineBinding(result, name, init) ?? inlineUnderCallbacks(result, name, init, ctx) ?? result
   }
@@ -489,6 +500,37 @@ function callsOnlyReadable(init: ParsedExpr, constant: ConstantInfo, getters: Re
     if (!constant.isModule || call.scope === 'module') readable.add(name)
   }
   return callsOnlyGetters(init, readable)
+}
+
+/**
+ * The initializer of a `const` holding an array literal that a read of `name`
+ * stands for (`const local = [...b, 'z']`, `const pair = [props.a, 'z']`),
+ * resolved in the scope the const is declared in, or `null` when the read
+ * stays as it is. A template has no binding for the const, so a read of its
+ * `length`, an index or a method rendered an unbound name (#3954): inlined,
+ * the adapter lowers the literal like one written in place, or refuses what
+ * it cannot lower (an element spread, BF101).
+ *
+ * The same visibility rules as {@link objectConstInitializer}. An array of
+ * compile-time literals stays a name unless the reader asks for it
+ * ({@link ComputedConstContext.inlineLiteralArrays}): the adapters resolve
+ * one themselves, as a loop source or a literal member read.
+ */
+function arrayConstInitializer(name: string, ctx: ComputedConstContext): ParsedExpr | null {
+  if (ctx.componentNames.has(name) && !componentConst(name, ctx)) return null
+  const constant = resolveStaticConstBinding(name, ctx.constants, n => ctx.isShadowed(n))
+  const init = constant?.parsed
+  if (!constant || init?.kind !== 'array-literal' || constant.systemConstructKind || constant.containsArrow || constant.isJsx) return null
+  if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
+  if (ctx.isAdapterBound(name)) return null
+  if (!callsOnlyReadable(init, constant, ctx.getters, ctx)) return null
+  // An element no template lowers (a spread, `[...b, 'z']`) leaves the free
+  // names unknown: the literal is read as written, and the adapter refuses
+  // the read where it lowers it.
+  const resolved = freeIdentifiers(init) === null ? init : resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
+  if (resolved?.kind !== 'array-literal') return null
+  if (!ctx.inlineLiteralArrays && evaluateStaticLiteral(resolved) !== null) return null
+  return resolved
 }
 
 /**

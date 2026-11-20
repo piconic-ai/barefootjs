@@ -6,9 +6,6 @@ import { createFixture } from '../src/types'
  * `{ b = L }`, #3725). `a` has a computed default of its own, so `b`'s
  * default has to be applied after `a`'s, and the props type lists `b`
  * before `a`.
- *
- * The client template reads `L` as `_p.a + '!'`, without `a`'s default
- * (limitation `const-alias-signature-default`), so the CSR render is pinned.
  */
 export const fixture = createFixture({
   id: 'destructure-default-local-const-prop-hop',
