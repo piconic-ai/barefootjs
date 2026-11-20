@@ -1388,7 +1388,7 @@ export function Greeting(_p, __bfKey) { return createComponent('Greeting', _p, _
 `;
 
 exports[`docs/core/components/component-authoring.md doc-examples L95 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
 
@@ -1477,7 +1477,7 @@ export function AutoFocus(_p, __bfKey) { return createComponent('AutoFocus', _p,
 `;
 
 exports[`docs/core/components/component-authoring.md doc-examples L149 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
 
@@ -1486,7 +1486,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/children-slots.md doc-examples L11 — (no label) 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
 
@@ -1853,7 +1853,7 @@ export function Tooltip(_p, __bfKey) { return createComponent('Tooltip', _p, __b
 `;
 
 exports[`docs/core/components/styling.md doc-examples L20 — Source 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
 
@@ -1862,7 +1862,7 @@ export function StatementExample(_p, __bfKey) { return createComponent('Statemen
 `;
 
 exports[`docs/core/components/styling.md doc-examples L23 — Compiled (cssLayerPrefix: 'components') 1`] = `
-"import { createComponent, hydrate } from '@barefootjs/client/runtime'
+"import { createComponent, createEffect, createMemo, createSignal, hydrate, onCleanup, onMount, untrack } from '@barefootjs/client/runtime'
 
 function initStatementExample() {}
 
