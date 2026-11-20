@@ -3447,6 +3447,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -3604,6 +3628,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -3791,6 +3839,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -3966,6 +4038,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -4147,6 +4243,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4310,6 +4430,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -4491,6 +4635,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4669,6 +4837,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4838,6 +5030,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -6827,6 +7043,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7308,6 +7548,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -7876,6 +8140,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -8477,6 +8765,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8973,6 +9285,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -9454,6 +9790,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -9947,6 +10307,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -10437,6 +10821,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -10924,6 +11332,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -12631,6 +13063,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -13304,6 +13760,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -14112,6 +14592,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -14959,6 +15463,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -15641,6 +16169,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -16308,6 +16860,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -16993,6 +17569,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -17660,6 +18260,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -18342,6 +18966,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -19494,6 +20142,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -20041,6 +20713,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -20663,6 +21359,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -21366,6 +22086,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -21922,6 +22666,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -22475,6 +23243,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -23046,6 +23838,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23587,6 +24403,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -24137,6 +24977,30 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -25525,6 +26389,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -26030,6 +26918,30 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -26655,6 +27567,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27241,6 +28177,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27755,6 +28715,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28254,6 +29238,30 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -28777,6 +29785,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -29282,6 +30314,30 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -29799,6 +30855,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -30188,6 +31268,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -30447,6 +31551,30 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -30727,6 +31855,30 @@
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -31016,6 +32168,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -31275,6 +32451,30 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -31543,6 +32743,30 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -31820,6 +33044,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -32073,6 +33321,30 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -32335,6 +33607,30 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -40783,6 +42079,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -41234,6 +42554,30 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -41742,6 +43086,30 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -42343,6 +43711,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -42803,6 +44195,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -43260,6 +44676,30 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
@@ -43735,6 +45175,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -44189,6 +45653,30 @@
               ]
             },
             {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -44640,6 +46128,30 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-child",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-inlined",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-runtime-alias",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-helper-call-spread-inlined",
+              "limitations": [
+                "const-object-spread-unresolved"
               ]
             },
             {
