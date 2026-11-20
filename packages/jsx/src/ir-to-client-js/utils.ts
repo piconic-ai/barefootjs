@@ -38,14 +38,15 @@ export { DATA_KEY, DATA_KEY_PREFIX, DATA_BF_PH, BF_LOOP_START, BF_LOOP_END, loop
  * replaces it with the mounted child (`upsertChild` / `createComponent`, which
  * find it by its `data-bf-ph` attribute, whatever its tag).
  *
- * It is a `<template>` because that is the one element the HTML parser
- * leaves where it is written in every parent the child itself can sit in
- * (#3955): a `<div>` start tag closes an open `<p>` (also through a `<span>`),
- * is foster-parented out of a `<table>` / `<tbody>` / `<tr>`, and ends an
+ * It is a `<template>` because the HTML parser leaves a `<template>` where
+ * it is written under every parent a child component can sit in (#3955): a
+ * `<div>` start tag closes an open `<p>` (also through a `<span>`), is
+ * foster-parented out of a `<table>` / `<tbody>` / `<tr>`, and ends an
  * `<svg>` / `<math>`; a `<span>` fails the same table and foreign cases. A
- * `<template>` is allowed in phrasing content and in every table, select and
- * colgroup content model, and in SVG / MathML it is an ordinary foreign
- * element. So the decision needs no parent tag: one spelling, every context.
+ * `<template>` is allowed in phrasing and flow content and in the table,
+ * select and colgroup content models, and in SVG / MathML it parses as an
+ * ordinary foreign element. So the choice needs no parent tag: one spelling
+ * for every position.
  */
 export function componentPlaceholderMarkup(placeholderId: string): string {
   return `<template ${DATA_BF_PH}="${placeholderId}"></template>`
