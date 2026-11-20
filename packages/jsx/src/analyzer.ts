@@ -25,6 +25,9 @@ import {
   typeNodeToTypeInfo,
   tsTypeToTypeInfo,
   membersToProperties,
+  constituentTypeInfo,
+  intersectionConstituents,
+  unwrapParenthesizedType,
   isComponentFunction,
   isArrowComponentFunction,
   collectReactiveGetterNames,
@@ -2872,32 +2875,15 @@ function interfaceBaseTypes(node: ts.InterfaceDeclaration, sourceFile: ts.Source
   return bases
 }
 
-/** Strip any number of enclosing parentheses: `((Base))` -> `Base`. */
-function unwrapParenthesizedType(type: ts.TypeNode): ts.TypeNode {
-  return ts.isParenthesizedTypeNode(type) ? unwrapParenthesizedType(type.type) : type
-}
-
-/** The leaf arms of an intersection, parentheses and nested intersections flattened. */
-function intersectionArms(type: ts.TypeNode): ts.TypeNode[] {
-  const inner = unwrapParenthesizedType(type)
-  return ts.isIntersectionTypeNode(inner) ? inner.types.flatMap(intersectionArms) : [inner]
-}
-
 /**
  * The constituents of an alias that inherits members: each leaf arm of an
- * intersection, or the referenced type of a plain alias (`type Props = Base`).
- * An arm that is neither a named reference nor an object literal (a union, a
- * mapped type, ...) is kept as `unknown` so consumers know the member set is
- * incomplete rather than silently missing it. Empty for every other alias
- * (object literal, union, primitive, ...).
+ * intersection (`intersectionConstituents`), or the referenced type of a plain
+ * alias (`type Props = Base`). Empty for every other alias (object literal,
+ * union, primitive, ...).
  */
 function aliasInheritedTypes(type: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo[] {
   const inner = unwrapParenthesizedType(type)
-  const arms = ts.isIntersectionTypeNode(inner) ? intersectionArms(inner) : ts.isTypeReferenceNode(inner) ? [inner] : []
-  return arms.map((arm) => {
-    const info = typeNodeToTypeInfo(arm, sourceFile)
-    return info && (info.kind === 'interface' || info.kind === 'object') ? info : { kind: 'unknown', raw: arm.getText(sourceFile) }
-  })
+  return ts.isTypeReferenceNode(inner) ? [constituentTypeInfo(inner, sourceFile)] : intersectionConstituents(inner, sourceFile)
 }
 
 function inheritsField(types: TypeInfo[], inheritance: 'extends' | 'intersection'): { inherits?: TypeInfo[]; inheritance?: 'extends' | 'intersection' } {
@@ -4790,17 +4776,17 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
 }
 
 /**
- * The props parameter's `TypeInfo`. An inline intersection
- * (`Base & { label: string }`) would lower to `unknown` in
- * `typeNodeToTypeInfo`, losing the evidence its constituents carry, so it is
- * recorded the way an intersection alias is: an `object` whose constituents
- * ride in `inherits` (the leaf arms, parentheses and nesting flattened). Every
- * other annotation lowers as before.
+ * The props parameter's `TypeInfo`. `typeNodeToTypeInfo` lowers an inline
+ * intersection (`Base & { label: string }`) to `unknown` carrying its
+ * constituents in `inherits`; on the props type itself it is recorded as an
+ * `object` (the #3938 shape, unchanged here). Nested
+ * intersections (a member typed `A & B`) keep `kind: 'unknown'` (#3949).
+ * Every other annotation lowers as before.
  */
 function propsTypeInfo(typeNode: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo | null {
   const info = typeNodeToTypeInfo(typeNode, sourceFile)
-  if (!info || !ts.isIntersectionTypeNode(unwrapParenthesizedType(typeNode))) return info
-  return { kind: 'object', raw: info.raw, ...inheritsField(aliasInheritedTypes(typeNode, sourceFile), 'intersection') }
+  if (!info?.inherits) return info
+  return { kind: 'object', raw: info.raw, inherits: info.inherits, inheritance: info.inheritance }
 }
 
 /**

@@ -1,0 +1,5 @@
+---
+"@barefootjs/jsx": patch
+---
+
+A `Date` reached through a props member whose type is an inline intersection (`props: { data: A & B }`, `props.data.at.getUTCFullYear()`) is now seen by the date lowering, the same way the alias form (`type Data = A & B`) already is. Before, the member lowered to `unknown`, so the read rendered an empty string without any diagnostic on the blade, erb, jinja, mojolicious, pebble, rust, twig and xslate adapters. The member may sit on an inline props type, a props interface or alias, a destructured parameter, a nullable union arm or a deeper member; a constituent declared outside the file (or that is not a reference or object literal), and irreconcilable declarations of the member, are refused with BF021 as for the alias form. Every intersection `TypeInfo` from source now carries its constituents in `inherits` / `inheritance`; its `kind` stays `unknown` (the props parameter's own intersection stays `object`), so type synthesis in the adapters is unchanged. On go-template the member is still generated as an `interface{}` field, so its member reads render empty (tracked as `go-inline-intersection-member`).
