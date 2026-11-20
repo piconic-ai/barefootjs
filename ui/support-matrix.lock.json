@@ -5970,6 +5970,24 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -6057,6 +6075,18 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -8437,6 +8467,24 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8662,6 +8710,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -8937,7 +8997,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -12638,6 +12698,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -15069,6 +15135,24 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -15360,6 +15444,30 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -15737,7 +15845,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -22340,6 +22448,24 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -22559,6 +22685,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -22864,7 +23002,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -27099,6 +27237,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -27207,6 +27357,18 @@
               ]
             },
             {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -27221,7 +27383,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -29241,6 +29403,24 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -29502,6 +29682,30 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-spread-optional",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -29807,7 +30011,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -41191,6 +41395,24 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -41230,6 +41452,18 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -45747,6 +45981,24 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -45924,6 +46176,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
               ]
             },
             {
@@ -46199,7 +46463,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -50018,6 +50282,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -50120,6 +50396,18 @@
               ]
             },
             {
+              "fixture": "jsx-prop-loop-row-component-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-prop-loop-row-element-dynamic",
+              "limitations": [
+                "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -50134,7 +50422,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {

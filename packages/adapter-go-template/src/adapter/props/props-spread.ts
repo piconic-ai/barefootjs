@@ -118,6 +118,27 @@ export function finalPropWriters(
   return props.filter((p) => isFinalPropWriter(p, keys))
 }
 
+/**
+ * The props of a child call that the constructor lowers as the values their
+ * keys end up with (`planChildCallProps`' writer resolution): a prop a later
+ * unconditional writer replaces (an explicit prop of the same key, or a
+ * `{...props}` param the caller always passes) is dropped. A prop a spread
+ * key overrides only when the caller passed it stays, since it is the value
+ * when the key is absent. A call that also spreads an object whose keys are
+ * unknown is returned whole.
+ */
+export function survivingPropWriters(
+  ctx: GoEmitContext,
+  props: readonly IRProp[],
+  children: readonly IRNode[] = [],
+): readonly IRProp[] {
+  const ir = { metadata: { propsParams: ctx.state.currentPropsParams } } as unknown as ComponentIR
+  const call = resolvePropsSpreadCall(ctx, ir, props, children)
+  if (call === null) return finalPropWriters(ctx, ir, props, children)
+  if (call.kind === 'unresolved') return props
+  return props.filter((p) => isFinalPropWriter(p, call.keys))
+}
+
 /** Every component call in `node`'s subtree, the root included. */
 function forEachComponent(node: IRNode, visit: (props: readonly IRProp[]) => void): void {
   switch (node.type) {
