@@ -283,6 +283,16 @@ export function toSpreadAttrName(key: string): string {
 }
 
 /**
+ * The spread bag keys that render as the attribute `attrName`
+ * ({@link SPREAD_KEY_ATTR_NAMES} reversed): `['htmlFor']` for `for`, `[]`
+ * for a name no key is renamed to. A key spelled as the attribute itself
+ * (`for`) is not listed.
+ */
+export function spreadKeysForAttrName(attrName: string): string[] {
+  return Object.keys(SPREAD_KEY_ATTR_NAMES).filter(key => SPREAD_KEY_ATTR_NAMES[key] === attrName)
+}
+
+/**
  * Runtime variant of attribute name mapping that additionally applies
  * camelCase→kebab conversion for `data-*` and `aria-*` convenience
  * props (e.g. `dataTestId` → `data-test-id`) and preserves SVG XML

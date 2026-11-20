@@ -60,6 +60,10 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // so it renders `1`. The reference is the broken side (limitation
   // `init-statement-mutation-unrun-on-server`).
   'body-statement-write-child-prop',
+  // Hand-authored to one `for`, the bag's: the reference writes the earlier
+  // literal as `for` and the bag's `htmlFor` as `for` again, so it renders
+  // both (limitation `spread-key-alias-literal-duplicate`).
+  'spread-open-bag-literal-alias-before',
 ])
 
 async function main() {

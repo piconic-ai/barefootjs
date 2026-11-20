@@ -13501,6 +13501,12 @@
               "limitations": [
                 "namespace-import-primitive-without-program"
               ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-alias-before",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
             }
           ]
         },

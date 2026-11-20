@@ -171,6 +171,7 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // `applyRestAttrs`; these fixtures pin the SSR spread-key names.
   'spread-open-bag-attr-names',
   'spread-open-bag-hono-renamed-keys',
+  'spread-open-bag-literal-alias-before',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

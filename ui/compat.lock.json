@@ -14858,6 +14858,14 @@
           ]
         }
       },
+      "spread-open-bag-literal-alias-before": {
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -17179,6 +17187,10 @@
         "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
       },
+      "spread-open-bag-literal-alias-before": {
+        "description": "A literal htmlFor before an open bag carrying htmlFor renders the bag value once; literals the bag…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-alias-before.ts"
+      },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
@@ -19118,6 +19130,19 @@
         "mojolicious",
         "twig",
         "xslate"
+      ]
+    },
+    "spread-key-alias-literal-duplicate": {
+      "title": "A literal attribute and an open spread bag key that renames to it",
+      "kind": "silent",
+      "given": "a literal written with a React-style name a spread renames (`htmlFor=\"explicit\"`) before an open spread (`{...rest}`) whose bag carries that key (`htmlFor`)",
+      "expected": "the attribute renders once, with the bag's value (`for=\"spread\"`); a key the bag lacks keeps the literal",
+      "actual": "Renders the attribute twice (`for=\"explicit\" for=\"spread\"`), so a browser keeps the literal",
+      "fixtures": [
+        "spread-open-bag-literal-alias-before"
+      ],
+      "adapters": [
+        "hono"
       ]
     },
     "statement-body-callback": {

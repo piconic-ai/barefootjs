@@ -19980,6 +19980,16 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-literal-alias-after": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-open-bag-attr-names": {
       "kinds": [
         "array-literal",
@@ -19996,6 +20006,15 @@
       ]
     },
     "spread-open-bag-hono-renamed-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-alias-before": {
       "kinds": [
         "identifier"
       ],

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysForAttrName, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -259,5 +259,19 @@ describe('toSpreadAttrName', () => {
     for (const key of ['class', 'for', 'tabIndex', 'ariaLabel', 'dataTestId', 'strokeWidth', 'viewBox', 'data-x', 'toString', '__proto__']) {
       expect(toSpreadAttrName(key)).toBe(key)
     }
+  })
+})
+
+describe('spreadKeysForAttrName', () => {
+  test('lists the bag keys that render as the attribute', () => {
+    expect(spreadKeysForAttrName('for')).toEqual(['htmlFor'])
+    expect(spreadKeysForAttrName('class')).toEqual(['className'])
+    expect(spreadKeysForAttrName('http-equiv')).toEqual(['httpEquiv'])
+  })
+
+  test('lists nothing for a name no key renames to', () => {
+    expect(spreadKeysForAttrName('id')).toEqual([])
+    expect(spreadKeysForAttrName('tabindex')).toEqual([])
+    expect(spreadKeysForAttrName('htmlFor')).toEqual([])
   })
 })

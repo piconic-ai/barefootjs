@@ -66,7 +66,19 @@ export function P({ label, ...rest }: { label: string; title?: string }) {
 }
 `)
     const [p] = elements(ir.root, 'p')
-    expect(attrExpr(p, 'title')).toEqual(['rest.title', 'literal'])
+    // The spread's expansion drops the key the later attribute writes, so
+    // the element carries it once, as the literal.
+    expect(attrExpr(p, 'title')).toEqual(['literal'])
+  })
+
+  test('a later attribute spelled as the attribute a rest key renders as wins over it', () => {
+    const ir = irOf(`
+export function P({ label, ...rest }: { label: string; htmlFor?: string; className?: string }) {
+  return <label {...rest} for="x" className="c">{label}</label>
+}
+`)
+    const [label] = elements(ir.root, 'label')
+    expect(label.attrs.map(a => a.name)).toEqual(['for', 'class'])
   })
 
   test('a member read before the spread is a fallback', () => {

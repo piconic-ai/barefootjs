@@ -606,6 +606,8 @@ import { fixture as spreadOpenBagAttrNames } from './spread-open-bag-attr-names'
 import { fixture as spreadOpenBagHonoRenamedKeys } from './spread-open-bag-hono-renamed-keys'
 import { fixture as spreadClosedRestAttrNames } from './spread-closed-rest-attr-names'
 import { fixture as spreadClosedRestAttrNamesOverlap } from './spread-closed-rest-attr-names-overlap'
+import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-literal-alias-before'
+import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
 import { fixture as restSpreadRootHydrationProps } from './rest-spread-root-hydration-props'
 import { fixture as propsObjectSpreadChildHydrationProps } from './props-object-spread-child-hydration-props'
 import { fixture as restSpreadChildOverrideHydrationProps } from './rest-spread-child-override-hydration-props'
@@ -2184,6 +2186,8 @@ export const jsxFixtures: JSXFixture[] = [
   spreadOpenBagHonoRenamedKeys,
   spreadClosedRestAttrNames,
   spreadClosedRestAttrNamesOverlap,
+  spreadOpenBagLiteralAliasBefore,
+  spreadClosedRestLiteralAliasAfter,
   restSpreadRootHydrationProps,
   propsObjectSpreadChildHydrationProps,
   restSpreadChildOverrideHydrationProps,

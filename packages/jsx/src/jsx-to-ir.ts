@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysForAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -7338,6 +7338,7 @@ function expandSpreadAttribute(
   ctx: TransformContext,
   constEntries?: ReadonlyArray<{ key: string; text: string }>,
   restFallbacks?: ReadonlyMap<string, RestKeyFallback>,
+  overriddenKeys?: ReadonlySet<string>,
 ): Array<{
   name: string
   value: AttrValue
@@ -7364,7 +7365,9 @@ function expandSpreadAttribute(
     // earlier attribute also writes keeps that value when the caller
     // omitted it (`restFallbacks`, {@link closedRestFallbacks}).
     const perKeyFreeIds: ReadonlySet<string> = new Set([source])
-    return expandedKeys.map(key => {
+    // A key a later attribute writes is that attribute's (`overriddenKeys`,
+    // {@link closedRestKeysWrittenLater}): JSX keeps the last write.
+    return expandedKeys.filter(key => !overriddenKeys?.has(key)).map(key => {
       const read = `${source}.${key}`
       const fallback = restFallbacks?.get(key)
       return {
@@ -7513,6 +7516,47 @@ function closedRestFallbacks(
     }
   }
   return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks }
+}
+
+/**
+ * The keys of each closed rest spread on an element that an explicit
+ * attribute or a static const spread written after it also writes. JSX
+ * keeps the last write, so `<label {...rest} htmlFor="x">` renders
+ * `for="x"` whatever `rest.htmlFor` holds: the spread's expansion drops
+ * those keys. A later attribute writes a key when it is spelled the same
+ * (`htmlFor`) or names the attribute the key renders as
+ * (`toSpreadAttrName`: a later `for` writes `htmlFor`). An open spread
+ * after it writes keys nothing knows statically and overrides nothing here.
+ */
+function closedRestKeysWrittenLater(
+  properties: readonly ts.JsxAttributeLike[],
+  entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
+  ctx: TransformContext,
+): Map<ts.JsxSpreadAttribute, Set<string>> {
+  const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
+  const laterJsxNames = new Set<string>()
+  const laterAttrNames = new Set<string>()
+  const noteWrite = (jsxName: string): void => {
+    laterJsxNames.add(jsxName)
+    laterAttrNames.add(toHTMLAttrName(jsxName))
+  }
+  for (const attr of [...properties].reverse()) {
+    if (ts.isJsxAttribute(attr)) {
+      noteWrite(attr.name.getText(ctx.sourceFile))
+      continue
+    }
+    if (!ts.isJsxSpreadAttribute(attr)) continue
+    const constEntries = entries.get(attr)
+    if (constEntries) {
+      for (const e of constEntries) noteWrite(e.key)
+      continue
+    }
+    if (closedRestSpreadSource(attr, ctx) === null) continue
+    const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(toSpreadAttrName(key)))
+    if (written.length > 0) result.set(attr, new Set(written))
+    for (const key of ctx.analyzer.restPropsExpandedKeys) noteWrite(key)
+  }
+  return result
 }
 
 /** {@link closedRestFallbacks} for one closed rest spread reading its keys off `source`. */
@@ -7878,11 +7922,12 @@ function processAttributes(
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
   const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
+  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, ctx)
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       hasSpread = true
-      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr)))
+      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr), writtenLater.get(attr)))
       continue
     }
 
@@ -8014,9 +8059,13 @@ function markAttrsOverridableBySpread(
   attrs.forEach((attr, index) => {
     const value = attr.value
     if (value.kind !== 'literal' && value.kind !== 'boolean-attr') return
-    // The key a spread bag spells it: the JSX one, as the reference adapter
-    // writes the attribute (`className`, every other name as the IR has it).
-    const keys = [attr.name === 'class' ? 'className' : attr.name]
+    // The keys a spread bag writes the attribute under: the name as the IR
+    // has it, and every bag key a spread renders as that attribute
+    // (`spreadKeysForAttrName`: `htmlFor` for `for`), since a template's
+    // spread helper renames it to the same attribute. `class` is read only
+    // as `className`, the key the reference adapter writes it under.
+    const aliases = spreadKeysForAttrName(attr.name)
+    const keys = attr.name === 'class' ? aliases : [attr.name, ...aliases]
     const missing: string[] = []
     const templateMissing: string[] = []
     for (const later of attrs.slice(index + 1)) {
