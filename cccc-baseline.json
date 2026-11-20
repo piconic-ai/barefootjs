@@ -774,13 +774,13 @@
     },
     "packages/jsx/src/ssr-defaults.ts": {
       "evalNode": [
-        214
+        205
       ],
       "evalStatementsForReturn": [
         39
       ],
       "extractSsrDefaults": [
-        72
+        63
       ]
     },
     "packages/jsx/src/static-literal.ts": {

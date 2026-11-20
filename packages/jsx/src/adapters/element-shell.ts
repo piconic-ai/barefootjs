@@ -45,7 +45,10 @@ export function renderElementAttributes(element: IRElement, emitter: AttrValueEm
     if (attr.name === 'key') continue
     // Rewrite JSX special-prop names to their HTML-attribute counterparts (#1475).
     const attrName = attr.name === 'className' ? 'class' : attr.name
-    const lowered = emitAttrValue(attr.value, emitter, attrName)
+    // A literal a later open spread may also carry the key of renders only
+    // when the bag lacks it (`IRAttribute.spreadOverridable`), so the key
+    // appears once, with the spread's value.
+    const lowered = emitAttrValue(attr.spreadOverridable ?? attr.value, emitter, attrName)
     if (lowered) parts.push(lowered)
   }
 

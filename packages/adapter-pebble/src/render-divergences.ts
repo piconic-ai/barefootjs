@@ -27,6 +27,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A key an open spread and another attribute or spread both write renders
+  // twice (an expression or template value before the spread, an attribute
+  // after it, two spreads), and an explicit `null` bag value renders the
+  // earlier literal.
+  'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
   // A body statement mutating a destructure binding (`local.push('z')`),
   // read through a memo: the server render runs no body statement, so it
   // renders the value before the push.

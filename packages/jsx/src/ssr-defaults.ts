@@ -168,7 +168,7 @@ function fallbackOf(d: SsrDefault): unknown {
   return 'value' in d ? decodeUndefinedMembers(d.value) : null
 }
 
-const UNRESOLVED = Symbol('unresolved')
+export const UNRESOLVED = Symbol('unresolved')
 type EvalResult = unknown | typeof UNRESOLVED
 
 // Sentinel: a statement list ran to its end without hitting a `return`
@@ -308,6 +308,65 @@ function addPropSsrDefaults(
   }
 }
 
+/** What {@link evaluateSeeds} resolved, by the name the template variable carries. */
+export interface SeedEvaluation {
+  /** Each signal getter's initial value ({@link UNRESOLVED} when it has none). */
+  readonly signals: ReadonlyMap<string, EvalResult>
+  /** Each memo's value ({@link UNRESOLVED} when it has none). */
+  readonly memos: ReadonlyMap<string, EvalResult>
+}
+
+/**
+ * The static value of every component-scope signal and memo, in declaration
+ * order: each value joins the bindings the next one reads (Counter's
+ * `doubled = createMemo(() => count() * 2)`), and the module consts
+ * evaluate first so a memo template-literal over them resolves to a concrete
+ * string (#checkbox). Env signals and an elided async-factory getter have no
+ * static value and are absent.
+ *
+ * The one evaluation behind both the SSR stash seeds (`extractSsrDefaults`)
+ * and the plan's decision that a derived step keeps its static seed
+ * (`computeSsrSeedPlan`): the two read the same values, so a step the
+ * evaluator cannot resolve is never left to a seed that is `null`.
+ */
+export function evaluateSeeds(metadata: IRMetadata): SeedEvaluation {
+  const propsLike = new Set<string>()
+  if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
+  for (const p of metadata.propsParams) propsLike.add(p.name)
+
+  const bindings: Record<string, EvalResult> = {}
+  // (#checkbox) Seed module-scope constants so a memo template-literal that
+  // references them resolves to a concrete string. Checkbox's `classes` memo
+  // interpolates `baseClasses` / `focusClasses` / `errorClasses` (pure string
+  // consts) and `stateClasses` (`[...].join(' ')`). Without these in scope the
+  // memo evaluates to `null` and the SSR `class="..."` renders empty, diverging
+  // from Hono. Only module-scope consts are seeded (component-scope locals can
+  // depend on signals/props and are evaluated lazily elsewhere).
+  for (const c of metadata.localConstants ?? []) {
+    if (!c.isModule || c.value === undefined) continue
+    if (c.name in bindings) continue
+    const v = tryStaticEval(c.value, { bindings, propsLike })
+    if (v !== UNRESOLVED) bindings[c.name] = v
+  }
+  // Signals and memos read the names their component scope binds (#3721).
+  const scope = componentEvalScope(metadata, bindings)
+  const signals = new Map<string, EvalResult>()
+  for (const sig of metadata.signals) {
+    if (!sig.getter || sig.isModule || sig.envReader || isElidedFactoryGetter(sig)) continue
+    const value = tryStaticEval(sig.initialValue, { ...scope, bindings })
+    signals.set(sig.getter, value)
+    bindings[sig.getter] = value
+  }
+  const memos = new Map<string, EvalResult>()
+  for (const memo of metadata.memos) {
+    if (memo.isModule) continue
+    const value = tryStaticEval(memo.computation, { ...scope, bindings })
+    memos.set(memo.name, value)
+    bindings[memo.name] = value
+  }
+  return { signals, memos }
+}
+
 /**
  * Extract a JSON-encodable defaults map for the SSR stash.
  *
@@ -348,31 +407,15 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     out[metadata.restPropsName] = { isRestProps: true, value: {} }
   }
 
-  // Signal initial values, in declaration order. Each evaluated value is
-  // fed into the bindings map so subsequent memos can reference earlier
-  // signals (Counter's `doubled = createMemo(() => count() * 2)`).
-  const bindings: Record<string, EvalResult> = {}
+  // Signal initial values, in declaration order, as `evaluateSeeds` resolved
+  // them (each one joins the bindings the next signal / memo reads).
+  const seeds = evaluateSeeds(metadata)
   // Component-scope const locals, for the transitive prop-reference
   // resolution both `referencesOwnProp` calls below and the bare-props
   // safety net (further down) use — computed once so every caller shares
   // the same table.
   const localConsts = localConstValuesByName(metadata)
 
-  // (#checkbox) Seed module-scope constants so a memo template-literal that
-  // references them resolves to a concrete string. Checkbox's `classes` memo
-  // interpolates `baseClasses` / `focusClasses` / `errorClasses` (pure string
-  // consts) and `stateClasses` (`[...].join(' ')`). Without these in scope the
-  // memo evaluates to `null` and the SSR `class="..."` renders empty, diverging
-  // from Hono. Only module-scope consts are seeded (component-scope locals can
-  // depend on signals/props and are evaluated lazily elsewhere).
-  for (const c of metadata.localConstants ?? []) {
-    if (!c.isModule || c.value === undefined) continue
-    if (c.name in bindings) continue
-    const v = tryStaticEval(c.value, { bindings, propsLike })
-    if (v !== UNRESOLVED) bindings[c.name] = v
-  }
-  // Signals and memos read the names their component scope binds (#3721).
-  const scope = componentEvalScope(metadata, bindings)
   for (const sig of metadata.signals) {
     if (!sig.getter || sig.isModule) continue
     // Env signals (#2057) have no static SSR default — their value is the
@@ -388,7 +431,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // getter-elided form is unaffected, a pre-existing, separate question
     // this issue doesn't cover.
     if (isElidedFactoryGetter(sig)) continue
-    const value = tryStaticEval(sig.initialValue, { ...scope, bindings })
+    const value = seeds.signals.get(sig.getter)
     // Self-derivation collision (#2669): a signal whose getter shares its
     // name with the prop its OWN initializer derives from
     // (`const [label] = createSignal(props.label ?? 'Default')`) gets a
@@ -431,12 +474,11 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     } else {
       out[sig.getter] = { value: resultToJsonable(value) }
     }
-    // `bindings` always gets the EVALUATED value regardless of which stash
+    // `evaluateSeeds` binds the EVALUATED value regardless of which stash
     // seed the entry above ended up with — a later memo referencing this
     // getter (`createMemo(() => label() + '!')`) must keep resolving
     // through the chain exactly as before; only the manifest's own seed
     // choice changes, not the static-eval semantics.
-    bindings[sig.getter] = value
 
     // #2924 (SSR half): a bare reference to the SETTER (`<Display
     // update={setCount} />`) can reach a template-stash adapter's own
@@ -458,7 +500,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
 
   for (const memo of metadata.memos) {
     if (memo.isModule) continue
-    const value = tryStaticEval(memo.computation, { ...scope, bindings })
+    const value = seeds.memos.get(memo.name)
     // Same self-derivation collision as signals above, for a memo whose
     // computation derives from a same-named prop
     // (`createMemo(() => (props.label ?? 'Default') + n())`). See the
@@ -471,7 +513,6 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     } else {
       out[memo.name] = { value: resultToJsonable(value) }
     }
-    bindings[memo.name] = value
   }
 
   // #2813: a bare local-const alias of a signal/memo getter
@@ -945,6 +986,39 @@ function zeroArgCallResult(node: ts.CallExpression, ctx: EvalContext): EvalResul
   return name in ctx.bindings ? ctx.bindings[name] : NOT_BOUND
 }
 
+/**
+ * `<base>.<name>`: `undefined` for a read off an unbound or `undefined` base
+ * (`props.X`, a chain of them), `.length` of a resolved array or string, and a
+ * member of a resolved plain object.
+ */
+function evalPropertyAccess(node: ts.PropertyAccessExpression, ctx: EvalContext): EvalResult {
+  const baseResult = evalNode(node.expression, ctx)
+  // `props.X` / `props?.X` — read of a binding we know nothing about, so
+  // resolve to `undefined`. Chained access (`a.b.c`) collapses the same way
+  // because the base read is already undefined.
+  if (baseResult === undefined) return undefined
+  // `.length` of a resolved array or string is the length JS reads: this
+  // evaluator runs in JS, so a string counts UTF-16 code units as the
+  // reference render does (#3953).
+  if (node.name.text === 'length' && (Array.isArray(baseResult) || typeof baseResult === 'string')) {
+    return baseResult.length
+  }
+  if (baseResult === UNRESOLVED || baseResult === null || typeof baseResult !== 'object') {
+    return UNRESOLVED
+  }
+  // Own-property reads are only faithful for a plain object. An array (or
+  // any other non-plain object) exposes prototype members (`.map`,
+  // `.length`) that `hasOwnProperty` would wrongly resolve to `undefined`
+  // instead of the real function/value (#2698 review).
+  const proto = Object.getPrototypeOf(baseResult)
+  if (proto !== Object.prototype && proto !== null) return UNRESOLVED
+  // A resolved plain-object base — an object-literal value, e.g. a
+  // `.map()` callback param bound to one element (#2696's `t.a`). Missing
+  // key → JS `undefined`, mirroring `isElementAccessExpression`'s own
+  // missing-key handling above.
+  return ownMember(baseResult, node.name.text)
+}
+
 function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   // Strip parentheses / `as` / `satisfies` — they don't affect the value.
   if (ts.isParenthesizedExpression(node)) return evalNode(node.expression, ctx)
@@ -1044,27 +1118,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     return ownMember(base, k)
   }
 
-  if (ts.isPropertyAccessExpression(node)) {
-    const baseResult = evalNode(node.expression, ctx)
-    // `props.X` / `props?.X` — read of a binding we know nothing about, so
-    // resolve to `undefined`. Chained access (`a.b.c`) collapses the same way
-    // because the base read is already undefined.
-    if (baseResult === undefined) return undefined
-    if (baseResult === UNRESOLVED || baseResult === null || typeof baseResult !== 'object') {
-      return UNRESOLVED
-    }
-    // Own-property reads are only faithful for a plain object. An array (or
-    // any other non-plain object) exposes prototype members (`.map`,
-    // `.length`) that `hasOwnProperty` would wrongly resolve to `undefined`
-    // instead of the real function/value (#2698 review).
-    const proto = Object.getPrototypeOf(baseResult)
-    if (proto !== Object.prototype && proto !== null) return UNRESOLVED
-    // A resolved plain-object base — an object-literal value, e.g. a
-    // `.map()` callback param bound to one element (#2696's `t.a`). Missing
-    // key → JS `undefined`, mirroring `isElementAccessExpression`'s own
-    // missing-key handling above.
-    return ownMember(baseResult, node.name.text)
-  }
+  if (ts.isPropertyAccessExpression(node)) return evalPropertyAccess(node, ctx)
 
   if (ts.isCallExpression(node)) {
     // Zero-arg call of a bound identifier — resolves the signal getter

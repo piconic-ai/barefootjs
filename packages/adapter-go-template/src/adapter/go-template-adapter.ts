@@ -324,9 +324,13 @@ function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) =
   // resolves, so a read of one of its keys is projected like a component
   // const's (`H.safe` reads `'ok'` of `const H = { safe: 'ok', … }`).
   const moduleConsts = new Set(
-    (ir.metadata.localConstants ?? []).filter(c => c.isModule && c.parsed?.kind !== 'object-literal').map(c => c.name),
+    (ir.metadata.localConstants ?? [])
+      .filter(c => c.isModule && c.parsed?.kind !== 'object-literal' && c.parsed?.kind !== 'array-literal')
+      .map(c => c.name),
   )
-  const memoConsts = computedConstContext(ir.metadata, () => false, name => moduleConsts.has(name) || isAdapterBound(name))
+  const memoConsts = computedConstContext(ir.metadata, () => false, name => moduleConsts.has(name) || isAdapterBound(name), {
+    inlineLiteralArrays: true,
+  })
   const memos = (ir.metadata.memos ?? []).map(m =>
     m.parsed ? { ...m, parsed: inlineComputedConsts(m.parsed, memoConsts) } : m,
   )

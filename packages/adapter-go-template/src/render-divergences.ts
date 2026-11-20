@@ -117,6 +117,11 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A key an open spread and another attribute or spread both write renders
+  // twice (an expression or template value before the spread, an attribute
+  // after it, two spreads), and an explicit `null` bag value renders the
+  // earlier literal.
+  'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },
@@ -124,6 +129,9 @@ export const renderDivergences: RenderDivergences = {
   // read through a memo: the server render runs no body statement, so it
   // renders the value before the push.
   'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
+  // A memo reading an element of an array literal by a literal index: the
+  // runtime evaluator does not read an array element by a computed key.
+  'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },

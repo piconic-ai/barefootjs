@@ -45,6 +45,7 @@ import {
   type ParsedExpr,
 } from './expression-parser.ts'
 import { templatePropReadParams } from './props-binding.ts'
+import { evaluateSeeds, UNRESOLVED, type SeedEvaluation } from './ssr-defaults.ts'
 import { localCallBodies, type LocalCallBindings } from './local-call-body.ts'
 import { propDefaultResolver, type PropDefaultBindings, type ResolvedPropDefault } from './prop-default-resolution.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
@@ -83,9 +84,13 @@ export type SsrSeedStep =
       parsed: ParsedExpr
       frees: string[]
       /**
-       * Every free identifier is a module pure-string const, which every
-       * adapter inlines, so the lowered expression reads no template
-       * variable (#3542).
+       * The step reads no template variable (every free identifier is a
+       * module pure-string const, which every adapter inlines, #3542) AND the
+       * static evaluator resolved its value, so the adapters keep the static
+       * ssr-defaults seed instead of computing it in-template. A step the
+       * evaluator cannot resolve (`['y', 'z'].length`, `rows.filter(…).length`
+       * over literals) is not constant: its seed would be `null`, so the
+       * template computes it (#3953).
        */
       constant: boolean
     }
@@ -131,6 +136,19 @@ function classify(
   }
   const constant = [...frees].every(free => inlined.has(free))
   return { kind: 'derived', name, origin, expr, parsed, frees: [...frees], constant }
+}
+
+/**
+ * `step`, no longer `constant` when the static evaluator has no value for it:
+ * a constant step keeps the static ssr-defaults seed ({@link SsrSeedStep}),
+ * which is `null` for a seed the evaluator cannot resolve. The same
+ * evaluation (`evaluateSeeds`) writes the seeds, so the plan and the seeds
+ * agree on which steps have one.
+ */
+function keepStaticSeed(step: SsrSeedStep, resolved: () => SeedEvaluation): SsrSeedStep {
+  if (step.kind !== 'derived' || !step.constant || step.origin === 'prop') return step
+  const seeds = step.origin === 'signal' ? resolved().signals : resolved().memos
+  return seeds.get(step.name) === UNRESOLVED ? { ...step, constant: false } : step
 }
 
 /**
@@ -428,6 +446,9 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const available = new Set<string>(baseScope)
   const localConsts = localConstExprsByName(metadata)
   const steps: SsrSeedStep[] = []
+  // The static seeds, evaluated once and only when a constant step needs them.
+  let seeds: SeedEvaluation | undefined
+  const staticSeeds = (): SeedEvaluation => (seeds ??= evaluateSeeds(metadata))
 
   steps.push(...dependentPropDefaultSteps(metadata, inlined))
 
@@ -441,7 +462,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
       }
     }
     const expr = signal.initialValue.trim()
-    steps.push(
+    const step: SsrSeedStep =
       // An elided async-factory value (#3245): `signal.getter` is a
       // synthesized internal name nothing in the source ever references
       // (see `isElidedFactoryGetter`'s docstring). Forced `opaque` (never
@@ -473,14 +494,14 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
             resolveThroughLocalConsts(signal.parsed ?? parseExpression(`(${expr})`), localConsts),
             available,
             inlined,
-          ),
-    )
+          )
+    steps.push(keepStaticSeed(step, staticSeeds))
     available.add(signal.getter)
   }
 
   for (const memo of metadata.memos) {
     const expr = memoSeedExpr(memo)
-    steps.push(
+    const step: SsrSeedStep =
       expr === ''
         ? { kind: 'opaque', name: memo.name, origin: 'memo' }
         : classify(
@@ -490,8 +511,8 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
             resolveThroughLocalConsts(memo.parsed ?? parseExpression(expr), localConsts),
             available,
             inlined,
-          ),
-    )
+          )
+    steps.push(keepStaticSeed(step, staticSeeds))
     available.add(memo.name)
   }
 
