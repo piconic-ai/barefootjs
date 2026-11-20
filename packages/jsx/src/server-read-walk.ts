@@ -60,6 +60,8 @@ export interface ServerRead {
 interface Reads {
   names: Iterable<string>
   called: ReadonlySet<string>
+  /** The expression read, when it has an analyzable tree. */
+  expr: ParsedExpr | undefined
 }
 
 /** A declaration the walk follows, with the expression its value comes from. */
@@ -76,16 +78,22 @@ interface Followed {
 export interface ServerReadWalkOptions {
   /**
    * Sees each name read that has no declaration to follow: a prop in scope
-   * by its bare name, the props object, the rest props.
+   * by its bare name, the props object, the rest props. `expr` is the
+   * expression that reads it, when it has an analyzable tree.
    */
-  visitProp?: (name: string) => void
+  visitProp?: (name: string, expr: ParsedExpr | undefined) => void
+  /**
+   * Whether the walk goes on into the names `read` reads; every declaration
+   * when unset. A walk that stops at some declarations still visits them.
+   */
+  followsThrough?: (read: ServerRead) => boolean
   /** The positions the walk starts from; every position when unset. */
   startsAt?: (position: TemplatePosition) => boolean
 }
 
 /** Visit each declaration the server render of `ir` reads, once. */
 export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => void, options: ServerReadWalkOptions = {}): void {
-  const { visitProp, startsAt } = options
+  const { visitProp, startsAt, followsThrough } = options
   const resolve = localBindings({ ...ir.metadata, localConstants: ir.metadata.localConstants ?? [] })
   const seen = new Set<LocalBinding>()
   const pending: Array<{ reads: Reads; from: LocalScope }> = []
@@ -96,14 +104,15 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     seen.add(binding)
     const reads = readsOf(followed.expr, followed.fallback)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
-    visit({ name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls })
-    pending.push({ reads, from: binding.scope })
+    const read: ServerRead = { name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls }
+    visit(read)
+    if (!followsThrough || followsThrough(read)) pending.push({ reads, from: binding.scope })
   }
   const followReads = (reads: Reads, from: LocalScope, isBound: (name: string) => boolean): void => {
     for (const name of reads.names) {
       if (isBound(name)) continue
       const binding = resolve(name, from)
-      if (binding?.kind === 'opaque') visitProp?.(name)
+      if (binding?.kind === 'opaque') visitProp?.(name, reads.expr)
       else if (binding && isRead(binding, reads.called.has(name))) follow(name, binding)
     }
   }
@@ -162,7 +171,7 @@ function followedDeclaration(binding: LocalBinding): Followed | null {
 function readsOf(expr: ParsedExpr | undefined, fallback: ReadonlySet<string> | undefined): Reads {
   const names = expr && freeIdentifiers(expr)
   // An IR that went through JSON holds no `Set`: such a declaration reads nothing here.
-  if (!expr || !names) return { names: fallback instanceof Set ? fallback : [], called: new Set() }
+  if (!expr || !names) return { names: fallback instanceof Set ? fallback : [], called: new Set(), expr: undefined }
   const called = new Set<string>()
   mapParsedExpr(expr, (e, enclosing) => {
     if (e.kind === 'call' && e.args.length === 0 && e.callee.kind === 'identifier' && !enclosing.has(e.callee.name)) {
@@ -170,5 +179,5 @@ function readsOf(expr: ParsedExpr | undefined, fallback: ReadonlySet<string> | u
     }
     return null
   })
-  return { names, called }
+  return { names, called, expr }
 }

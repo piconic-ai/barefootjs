@@ -6,6 +6,7 @@
 
 import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
 import type { SsrSeedPlan } from './ssr-seed-plan.ts'
+import type { ValueUse } from './value-uses.ts'
 import type { RawTextTag } from '@barefootjs/shared'
 
 /**
@@ -2004,6 +2005,13 @@ export interface SignalInfo {
    * the factory's action, recorded here, never a setter.
    */
   factory?: SignalFactoryCall
+  /**
+   * How evaluating the initial value uses each name it mentions (`classifyValueUses`,
+   * `value-uses.ts`): held, copied, read into a primitive, called, or only
+   * captured by a function it creates. Unset when no AST was at hand: a
+   * consumer then treats every mention as an opaque eager use.
+   */
+  valueUses?: Map<string, Set<ValueUse>>
 }
 
 /**
@@ -2162,6 +2170,13 @@ export interface MemoInfo {
   isModule?: boolean
   /** When true, the declaration carries an `export` keyword. */
   isExported?: boolean
+  /**
+   * How evaluating the computation uses each name it mentions (`classifyValueUses`,
+   * `value-uses.ts`): held, copied, read into a primitive, called, or only
+   * captured by a function it creates. Unset when no AST was at hand: a
+   * consumer then treats every mention as an opaque eager use.
+   */
+  valueUses?: Map<string, Set<ValueUse>>
 }
 
 export interface EffectInfo {
@@ -2221,6 +2236,23 @@ export interface InitStatementInfo {
    * equal to its declaration-time initializer text.
    */
   mutatedIdentifiers?: Set<string>
+  /**
+   * For each of `mutatedIdentifiers`, the members directly under it the
+   * statement writes when every write names one (`props.items.push('z')`
+   * and `props.items = []` both write `items`), or `null` for a write to
+   * the binding as a whole or to a member no name stands for
+   * (`root.push(x)`, `root[k] = v`, `Object.assign(root, …)`). A reader of
+   * another member does not observe the write (`checkStatementWrites`).
+   */
+  mutatedMembers?: Map<string, Set<string> | null>
+  /**
+   * Those of `mutatedIdentifiers` for which the object the statement changes
+   * is not the binding's own value but one it holds (`root.a.b = v`,
+   * `root.items.push(x)`). A shallow copy of the binding made before the
+   * statement shares that object, so it observes the write
+   * (`checkStatementWrites`).
+   */
+  deeplyMutatedIdentifiers?: Set<string>
   /**
    * When true, the emitted statement must be prefixed with `;` to defeat
    * ASI fusion with the previous line. Tracked in IR rather than recovered
@@ -2499,6 +2531,13 @@ export interface ConstantInfo {
   loc: SourceLocation
   /** Pre-computed free identifier references in the value expression (computed at analysis time). */
   freeIdentifiers?: Set<string>
+  /**
+   * How evaluating the initializer uses each name it mentions (`classifyValueUses`,
+   * `value-uses.ts`): held, copied, read into a primitive, called, or only
+   * captured by a function it creates. Unset when no AST was at hand: a
+   * consumer then treats every mention as an opaque eager use.
+   */
+  valueUses?: Map<string, Set<ValueUse>>
   /** When true, the initializer is JSX that is inlined into the IR tree at usage sites (#547). */
   isJsx?: boolean
   /** When true, the initializer is a JSX-returning function inlined at call sites (#569). */

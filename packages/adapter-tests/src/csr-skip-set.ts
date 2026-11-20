@@ -52,6 +52,19 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // fixture-hydrate and oracle suites check the client.
   'destructure-default-shared-array',
   'destructure-default-shared-array-renamed',
+  // A binding a body statement mutates (`items.push('z')`) handed to a child
+  // as a prop: the client passes the child the live binding from init
+  // (`upsertChild`), so the CSR template holds only the child's placeholder.
+  // The mount renders the child with the mutated array; per-adapter render
+  // conformance carries the server divergence this fixture is pinned for.
+  'body-statement-write-child-prop',
+  // A memo declared before a body statement mutates the binding it reads
+  // (`createMemo(() => local.length)`, then `local.push('z')`): the CSR
+  // template cannot inline a memo over a binding a statement changes, so its
+  // slot is empty until the mount's effect fills it with the memo's value
+  // (`1`, checked by `issue-3719-body-statement-write.test.ts` in
+  // `packages/client`). Per-adapter render conformance pins the server HTML.
+  'body-statement-write-earlier-memo',
   // A const initialized by a local function call (`const initial = value()`)
   // and an arrow const wrapping one live in the init body: the CSR template
   // has no init to run, so the signals seeded through them render empty
@@ -274,10 +287,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
-  // A body statement mutating a destructure binding (`local.push('z')`),
-  // read through a memo: the CSR template does not run the statement and
-  // cannot inline the memo over a mutated binding, so it renders empty.
-  'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
   // An object const holding an arrow, read for a listed key in markup: the
   // CSR template does not carry the const, so `{H.safe}` renders empty.
   'module-const-inherited-key-object-safe': { limitation: 'csr-template-object-const-function-property' },

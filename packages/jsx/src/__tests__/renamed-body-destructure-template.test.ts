@@ -8,7 +8,10 @@
  *
  * The reassigned shapes have no conformance fixture: the reference adapter
  * itself drops the reassignment of a destructured binding, so these pin the
- * client template only.
+ * client template only. Where the component's own markup reads such a binding
+ * the compile is refused (BF101, `checkStatementWrites`, #3719), since no
+ * template can show the written value; the template is still pinned for
+ * those shapes, as what a build that ignored the error would have got.
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -20,8 +23,11 @@ const transpiler = new Bun.Transpiler({ loader: 'js' })
 
 const CHILD = 'function Child(props: { xs: string[] }) { return <i>{props.xs.length}</i> }'
 
-/** The `template: (_p) => …` lambda the client registers for `C`. */
-function templateOf(body: string, jsx: string, propsType = '{ b?: string[] | null }'): string {
+/**
+ * The `template: (_p) => …` lambda the client registers for `C`. With
+ * `refused`, the compile must report exactly the statement-write BF101.
+ */
+function templateOf(body: string, jsx: string, propsType = '{ b?: string[] | null }', refused = false): string {
   const source = `
     'use client'
     ${CHILD}
@@ -31,7 +37,13 @@ function templateOf(body: string, jsx: string, propsType = '{ b?: string[] | nul
     }
   `
   const result = compileJSX(source, 'C.tsx', { adapter })
-  expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
+  const errors = result.errors.filter(e => e.severity === 'error')
+  if (refused) {
+    expect(errors.map(e => e.code)).toEqual(['BF101'])
+    expect(errors[0]!.message).toContain("is written by a statement in the component body")
+  } else {
+    expect(errors).toHaveLength(0)
+  }
   const js = result.files.find(f => f.type === 'clientJs')!.content
   expect(() => transpiler.transformSync(js)).not.toThrow()
   const line = js.split('\n').find(l => l.includes("hydrate('C'") && l.includes('template: (_p) =>'))
@@ -58,13 +70,13 @@ describe('renamed body destructure binding in the client template (#3579)', () =
     expect(t).not.toContain('_p.b === undefined ? ')
   })
 
-  test('a let reassigned before the return is not read as the prop in text or an attribute', () => {
-    const t = templateOf("let { b: local = 'x' } = props\n      local = local + '!'", '<p data-v={local}>{local}</p>', '{ b?: string }')
+  test('a let reassigned before the return is refused in text or an attribute, and not read as the prop', () => {
+    const t = templateOf("let { b: local = 'x' } = props\n      local = local + '!'", '<p data-v={local}>{local}</p>', '{ b?: string }', true)
     expect(t).not.toContain('_p.b === undefined ? ')
   })
 
-  test('a folded conditional reassignment is not read as the prop', () => {
-    const t = templateOf("let { b: local = 'x' } = props\n      if (!local) local = 'y'", '<p>{local}</p>', '{ b?: string }')
+  test('a conditional reassignment of a destructured binding is refused, and not read as the prop', () => {
+    const t = templateOf("let { b: local = 'x' } = props\n      if (!local) local = 'y'", '<p>{local}</p>', '{ b?: string }', true)
     expect(t).not.toContain('_p.b === undefined ? ')
   })
 
@@ -79,8 +91,8 @@ describe('renamed body destructure binding in the client template (#3579)', () =
     expect(t).toContain("renderChild('Child")
   })
 
-  test('a value mutated in place is not read as the prop', () => {
-    const t = templateOf("const { b: local = ['x'] } = props\n      local.push('y')", '<p>{local.length}</p>', '{ b?: string[] }')
+  test('a value mutated in place is refused, and not read as the prop', () => {
+    const t = templateOf("const { b: local = ['x'] } = props\n      local.push('y')", '<p>{local.length}</p>', '{ b?: string[] }', true)
     expect(t).not.toContain('_p.b === undefined ? ')
   })
 })

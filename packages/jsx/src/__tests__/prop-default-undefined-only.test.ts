@@ -45,7 +45,7 @@ export function Demo(props: { label?: string | null; n?: number | null }) {
 }
 export function Counter({ n = 1 }: { n?: number | null }) {
   n = n + 1
-  return <p>{n}</p>
+  return <p>{/* @client */ n}</p>
 }
 `)
     expect(js).toContain("(_p.label === undefined ? 'D' : _p.label)")
@@ -60,7 +60,7 @@ export function Counter({ n = 1 }: { n?: number | null }) {
 export function Demo(props: { a?: string[]; b?: string[] }) {
   let { a = [], b = a } = props
   a.push('x')
-  return <p>{b.length}</p>
+  return <p>{/* @client */ b.length}</p>
 }
 export function Assigned(props: { a?: number; b?: number; c?: number }) {
   let { a = 1, b = (a = 2), c = a } = props
@@ -69,7 +69,7 @@ export function Assigned(props: { a?: number; b?: number; c?: number }) {
 export function Kept(props: { a?: string[]; b?: string[] }) {
   const { a = [], b = a } = props
   a.push('x')
-  return <p>{b.length}</p>
+  return <p>{/* @client */ b.length}</p>
 }
 `)
     expect(js).toContain('let b = _p.b === undefined ? a : _p.b')

@@ -46,6 +46,13 @@ function expectNoFatalErrors(c: Compiled): void {
   }
 }
 
+/** The compile's only fatal error is the statement-write BF101 for `name` (#3719). */
+function expectStatementWriteRefusal(c: Compiled, name: string): void {
+  const fatals = c.errors.filter(e => e.severity === 'error')
+  expect(fatals.map(e => e.code)).toEqual(['BF101'])
+  expect(fatals[0]!.message).toContain(`'${name}' is written by a statement in the component body`)
+}
+
 /**
  * Return the body (between the outer `{` and `}`) of the Nth
  * `createEffect(() => { ... })` call in `source`. Uses brace counting
@@ -1711,9 +1718,10 @@ describe('member-expression component tag', () => {
 
 describe('for...of generating JSX in component body', () => {
   // An imperative loop is a non-standard but legal way to build a JSX
-  // tree. The analyzer treats `.map()` specially; `for...of` plus
-  // `push` should also produce a valid tree.
-  test('for...of building an array of JSX children', () => {
+  // tree. A template renders `out` from its declaration (`[]`) and never
+  // runs the loop that fills it, so the read is refused (BF101,
+  // `checkStatementWrites`, #3719) instead of rendering an empty list.
+  test('for...of building an array of JSX children is refused', () => {
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -1726,7 +1734,7 @@ describe('for...of generating JSX in component body', () => {
         return <ul onClick={() => setItems(i => i)}>{out}</ul>
       }
     `
-    expectNoFatalErrors(compile(src))
+    expectStatementWriteRefusal(compile(src), 'out')
   })
 })
 
@@ -2035,7 +2043,10 @@ describe('signal read inside a closure captured by an event handler', () => {
 })
 
 describe('signal read inside a try/catch in render', () => {
-  test('try/catch wrapping a signal read in JSX body', () => {
+  // `display` is assigned by the `try` statement, which no template runs:
+  // the markup's read is refused (BF101, `checkStatementWrites`, #3719)
+  // unless it is deferred to the client, where init ran the statement.
+  test('try/catch wrapping a signal read in JSX body is refused', () => {
     const src = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -2048,6 +2059,24 @@ describe('signal read inside a try/catch in render', () => {
           display = '?'
         }
         return <button onClick={() => setN(v => v + 1)}>{display}</button>
+      }
+    `
+    expectStatementWriteRefusal(compile(src), 'display')
+  })
+
+  test('try/catch wrapping a signal read, with the read deferred to the client', () => {
+    const src = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Demo() {
+        const [n, setN] = createSignal(0)
+        let display: string
+        try {
+          display = String(n())
+        } catch {
+          display = '?'
+        }
+        return <button onClick={() => setN(v => v + 1)}>{/* @client */ display}</button>
       }
     `
     expectNoFatalErrors(compile(src))

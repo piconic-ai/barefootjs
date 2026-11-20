@@ -416,9 +416,11 @@ export function C({ base }: { base: string }) {
 let counter = '' || 'fallback'
 export function C() {
   counter = counter + '!'
-  return <button onClick={() => console.log(counter)}>{counter}</button>
+  return <button onClick={() => console.log(counter)}>log</button>
 }
 `)
+    // The handler reads `counter`; the markup does not: a server read of a
+    // binding a body statement writes is refused (BF101, `checkStatementWrites`).
     expect(lines(clientJs, 'var counter')).toEqual(["var counter = counter ?? ('' || 'fallback')"])
     expect(() => renderClientTemplate(clientJs)).not.toThrow()
   })

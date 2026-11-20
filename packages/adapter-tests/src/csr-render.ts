@@ -14,6 +14,7 @@ import {
   analyzeClientNeeds,
   listComponentFunctions,
   decideClientOnlyElision,
+  checkStatementWrites,
   type ComponentIR,
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -58,6 +59,17 @@ function throwIfErrors(ctx: { errors: Array<{ severity: string; message: string 
   }
 }
 
+/**
+ * Mirror `compiler.ts`'s `checkStatementWrites` call: this harness bypasses
+ * `compileJSX`, so without it a component the production pipeline refuses
+ * (a body statement's write the client reads too early) would compile here.
+ */
+function throwIfStatementWrites(componentIR: ComponentIR, filePath: string): void {
+  const errors: Parameters<typeof checkStatementWrites>[1] = []
+  checkStatementWrites(componentIR, errors)
+  throwIfErrors({ errors }, filePath)
+}
+
 function compileToClientJs(source: string, filePath: string): string {
   // Compile every component declared in the source file, mirroring the
   // production `compileMultipleComponents` flow (`packages/jsx/src/compiler.ts`).
@@ -92,6 +104,7 @@ function compileToClientJs(source: string, filePath: string): string {
       errors: [],
     }
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
+    throwIfStatementWrites(componentIR, filePath)
     return generateClientJs(componentIR)
   }
 
@@ -114,6 +127,7 @@ function compileToClientJs(source: string, filePath: string): string {
       errors: [],
     }
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
+    throwIfStatementWrites(componentIR, filePath)
     const js = generateClientJs(componentIR, componentNames)
     if (js) outputs.push(js)
   }

@@ -207,6 +207,14 @@ Pass the computed value as a prop (keeps SSR), or defer with `/* @client */` (em
 
 Per-adapter table: [compatibility matrix](/docs/advanced/compatibility-matrix); worked examples in [Adapter limits](../rendering/jsx-compatibility.md#adapter-limits).
 
+#### A binding written by a statement after its declaration
+
+BF101 is also raised on every adapter, Hono included, when a statement in the component body writes a binding after it is declared (`items.push('z')`, a reassignment in a loop or a `try`, `config[key] = value`, `xs.forEach(x => out.push(x))`) and the compiled output would read it as it was declared where JavaScript reads the written value. A template renders a binding from its declaration and never runs the statements that follow it, and the client's init creates the component's signals, memos and constants before it runs those statements. The refused reads are the ones JavaScript evaluates after the write: a read by the component's own markup, directly or through a function it calls or a memo, signal seed or constant declared after the statement; and, in a `'use client'` component, any memo, signal seed or constant declared after the statement.
+
+Give the binding its final value where it is declared, in one expression (a literal, a ternary, a template string). A read by the markup can instead be deferred with `/* @client */`.
+
+Not refused: a memo, signal seed or constant declared before the statement (it keeps the earlier value in JavaScript too, as does a copy such as `[...items]` or `items.map(f)`), unless it may hold the very object the statement changes; a constant declared after the statement that only stores functions which read the binding when called (`{ read: () => items.length }`); a read of another member of `props` than the one written (`props.items.push('z')` beside `{props.title}`); a value passed to a child component as a prop; a read in an event handler or effect; and a write inside a callback that runs later.
+
 <a id="bf102"></a>
 
 ### BF102 — Adapter-Specific Condition Not Supported

@@ -1435,6 +1435,19 @@ import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destru
 import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
 import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
 import { fixture as destructureDefaultBodyMutatedMemo } from './destructure-default-body-mutated-memo'
+import { fixture as bodyStatementWriteDirectRead } from './body-statement-write-direct-read'
+import { fixture as bodyStatementWriteDirectReadClient } from './body-statement-write-direct-read-client'
+import { fixture as bodyStatementWriteRewrite } from './body-statement-write-rewrite'
+import { fixture as bodyStatementWriteChildProp } from './body-statement-write-child-prop'
+import { fixture as bodyStatementWriteSiblingGetterSpread } from './body-statement-write-sibling-getter-spread'
+import { fixture as bodyStatementWriteThroughHolder } from './body-statement-write-through-holder'
+import { fixture as bodyStatementWriteCopiedClosureHolder } from './body-statement-write-copied-closure-holder'
+import { fixture as bodyStatementWriteAliasedClosureReassigned } from './body-statement-write-aliased-closure-reassigned'
+import { fixture as bodyStatementWriteCopyReadLater } from './body-statement-write-copy-read-later'
+import { fixture as bodyStatementWriteComputedMethodName } from './body-statement-write-computed-method-name'
+import { fixture as bodyStatementWriteBlockShadowedCallback } from './body-statement-write-block-shadowed-callback'
+import { fixture as bodyStatementWriteEarlierMemo } from './body-statement-write-earlier-memo'
+import { fixture as bodyStatementWriteOtherPropsMember } from './body-statement-write-other-props-member'
 import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
 import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
 import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
@@ -2699,6 +2712,19 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackEarlier,
   destructureDefaultBodyRenamedCallbackMemo,
   destructureDefaultBodyMutatedMemo,
+  bodyStatementWriteDirectRead,
+  bodyStatementWriteDirectReadClient,
+  bodyStatementWriteRewrite,
+  bodyStatementWriteChildProp,
+  bodyStatementWriteSiblingGetterSpread,
+  bodyStatementWriteThroughHolder,
+  bodyStatementWriteCopiedClosureHolder,
+  bodyStatementWriteAliasedClosureReassigned,
+  bodyStatementWriteCopyReadLater,
+  bodyStatementWriteComputedMethodName,
+  bodyStatementWriteBlockShadowedCallback,
+  bodyStatementWriteEarlierMemo,
+  bodyStatementWriteOtherPropsMember,
   destructureDefaultBodyRenamedCallbackMemoChain,
   destructureDefaultBodyRenamedCallbackSignal,
   destructureDefaultBodyCallbackMemo,

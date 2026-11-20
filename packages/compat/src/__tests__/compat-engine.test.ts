@@ -60,6 +60,7 @@ describe('compileForCompat', () => {
           'body-destructure-without-const-form',
           'body-rest-props-name-shadowed',
           'body-rest-taken-key-read',
+          'body-statement-write-read-as-declared',
           'callback-index-param',
           'callback-outside-evaluator',
           'caller-rows-computed-key',
