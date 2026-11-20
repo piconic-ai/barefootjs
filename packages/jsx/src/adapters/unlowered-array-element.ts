@@ -15,13 +15,16 @@
  * Only a value the server render reads is refused, however it is reached
  * (`walkServerReads`): a signal, a memo, a const initializer or an inlined
  * function, each name resolved lexically. A `/* @client *\/` read and an
- * event handler read none. Within an expression a function is entered only
- * where it is called or handed to a call (a callback), not where it is stored
- * (an object const's method read for another key).
+ * event handler read none. Within an expression only what its evaluation
+ * runs is checked (`walkEvaluated`): a function is entered where it is called
+ * or handed to a call (a callback, a literal const's method called by name),
+ * not where it is stored (an object const's method read for another key).
  */
 
-import { parsedExprChildren } from '../action-accessor.ts'
+import { evaluatedWalkContext, walkEvaluated, type EvaluatedWalkContext } from '../evaluated-expr-walk.ts'
 import type { ParsedExpr } from '../expression-parser.ts'
+import type { LocalScope } from '../local-call-body.ts'
+import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads, type ServerRead } from '../server-read-walk.ts'
 import type { ComponentIR } from '../types.ts'
 import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
@@ -32,11 +35,13 @@ export function refuseUnloweredArrayElements(ir: ComponentIR, sink: UninlinableS
   // a declaration a child prop reads has no `/* @client */` escape.
   const readByProp = new Set<string>()
   walkServerReads(ir, read => readByProp.add(readKey(read)), { startsAt: position => position.role === 'prop' })
+  // A function called by its own name is a declaration of its own, refused there.
+  const ctx = evaluatedWalkContext(ir.metadata, { component: BindingScope.EMPTY, module: BindingScope.EMPTY }, false)
   walkServerReads(ir, (read) => {
     // A module-scope declaration (`const ALL = [...BASE, 'z']` at the top of
     // the file) is out of this refusal's scope: its reads are left as they are.
-    if (read.scope === 'module') return
-    if (read.expr && holdsUnloweredArrayElement(read.expr, 'value')) record(read, !readByProp.has(readKey(read)), sink)
+    if (read.scope === 'module' || !read.expr) return
+    if (holdsUnloweredArrayElement(read.expr, read.scope, ctx)) record(read, !readByProp.has(readKey(read)), sink)
   })
 }
 
@@ -44,16 +49,17 @@ function readKey(read: ServerRead): string {
   return `${read.scope}:${read.kind}:${read.name}`
 }
 
-/** How the expression being visited is used: its value, or a function a call runs. */
-type Use = 'value' | 'called'
-
-/** Whether evaluating `expr` builds an array literal with an `unsupported` element. */
-function holdsUnloweredArrayElement(expr: ParsedExpr, use: Use): boolean {
-  // A stored function builds nothing until it is called.
-  if (expr.kind === 'arrow' && use === 'value') return false
-  if (expr.kind === 'array-literal' && expr.elements.some(el => el.kind === 'unsupported')) return true
-  const called = expr.kind === 'call' || expr.kind === 'array-method'
-  return parsedExprChildren(expr).some(child => holdsUnloweredArrayElement(child.expr, called ? 'called' : 'value'))
+/**
+ * Whether evaluating `expr` builds an array literal with an `unsupported`
+ * element: a stored function builds nothing until it is called, a literal
+ * const's method called by name (`api.add()`) builds what its body does.
+ */
+function holdsUnloweredArrayElement(expr: ParsedExpr, from: LocalScope, ctx: EvaluatedWalkContext): boolean {
+  let found = false
+  walkEvaluated(expr, { scope: BindingScope.EMPTY, from }, { ...ctx, entered: new Set() }, (e) => {
+    if (e.kind === 'array-literal' && e.elements.some(el => el.kind === 'unsupported')) found = true
+  })
+  return found
 }
 
 const SUBJECT: Record<ServerRead['kind'], (name: string) => string> = {

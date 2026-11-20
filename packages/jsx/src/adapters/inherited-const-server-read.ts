@@ -32,9 +32,8 @@
  */
 
 import { isEventHandlerName } from '../event-handler-name.ts'
-import { throughAliases, walkEvaluated, type EvaluatedAt, type EvaluatedUse, type EvaluatedWalkContext } from '../evaluated-expr-walk.ts'
+import { evaluatedWalkContext, throughAliases, walkEvaluated, type EvaluatedAt, type EvaluatedUse, type EvaluatedWalkContext } from '../evaluated-expr-walk.ts'
 import type { ParsedExpr, ParsedStatement } from '../expression-parser.ts'
-import { localBindings } from '../local-call-body.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads } from '../server-read-walk.ts'
 import { refuseComputedConstRead, spellStaticConstMember, staticIndexKey, type InheritedReadPlace, type StaticConstMemberSink } from '../static-const-member.ts'
@@ -47,14 +46,7 @@ export function refuseInheritedConstServerReads(ir: ComponentIR, sink: StaticCon
   const constants = ir.metadata.localConstants ?? []
   if (constants.length === 0) return
   const component = BindingScope.forComponent(ir.metadata.propsObjectName ?? null)
-  const shared: Omit<Check, 'place'> = {
-    // A module declaration's names are the module's: a component binding of a name does not hide them there.
-    constants: { component: constants, module: constants.filter(c => c.isModule).map(c => ({ ...c, shadowedInComponent: false })) },
-    scopes: { component, module: BindingScope.EMPTY },
-    resolve: localBindings({ ...ir.metadata, localConstants: constants }),
-    sink,
-    entered: new Set(),
-  }
+  const shared: Omit<Check, 'place'> = { ...evaluatedWalkContext(ir.metadata, { component, module: BindingScope.EMPTY }), sink }
   // This pass runs before any emitter, so its record of a read is the one that stands.
   walkTemplatePositions(ir.root, ({ expr, scope, attrName, loc, role }) => {
     if (attrName !== undefined && isEventHandlerName(attrName)) return

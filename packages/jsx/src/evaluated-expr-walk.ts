@@ -16,7 +16,7 @@
 import { parsedExprChildren } from './action-accessor.ts'
 import { resolveStaticConstBinding } from './augment-inherited-props.ts'
 import type { ParsedExpr } from './expression-parser.ts'
-import { localCall, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
+import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import type { BindingScope } from './scope/binding-scope.ts'
 import { staticConstValue } from './static-const-member.ts'
 import type { ComponentIR } from './types.ts'
@@ -32,6 +32,33 @@ export interface EvaluatedWalkContext {
   resolve: LocalBindingResolver
   /** The function bodies already entered, so one that calls itself ends. */
   entered: Set<ParsedExpr>
+  /**
+   * Whether a function called by its own name (an arrow `const`, an
+   * inlinable local function) is entered; `true` when unset. A literal
+   * const's method is entered either way. The server-read walk follows a
+   * called name to its declaration itself, so it enters methods only.
+   */
+  entersNamedFunctions?: boolean
+}
+
+/**
+ * The {@link EvaluatedWalkContext} of a component: its consts, a module
+ * declaration's names read as the module's (a component binding of a name
+ * does not hide them there), and the scope each kind of declaration is read in.
+ */
+export function evaluatedWalkContext(
+  metadata: ComponentIR['metadata'],
+  scopes: Record<LocalScope, BindingScope>,
+  entersNamedFunctions = true,
+): EvaluatedWalkContext {
+  const constants = metadata.localConstants ?? []
+  return {
+    constants: { component: constants, module: constants.filter(c => c.isModule).map(c => ({ ...c, shadowedInComponent: false })) },
+    scopes,
+    resolve: localBindings({ ...metadata, localConstants: constants }),
+    entered: new Set(),
+    entersNamedFunctions,
+  }
 }
 
 /** Where an expression is read: the bindings around it, and the scope its free names are declared in. */
@@ -76,6 +103,7 @@ function enterCalledFunction(callee: ParsedExpr, at: EvaluatedAt, ctx: Evaluated
     if (method?.kind === 'arrow') enterBody(method.body, method.params, at.from, ctx, visit)
     return
   }
+  if (ctx.entersNamedFunctions === false) return
   const binding = isShadowed(callee.name) ? null : ctx.resolve(callee.name, at.from)
   if (binding?.kind === 'const' && binding.info.declarationKind === 'const' && binding.info.parsed?.kind === 'arrow') {
     enterBody(binding.info.parsed.body, binding.info.parsed.params, binding.scope, ctx, visit)

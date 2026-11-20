@@ -86,6 +86,25 @@ describe('refuseUnloweredArrayElements', () => {
     expect(errors).toEqual([])
   })
 
+  test('a literal const method the expression calls is entered; a stored one is not', () => {
+    expect(refused(`const api = { add: () => [...b, 'z'].length }; const n = createMemo(() => api.add()); return <p>{n()}</p>`)).toEqual([
+      `Memo 'n' computes`,
+    ])
+    expect(refused(`const api = { add: () => [...b, 'z'].length }; const [n] = createSignal(api['add']()); return <p>{n()}</p>`)).toEqual([
+      `Signal 'n' is seeded from`,
+    ])
+    expect(refused(`const api = { label: 'ok', add: () => [...b, 'z'].length }; const n = createMemo(() => api.label); return <p>{n()}</p>`)).toEqual([])
+  })
+
+  test('a declaration only a stored function reads is not read', () => {
+    expect(refused(`const local = [...b, 'z']; const api = { label: 'ok', add: () => local.length }; return <p>{api.label}</p>`)).toEqual([])
+    expect(refused(`const local = [...b, 'z']; const api = { label: 'ok', add: () => local.length }; const n = createMemo(() => api.label); return <p>{n()}</p>`)).toEqual([])
+    // Called, the method reads it.
+    expect(refused(`const local = [...b, 'z']; const api = { add: () => local.length }; const n = createMemo(() => api.add()); return <p>{n()}</p>`)).toEqual([
+      `'local' is initialized from`,
+    ])
+  })
+
   test('an array literal without a spread is not refused', () => {
     expect(refused(`const local = [b.length, 'z']; const n = createMemo(() => local.length); return <p>{n()}</p>`)).toEqual([])
   })

@@ -61,6 +61,7 @@ export const conformancePins: ConformancePins = {
   'destructure-default-spread-const-memo': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
   'destructure-default-spread-memo-body': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
   'destructure-default-spread-const-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-method-memo': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
   // A component renders on the server whatever directive its prop carries: no escape.
   'destructure-default-spread-const-child-prop': [
     { code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread', unescapable: true },

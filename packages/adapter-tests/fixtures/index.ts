@@ -1118,6 +1118,9 @@ import { fixture as destructureDefaultSpreadMemoBodyClient } from './destructure
 import { fixture as destructureDefaultSpreadConstSignalSeed } from './destructure-default-spread-const-signal-seed'
 import { fixture as destructureDefaultSpreadConstSignalSeedClient } from './destructure-default-spread-const-signal-seed-client'
 import { fixture as destructureDefaultSpreadConstChildProp } from './destructure-default-spread-const-child-prop'
+import { fixture as destructureDefaultSpreadMethodMemo } from './destructure-default-spread-method-memo'
+import { fixture as destructureDefaultSpreadMethodMemoClient } from './destructure-default-spread-method-memo-client'
+import { fixture as destructureDefaultSpreadStoredMethod } from './destructure-default-spread-stored-method'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
 import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as emptyArrayConditionShapes } from './empty-array-condition-shapes'
@@ -2545,6 +2548,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultSpreadConstSignalSeed,
   destructureDefaultSpreadConstSignalSeedClient,
   destructureDefaultSpreadConstChildProp,
+  destructureDefaultSpreadMethodMemo,
+  destructureDefaultSpreadMethodMemoClient,
+  destructureDefaultSpreadStoredMethod,
   memoLengthPropSeededSignalShapes,
   emptyArrayCondition,
   emptyArrayConditionShapes,
