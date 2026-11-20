@@ -154,7 +154,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -410,7 +452,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -648,7 +732,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -964,7 +1090,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -1220,7 +1388,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -1482,7 +1692,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -1738,7 +1990,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -1988,7 +2282,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -2244,7 +2580,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -3363,6 +3741,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3565,6 +3955,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3746,6 +4148,18 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -3957,6 +4371,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4156,6 +4582,18 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -4367,6 +4805,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4548,6 +4998,18 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -4753,6 +5215,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4952,6 +5426,18 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -6923,6 +7409,36 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -7446,6 +7962,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -7978,6 +8524,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -8645,6 +9221,36 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -9162,6 +9768,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -9691,6 +10327,36 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
@@ -10190,6 +10856,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -10698,6 +11394,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -11218,6 +11944,36 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -12901,7 +13657,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -13619,7 +14417,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -14337,7 +15177,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -15301,7 +16183,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -16007,7 +16931,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -16719,7 +17685,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -17413,7 +18421,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -18101,7 +19151,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -18813,7 +19905,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -20022,7 +21156,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -20602,7 +21778,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -21188,7 +22406,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -21966,7 +23226,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -22546,7 +23848,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -23132,7 +24476,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -23724,7 +25110,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -24286,7 +25714,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -24866,7 +26336,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25393,7 +26905,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25463,7 +27017,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25551,7 +27147,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25645,7 +27283,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25715,7 +27395,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25785,7 +27507,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25861,7 +27625,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -25931,7 +27737,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -26001,7 +27849,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -26269,7 +28159,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -26819,7 +28751,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -27369,7 +29343,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -28057,7 +30073,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -28595,7 +30653,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -29139,7 +31239,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -29665,7 +31807,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -30197,7 +32381,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -30741,7 +32967,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -31262,6 +33530,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
@@ -31548,6 +33828,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
@@ -31825,6 +34117,18 @@
               "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -32162,6 +34466,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
@@ -32445,6 +34761,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -32737,6 +35065,18 @@
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -33038,6 +35378,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
@@ -33315,6 +35667,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -33601,6 +35965,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
+              "limitations": [
+                "array-literal-element-spread"
               ]
             },
             {
@@ -34554,7 +36930,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -34642,7 +37060,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -34730,7 +37190,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -34818,7 +37320,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -34906,7 +37450,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -35000,7 +37586,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -35088,7 +37716,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -35176,7 +37846,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -35264,7 +37976,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -41983,7 +44737,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -42467,7 +45263,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -42945,7 +45783,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -43615,7 +46495,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -44099,7 +47021,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -44589,7 +47553,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -45085,7 +48091,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -45557,7 +48605,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -46041,7 +49131,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -46704,7 +49836,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -46768,7 +49942,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -46850,7 +50066,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -46938,7 +50196,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -47002,7 +50302,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -47066,7 +50408,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -47130,7 +50514,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -47194,7 +50620,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]
@@ -47258,7 +50726,49 @@
               ]
             },
             {
+              "fixture": "destructure-default-spread-const-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-length",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-const-signal-seed",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-inline-child-prop",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-memo-body",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-memo",
+              "limitations": [
+                "array-literal-element-spread"
+              ]
+            },
+            {
+              "fixture": "destructure-default-spread-method-text",
               "limitations": [
                 "array-literal-element-spread"
               ]

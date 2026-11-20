@@ -11,5 +11,6 @@ export default defineLimitation({
     'module-const-inherited-key-object-safe',
     'memo-object-const-arrow-sibling-key',
     'memo-module-object-const-arrow-sibling-key',
+    'destructure-default-spread-stored-method',
   ],
 })

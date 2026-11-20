@@ -1111,6 +1111,19 @@ import { fixture as memoOverArrayConstShapes } from './memo-over-array-const-sha
 import { fixture as memoOverArrayConstIndex } from './memo-over-array-const-index'
 import { fixture as computedArrayConstRead } from './computed-array-const-read'
 import { fixture as destructureDefaultSpreadConstLengthClient } from './destructure-default-spread-const-length-client'
+import { fixture as destructureDefaultSpreadConstMemo } from './destructure-default-spread-const-memo'
+import { fixture as destructureDefaultSpreadConstMemoClient } from './destructure-default-spread-const-memo-client'
+import { fixture as destructureDefaultSpreadMemoBody } from './destructure-default-spread-memo-body'
+import { fixture as destructureDefaultSpreadMemoBodyClient } from './destructure-default-spread-memo-body-client'
+import { fixture as destructureDefaultSpreadConstSignalSeed } from './destructure-default-spread-const-signal-seed'
+import { fixture as destructureDefaultSpreadConstSignalSeedClient } from './destructure-default-spread-const-signal-seed-client'
+import { fixture as destructureDefaultSpreadConstChildProp } from './destructure-default-spread-const-child-prop'
+import { fixture as destructureDefaultSpreadMethodMemo } from './destructure-default-spread-method-memo'
+import { fixture as destructureDefaultSpreadMethodMemoClient } from './destructure-default-spread-method-memo-client'
+import { fixture as destructureDefaultSpreadStoredMethod } from './destructure-default-spread-stored-method'
+import { fixture as destructureDefaultSpreadMethodText } from './destructure-default-spread-method-text'
+import { fixture as destructureDefaultSpreadMethodTextClient } from './destructure-default-spread-method-text-client'
+import { fixture as destructureDefaultSpreadInlineChildProp } from './destructure-default-spread-inline-child-prop'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
 import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as emptyArrayConditionShapes } from './empty-array-condition-shapes'
@@ -2534,6 +2547,19 @@ export const jsxFixtures: JSXFixture[] = [
   memoOverArrayConstIndex,
   computedArrayConstRead,
   destructureDefaultSpreadConstLengthClient,
+  destructureDefaultSpreadConstMemo,
+  destructureDefaultSpreadConstMemoClient,
+  destructureDefaultSpreadMemoBody,
+  destructureDefaultSpreadMemoBodyClient,
+  destructureDefaultSpreadConstSignalSeed,
+  destructureDefaultSpreadConstSignalSeedClient,
+  destructureDefaultSpreadConstChildProp,
+  destructureDefaultSpreadMethodMemo,
+  destructureDefaultSpreadMethodMemoClient,
+  destructureDefaultSpreadStoredMethod,
+  destructureDefaultSpreadMethodText,
+  destructureDefaultSpreadMethodTextClient,
+  destructureDefaultSpreadInlineChildProp,
   memoLengthPropSeededSignalShapes,
   emptyArrayCondition,
   emptyArrayConditionShapes,

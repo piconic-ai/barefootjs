@@ -4781,6 +4781,116 @@
           }
         }
       },
+      "destructure-default-spread-const-child-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "destructure-default-spread-const-length": {
         "blade": {
           "kind": "refusal",
@@ -4897,6 +5007,711 @@
           "escape": {
             "state": "escapable",
             "twin": "destructure-default-spread-const-length-client"
+          }
+        }
+      },
+      "destructure-default-spread-const-memo": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-memo-client"
+          }
+        }
+      },
+      "destructure-default-spread-const-signal-seed": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-signal-seed-client"
+          }
+        }
+      },
+      "destructure-default-spread-inline-child-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "destructure-default-spread-memo-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-memo-body-client"
+          }
+        }
+      },
+      "destructure-default-spread-method-memo": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-memo-client"
+          }
+        }
+      },
+      "destructure-default-spread-method-text": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-method-text-client"
           }
         }
       },
@@ -15794,9 +16609,37 @@
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed.ts"
       },
+      "destructure-default-spread-const-child-prop": {
+        "description": "A child prop reading a const spreading a defaulted destructured array prop renders the length…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-child-prop.ts"
+      },
       "destructure-default-spread-const-length": {
         "description": "A const spreading a defaulted destructured array prop renders its length (#3954)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-length.ts"
+      },
+      "destructure-default-spread-const-memo": {
+        "description": "A memo over a const spreading a defaulted destructured array prop renders its length (#3954)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-memo.ts"
+      },
+      "destructure-default-spread-const-signal-seed": {
+        "description": "A signal seeded from a const spreading a defaulted destructured array prop renders the length…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-signal-seed.ts"
+      },
+      "destructure-default-spread-inline-child-prop": {
+        "description": "A child prop spreading a defaulted destructured array prop in place renders the length (#3954)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-inline-child-prop.ts"
+      },
+      "destructure-default-spread-memo-body": {
+        "description": "A memo spreading a defaulted destructured array prop in its body renders the length (#3954)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-memo-body.ts"
+      },
+      "destructure-default-spread-method-memo": {
+        "description": "A memo calling a literal const method that spreads a defaulted destructured array prop renders the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-method-memo.ts"
+      },
+      "destructure-default-spread-method-text": {
+        "description": "Markup calling a literal const method that spreads a defaulted destructured array prop renders the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-method-text.ts"
       },
       "destructure-length-in-map": {
         "description": "Destructured { length } of string and array rows in .map()",
@@ -16394,6 +17237,26 @@
         "description": "The client-directive escape of a read of an array const spreading a defaulted prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-length-client.ts"
       },
+      "destructure-default-spread-const-memo-client": {
+        "description": "The client-directive escape of a memo over a const spreading a defaulted prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-memo-client.ts"
+      },
+      "destructure-default-spread-const-signal-seed-client": {
+        "description": "The client-directive escape of a signal seeded from a const spreading a defaulted prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-signal-seed-client.ts"
+      },
+      "destructure-default-spread-memo-body-client": {
+        "description": "The client-directive escape of a memo spreading a defaulted prop in its body",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-memo-body-client.ts"
+      },
+      "destructure-default-spread-method-memo-client": {
+        "description": "The client-directive escape of a memo calling a literal const method that spreads a defaulted prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-method-memo-client.ts"
+      },
+      "destructure-default-spread-method-text-client": {
+        "description": "The client-directive escape of markup calling a literal const method that spreads a defaulted prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-method-text-client.ts"
+      },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate-client.ts"
@@ -16668,13 +17531,20 @@
       ]
     },
     "array-literal-element-spread": {
-      "title": "An array literal with a spread element read in a template",
+      "title": "An array literal with a spread element read on the server",
       "kind": "refusal",
-      "given": "a component-scope const holding an array literal with a spread element (`const local = [...b, 'z']`), read in a server-rendered position (`local.length`)",
+      "given": "an array literal with a spread element (`[...b, 'z']`), held by a component-scope const or written in a memo body, that the server render reads: in a template position (`local.length`, or a literal const method it calls, `{api.add()}`), a child prop (`<Kid n={local.length} />`, `<Kid n={[...b, 'z'].length} />`), a memo body (`createMemo(() => local.length)`, or a literal const method it calls, `api.add()`) or a signal seed (`createSignal(local.length)`)",
       "expected": "the read computes over the spread array (`2` for `b` of one element)",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "destructure-default-spread-const-length"
+        "destructure-default-spread-const-child-prop",
+        "destructure-default-spread-const-length",
+        "destructure-default-spread-const-memo",
+        "destructure-default-spread-const-signal-seed",
+        "destructure-default-spread-inline-child-prop",
+        "destructure-default-spread-memo-body",
+        "destructure-default-spread-method-memo",
+        "destructure-default-spread-method-text"
       ],
       "adapters": [
         "blade",
@@ -17221,6 +18091,7 @@
       "expected": "the listed value (`'ok'`)",
       "actual": "renders empty: the client template does not carry the const, so the read has nothing to resolve",
       "fixtures": [
+        "destructure-default-spread-stored-method",
         "memo-module-object-const-arrow-sibling-key",
         "memo-object-const-arrow-sibling-key",
         "module-const-inherited-key-object-safe"

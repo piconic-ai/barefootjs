@@ -140,6 +140,7 @@ export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativ
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
 export { refuseInheritedConstServerReads } from './adapters/inherited-const-server-read.ts'
 export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
+export { refuseUnloweredArrayElements } from './adapters/unlowered-array-element.ts'
 export { refuseUnappliedPropDefaults, type UnappliedPropDefaultSink } from './adapters/unapplied-prop-default.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'

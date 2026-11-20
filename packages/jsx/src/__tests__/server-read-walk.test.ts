@@ -38,6 +38,19 @@ function reads(body: string, signature = '', preamble = ''): string[] {
 }
 
 describe('walkServerReads', () => {
+  test('a declaration only a stored function captures is not read (#3954)', () => {
+    expect(reads(`const local = ['y']
+      const api = { label: 'ok', add: () => local.length }
+      return <p>{api.label}</p>`)).toEqual(['const api@component'])
+    expect(reads(`const local = ['y']
+      const api = { label: 'ok', add: () => local.length }
+      return <p>{api.add()}</p>`)).toEqual(['const api@component', 'const local@component'])
+    expect(reads(`const local = ['y']
+      const api = { add: () => local.length }
+      const n = createMemo(() => api.add())
+      return <p>{n()}</p>`)).toEqual(['const api@component', 'const local@component', 'memo n@component'])
+  })
+
   test('a signal seeded from a const whose initializer calls an uninlinable function', () => {
     expect(reads(`${UNINLINABLE}
       const initial = value()

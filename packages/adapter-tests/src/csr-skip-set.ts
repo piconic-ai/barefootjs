@@ -34,6 +34,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // loop; SSR refuses it on the template adapters and the CSR template has
   // no value for it either.
   'computed-const-read-unlowerable',
+  // #3954: a memo calling a literal const's method that spreads a prop
+  // (`api.add()`). SSR refuses it on the template adapters (BF101, pinned under
+  // `array-literal-element-spread`), and the CSR template does not carry a
+  // const holding a function either, so the memo renders empty there too.
+  'destructure-default-spread-method-memo',
+  // The same method called in markup (`{api.add()}`).
+  'destructure-default-spread-method-text',
   // #3912: a row condition calling a component-scope helper
   // (`isSel(item.id)`). The helper is an init local, which the CSR template
   // has no init to declare, so the template reads the call as `undefined`
@@ -303,6 +310,8 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // memo over a const holding an arrow, so `m()` renders empty.
   'memo-object-const-arrow-sibling-key': { limitation: 'csr-template-object-const-function-property' },
   'memo-module-object-const-arrow-sibling-key': { limitation: 'csr-template-object-const-function-property' },
+  // The same for a component const read for a listed key beside an uncalled method.
+  'destructure-default-spread-stored-method': { limitation: 'csr-template-object-const-function-property' },
   // A boolean text child: the CSR template prints `true` / `false`; JSX
   // renders nothing.
   // `{ label = 'd' }` read through `const a = label`: the CSR template reads

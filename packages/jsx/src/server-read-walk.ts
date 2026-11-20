@@ -22,7 +22,8 @@
  * server) read nothing here.
  */
 
-import { freeIdentifiers, mapParsedExpr, type ParsedExpr, type ParsedStatement } from './expression-parser.ts'
+import { evaluatedWalkContext, walkEvaluated, type EvaluatedAt, type EvaluatedWalkContext } from './evaluated-expr-walk.ts'
+import { freeIdentifiers, type ParsedExpr, type ParsedStatement } from './expression-parser.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { localBindings, localCall, type LocalBinding, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import { BindingScope } from './scope/binding-scope.ts'
@@ -94,7 +95,8 @@ export interface ServerReadWalkOptions {
 /** Visit each declaration the server render of `ir` reads, once. */
 export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => void, options: ServerReadWalkOptions = {}): void {
   const { visitProp, startsAt, followsThrough } = options
-  const resolve = localBindings({ ...ir.metadata, localConstants: ir.metadata.localConstants ?? [] })
+  const ctx = evaluatedWalkContext(ir.metadata, { component: BindingScope.EMPTY, module: BindingScope.EMPTY }, false)
+  const { resolve } = ctx
   const seen = new Set<LocalBinding>()
   const pending: Array<{ reads: Reads; from: LocalScope }> = []
 
@@ -102,15 +104,14 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     const followed = followedDeclaration(binding)
     if (!followed || seen.has(binding)) return
     seen.add(binding)
-    const reads = readsOf(followed.expr, followed.fallback)
+    const reads = readsOf(followed.expr, followed.fallback, { scope: BindingScope.EMPTY, from: binding.scope }, ctx)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
     const read: ServerRead = { name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls }
     visit(read)
     if (!followsThrough || followsThrough(read)) pending.push({ reads, from: binding.scope })
   }
-  const followReads = (reads: Reads, from: LocalScope, isBound: (name: string) => boolean): void => {
+  const followReads = (reads: Reads, from: LocalScope): void => {
     for (const name of reads.names) {
-      if (isBound(name)) continue
       const binding = resolve(name, from)
       if (binding?.kind === 'opaque') visitProp?.(name, reads.expr)
       else if (binding && isRead(binding, reads.called.has(name))) follow(name, binding)
@@ -122,9 +123,9 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     const { expr, scope, attrName } = position
     if (attrName !== undefined && isEventHandlerName(attrName)) return
     if (startsAt && !startsAt(position)) return
-    followReads(readsOf(expr, undefined), 'component', name => (scope ?? component).isBound(name))
+    followReads(readsOf(expr, undefined, { scope: scope ?? component, from: 'component' }, ctx), 'component')
   }, component)
-  for (let next = pending.pop(); next; next = pending.pop()) followReads(next.reads, next.from, () => false)
+  for (let next = pending.pop(); next; next = pending.pop()) followReads(next.reads, next.from)
 }
 
 /** Whether reading `binding` reads its declaration: a function only where it is called. */
@@ -167,17 +168,24 @@ function followedDeclaration(binding: LocalBinding): Followed | null {
   }
 }
 
-/** {@link Reads} of `expr`, or of `fallback` (calling nothing) when it has no analyzable tree. */
-function readsOf(expr: ParsedExpr | undefined, fallback: ReadonlySet<string> | undefined): Reads {
-  const names = expr && freeIdentifiers(expr)
+/**
+ * {@link Reads} of `expr` read at `at`, or of `fallback` (calling nothing)
+ * when it has no analyzable tree. Only what its evaluation runs is read
+ * (`walkEvaluated`): a function stored in the value reads nothing until it is
+ * called, and a literal const's method called by name (`api.add()`) reads
+ * what its body does. A function called by its own name is followed as its
+ * declaration instead.
+ */
+function readsOf(expr: ParsedExpr | undefined, fallback: ReadonlySet<string> | undefined, at: EvaluatedAt, ctx: EvaluatedWalkContext): Reads {
   // An IR that went through JSON holds no `Set`: such a declaration reads nothing here.
-  if (!expr || !names) return { names: fallback instanceof Set ? fallback : [], called: new Set(), expr: undefined }
+  if (!expr || !freeIdentifiers(expr)) return { names: fallback instanceof Set ? fallback : [], called: new Set(), expr: undefined }
+  const names = new Set<string>()
   const called = new Set<string>()
-  mapParsedExpr(expr, (e, enclosing) => {
-    if (e.kind === 'call' && e.args.length === 0 && e.callee.kind === 'identifier' && !enclosing.has(e.callee.name)) {
+  walkEvaluated(expr, at, { ...ctx, entered: new Set() }, (e, eAt) => {
+    if (e.kind === 'identifier' && !eAt.scope.isBound(e.name)) names.add(e.name)
+    if (e.kind === 'call' && e.args.length === 0 && e.callee.kind === 'identifier' && !eAt.scope.isBound(e.callee.name)) {
       called.add(e.callee.name)
     }
-    return null
   })
   return { names, called, expr }
 }

@@ -5899,6 +5899,23 @@
         "text"
       ]
     },
+    "destructure-default-spread-const-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-spread-const-length": {
       "kinds": [
         "array-literal",
@@ -5923,6 +5940,230 @@
         "literal",
         "logical",
         "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-memo": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-memo-client": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-signal-seed": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-signal-seed-client": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-inline-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-memo-body": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-memo-body-client": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-method-memo": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-method-memo-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-method-text": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-method-text-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-stored-method": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
         "unsupported"
       ],
       "axes": [

@@ -57,6 +57,20 @@ export const conformancePins: ConformancePins = {
   // A const holding an array with a spread element (`[...b, 'z']`) is read where
   // a template has no binding for it: refused, not an unbound name.
   'destructure-default-spread-const-length': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  // The same array read through a memo, a signal seed or a child prop, which
+  // no emitter spells: refused at the declaration the server render reads.
+  'destructure-default-spread-const-memo': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-memo-body': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-const-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-method-memo': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-method-text': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
+  'destructure-default-spread-inline-child-prop': [
+    { code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread', unescapable: true },
+  ],
+  // A component renders on the server whatever directive its prop carries: no escape.
+  'destructure-default-spread-const-child-prop': [
+    { code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread', unescapable: true },
+  ],
   'static-array-from-props': [
     {
       code: 'BF101',
