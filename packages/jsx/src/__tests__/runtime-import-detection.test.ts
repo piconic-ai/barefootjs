@@ -156,6 +156,24 @@ describe('template-only client module declares the helpers its template inlines 
     expect(() => transpiler.transformSync(clientJs)).not.toThrow()
   })
 
+  test('the imports the declared helper reads are kept: an aliased runtime import and an external one', () => {
+    const { errors, clientJs } = compileStateless(
+      "import { untrack as read } from '@barefootjs/client'\n" +
+        "import { upper } from 'some-lib'\n" +
+        "import type { Box } from 'some-lib'\n" +
+        "import { lower } from 'other-lib'\n" +
+        'const unused = (s: string) => lower(s)\n' +
+        "const mk = (s: string): Box => ({ k: read(() => upper(s)) })\nconst B = mk('v')",
+    )
+    expect(errors).toHaveLength(0)
+    expect(runtimeImportLine(clientJs)).toContain('untrack as read')
+    expect(clientJs).toContain("import { upper } from 'some-lib'")
+    // A type-only import and one only a helper the module does not declare reads stay out.
+    expect(clientJs).not.toContain('Box')
+    expect(clientJs).not.toContain('other-lib')
+    expect(() => transpiler.transformSync(clientJs)).not.toThrow()
+  })
+
   test('such a helper named like a runtime export the template calls is BF057', () => {
     const { errors } = compileStateless("const escapeText = (s: string) => ({ k: s })\nconst B = escapeText('v')")
     expect(errors.map(e => e.code)).toContain('BF057')

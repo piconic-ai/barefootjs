@@ -23,10 +23,10 @@ import { buildInlinableConstants, csrInlinableConstantsFromCtx } from './emit-re
 import { buildEnvFromCtx } from './compute-inlinability.ts'
 import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from './component-scope.ts'
 import { resolveRestSpreadNames } from './prop-handling.ts'
-import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports, runtimeNameCollisions } from './imports.ts'
+import { IMPORT_PLACEHOLDER, runtimeNameCollisions } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
 import { moduleScopeView } from '../module-scope.ts'
-import { emitModuleLevelDeclarations, emitModuleScopeReplica } from './emit-module-level.ts'
+import { emitModuleLevelDeclarations, emitModuleScopeReplica, resolveFinalImports } from './emit-module-level.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
 import { isHydrationPayloadPropName } from '../event-handler-name.ts'
@@ -110,7 +110,7 @@ export function generateClientJsWithSourceMap(
     // diagnostics. Flush warnings to `ir.errors` AFTER those passes so the
     // diagnostics survive to the caller.
     if (!needsClientJs(ctx)) {
-      const code = generateTemplateOnlyMount(ir, ctx)
+      const code = generateTemplateOnlyMount(ir, ctx, localImportPrefixes)
       ir.errors.push(...ctx.warnings)
       return { code }
     }
@@ -367,7 +367,7 @@ function hasInitScopeOnlyConstant(ctx: ClientJsContext): boolean {
  *
  * Returns '' if a static template cannot be generated.
  */
-function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): string {
+function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext, localImportPrefixes?: string[]): string {
   const reactiveGetterNames = collectReactiveGetterNames(ctx.signals, ctx.memos)
   const graph = buildReferencesGraph(ctx, ir.root)
   const { inlinableConstants, unsafeLocalNames } = buildInlinableConstants(ctx, graph, ir.root)
@@ -444,22 +444,15 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
   lines.push(`export function ${name}(${PROPS_PARAM}, __bfKey) { return createComponent('${registryKey}', ${PROPS_PARAM}, __bfKey) }`)
 
   const generatedCode = lines.join('\n')
-  const usedImports = detectUsedImports(generatedCode)
-  const sortedImports = [...usedImports].sort()
-  const importLine = `import { ${sortedImports.join(', ')} } from '${RUNTIME_MODULE}'`
-  // Preserve user-defined external imports referenced by the inlined
-  // template body. The full-init path (`generateInitFunction`) calls
-  // `collectExternalImports` for this; the template-only path needs the
-  // same — without it, a constant whose value got inlined into the
-  // template (e.g. `useYjs(_p.x)`) leaves the template referencing a
-  // bare module-import name that's no longer imported (#1138 / #1133).
   ctx.warnings.push(
     ...runtimeNameCollisions([...moduleLevelConstants, ...moduleLevelFunctions], ir.metadata.imports, generatedCode),
   )
-  const externalImports = collectExternalImports(ir, generatedCode)
-  const allImports = externalImports.length > 0
-    ? `${importLine}\n${externalImports.join('\n')}`
-    : importLine
+  // The init path's import resolution (`resolveFinalImports`): the runtime
+  // helpers the code calls, the user's own runtime imports with their
+  // aliases (a module helper may call `untrack` imported as `read`, #3952),
+  // and the external imports the code reads — including those a constant
+  // inlined into the template needs (`useYjs(_p.x)`, #1138 / #1133).
+  const allImports = resolveFinalImports(generatedCode, ir, localImportPrefixes)
 
-  return generatedCode.replace(IMPORT_PLACEHOLDER, allImports)
+  return generatedCode.replace(IMPORT_PLACEHOLDER, () => allImports)
 }
