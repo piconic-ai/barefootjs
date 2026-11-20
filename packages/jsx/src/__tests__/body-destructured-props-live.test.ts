@@ -186,7 +186,7 @@ describe('body-destructured props compile to live reads', () => {
         createEffect(() => {
           console.log(count)
         })
-        return <span>{count}</span>
+        return <span>{/* @client */ count}</span>
       }
     `
     const { content } = compileClientJs(source, 'Child.tsx')

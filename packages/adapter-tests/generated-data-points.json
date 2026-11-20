@@ -1371,6 +1371,58 @@
       }
     }
   ],
+  "body-statement-write-earlier-memo": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "body-statement-write-other-props-member": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "items": [
+          "y"
+        ],
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "items": [
+          "y"
+        ],
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "items": [
+          "y"
+        ],
+        "title": "日本語"
+      }
+    }
+  ],
+  "body-statement-write-rewrite": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "boolean-logical-stringify": [
     {
       "name": "gen:on:false",

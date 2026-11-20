@@ -8,8 +8,8 @@
 import type { RenderDivergences } from '@barefootjs/jsx'
 
 export const renderDivergences: RenderDivergences = {
-  // A body statement mutating a destructure binding (`local.push('z')`),
-  // read through a memo: the server render runs no body statement, so it
+  // A binding a body statement mutates (`items.push('z')`) handed to a
+  // child as a prop: the server render runs no body statement, so the child
   // renders the value before the push.
-  'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
+  'body-statement-write-child-prop': { limitation: 'init-statement-mutation-unrun-on-server' },
 }

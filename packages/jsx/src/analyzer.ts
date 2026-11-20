@@ -43,6 +43,8 @@ import { separateSignalPropBindings, programWithSeparatedSource } from './signal
 import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
+import { isFunctionScope, isInvokedInPlace, runsInPlace } from './in-place-function.ts'
+import { classifyValueUses } from './value-uses.ts'
 import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
 // =============================================================================
@@ -589,31 +591,6 @@ function collectNamedExports(sourceFile: ts.SourceFile): Set<string> {
 // =============================================================================
 // Single Pass Visitor
 // =============================================================================
-
-/**
- * Does this node open a new function scope?
- *
- * The single answer to the one question every declaration collector in
- * this file asks: bindings declared inside a function belong to that
- * function, never to the scope being collected. `visitComponentBody` has
- * always stopped here; `visit` did not, so the inner `const`/`function`
- * declarations of a module-level `const f = (…) => { … }` were collected
- * as module-level declarations of the FILE — hoisted into the init body
- * and into the marked template, where their references to the helper's
- * own parameters are unbound (#2986). A class static block is its own scope
- * too: `class { static { var $ } }` declares `$` in the block, not in the
- * component body.
- */
-function isFunctionScope(node: ts.Node): boolean {
-  return ts.isClassStaticBlockDeclaration(node)
-    || ts.isArrowFunction(node)
-    || ts.isFunctionExpression(node)
-    || ts.isFunctionDeclaration(node)
-    || ts.isMethodDeclaration(node)
-    || ts.isGetAccessorDeclaration(node)
-    || ts.isSetAccessorDeclaration(node)
-    || ts.isConstructorDeclaration(node)
-}
 
 /**
  * Whether `node`, a statement the module walk reached, is outside the
@@ -1647,6 +1624,7 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
     initialFreeIdentifiers: seedNode
       ? extractFreeIdentifiersFromNode(seedNode)
       : new Set(),
+    valueUses: classifyValueUses(seedNode),
     envReader,
     envFactory,
   }
@@ -2255,6 +2233,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     computationFreeIdentifiers: callExpr.arguments[0]
       ? extractFreeIdentifiersFromNode(callExpr.arguments[0])
       : new Set(),
+    valueUses: classifyValueUses(callExpr.arguments[0]),
   }
   ctx.memos.push(memo)
   if (body) deferMemoTemplateBody(memo, body, ctx)
@@ -2385,12 +2364,15 @@ function collectOnMount(node: ts.CallExpression, ctx: AnalyzerContext): void {
  */
 function collectInitStatement(node: ts.Statement, ctx: AnalyzerContext): void {
   const body = ctx.getJS(node)
+  const writes = collectStatementWrites(node)
   ctx.initStatements.push({
     body,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
-    assignedIdentifiers: extractAssignedIdentifiersFromNode(node),
-    mutatedIdentifiers: extractMutatedIdentifiersFromNode(node),
+    assignedIdentifiers: writes.assigned,
+    mutatedIdentifiers: new Set(writes.mutated.keys()),
+    mutatedMembers: writes.mutated,
+    deeplyMutatedIdentifiers: writes.deep,
     // Init statements run inside the component's init function, so they
     // belong to `init` scope. Phase is conservatively `hydrate` (run-once
     // at hydration). relocate() can refine this when consuming the field.
@@ -2424,85 +2406,52 @@ function leadsWithAsiHazard(body: string): boolean {
 }
 
 /**
- * Collect identifiers that appear on the left-hand side of an assignment
- * (simple `=`, compound `+=` / `-=` / etc., or `++` / `--`). These identifiers
- * must resolve to a real declaration at emit time — writing to an undeclared
- * name throws a ReferenceError in ESM strict mode. Destructuring targets are
- * also collected.
+ * What a top-level statement writes when it runs: the bindings it assigns
+ * and the objects it changes in place. One walk answers both, with the same
+ * two rules:
+ *
+ *   - **Lexical scope.** A name the statement binds itself (a `for` head's
+ *     variable, a block's `let` / `const`, a callback's parameter) is that
+ *     binding, for exactly the scope it is declared in, and a write to it
+ *     is not a write to the component's binding of the same name
+ *     (`walkWithScope`). Outside that scope the name is the component's
+ *     again.
+ *   - **When it runs.** A write inside a function literal runs when the
+ *     function is called (an event listener, a timer callback), not with
+ *     the statement, unless the statement runs that function where it
+ *     stands (an IIFE, `xs.forEach(x => out.push(x))`; `runsInPlace`).
  */
-function extractAssignedIdentifiersFromNode(node: ts.Node): Set<string> {
-  const ids = new Set<string>()
+interface StatementWrites {
+  /**
+   * Identifiers on the left-hand side of an assignment (simple `=`,
+   * compound `+=` / `-=` / etc., `++` / `--`, a destructuring assignment,
+   * a `for (x of …)` head). They must resolve to a real declaration at emit
+   * time: writing to an undeclared name throws a ReferenceError in ESM
+   * strict mode (BF052).
+   */
+  assigned: Set<string>
+  /** See {@link InitStatementInfo.mutatedMembers}. */
+  mutated: Map<string, Set<string> | null>
+  /** See {@link InitStatementInfo.deeplyMutatedIdentifiers}. */
+  deep: Set<string>
+}
 
-  function addFromTarget(target: ts.Expression | ts.BindingElement): void {
-    if (ts.isIdentifier(target)) {
-      ids.add(target.text)
+function collectStatementWrites(statement: ts.Node): StatementWrites {
+  const writes: StatementWrites = { assigned: new Set(), mutated: new Map(), deep: new Set() }
+  walkWithScope(statement, (ident, _parent, shadowed) => {
+    if (shadowed || isNonReferenceIdentifierPosition(ident) || !runsInPlace(ident, statement)) return
+    if (isAssignmentTargetIdentifier(ident)) {
+      writes.assigned.add(ident.text)
       return
     }
-    if (ts.isParenthesizedExpression(target)) {
-      addFromTarget(target.expression)
-      return
-    }
-    if (ts.isArrayLiteralExpression(target)) {
-      for (const el of target.elements) {
-        if (ts.isOmittedExpression(el)) continue
-        if (ts.isSpreadElement(el)) { addFromTarget(el.expression); continue }
-        addFromTarget(el)
-      }
-      return
-    }
-    if (ts.isObjectLiteralExpression(target)) {
-      for (const prop of target.properties) {
-        if (ts.isShorthandPropertyAssignment(prop)) { ids.add(prop.name.text); continue }
-        if (ts.isPropertyAssignment(prop)) { addFromTarget(prop.initializer); continue }
-        if (ts.isSpreadAssignment(prop)) { addFromTarget(prop.expression); continue }
-      }
-      return
-    }
-    // PropertyAccessExpression / ElementAccessExpression: assignment to a
-    // property of an object doesn't create an implicit global, so we skip it.
-  }
-
-  function visit(n: ts.Node): void {
-    // Stop at the init / sub-init boundary (#1228): assignments inside
-    // nested function literals (event-listener callbacks, setTimeout
-    // arrows, returned closures, ...) do not execute at init time, so
-    // they are not init-statement assignments and BF052 must not flag
-    // them. The entry node passed in is always a ts.Statement from
-    // collectInitStatement, never a function literal, so this guard
-    // only trips on descent.
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n) ||
-      ts.isMethodDeclaration(n) ||
-      ts.isGetAccessorDeclaration(n) ||
-      ts.isSetAccessorDeclaration(n) ||
-      ts.isConstructorDeclaration(n)
-    ) {
-      return
-    }
-    if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
-      addFromTarget(n.left)
-    }
-    if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
-      if (
-        n.operator === ts.SyntaxKind.PlusPlusToken ||
-        n.operator === ts.SyntaxKind.MinusMinusToken
-      ) {
-        addFromTarget(n.operand)
-      }
-    }
-    ts.forEachChild(n, visit)
-  }
-
-  visit(node)
-
-  // Subtract locally declared variables (e.g. `let i` in `for (let i = 0; …; i++)`)
-  // so assignments to loop-local names don't trigger BF052.
-  const localDecls = collectLocalDeclarations(node)
-  for (const name of localDecls) ids.delete(name)
-
-  return ids
+    const write = inPlaceWriteRootedAt(ident)
+    if (!write) return
+    const known = writes.mutated.get(ident.text)
+    if (write.member === null || known === null) writes.mutated.set(ident.text, null)
+    else writes.mutated.set(ident.text, (known ?? new Set<string>()).add(write.member))
+    if (write.deep) writes.deep.add(ident.text)
+  })
+  return writes
 }
 
 /**
@@ -2516,32 +2465,31 @@ const MUTATING_METHOD_NAMES: ReadonlySet<string> = new Set([
   'set', 'add', 'delete', 'clear',
 ])
 
-/**
- * Collect identifiers mutated IN PLACE by a statement — a property/element
- * write (`config[k] = …`, `config.a.b += 1`), an `Object.assign(config, …)`
- * call, or a call to a known mutating method on the receiver
- * (`items.push(...)`) — as opposed to `extractAssignedIdentifiersFromNode`,
- * which only tracks reassignment of the BINDING itself (#2910).
- *
- * This distinction matters because `expandDynamicPropValue` /
- * `expandConstantForReactivity` (`ir-to-client-js/prop-handling.ts`) inline
- * a `localConstants` entry's DECLARATION-TIME initializer text wherever the
- * bare identifier is referenced. A `const config = {}` later populated by
- * `for (const s of series) config[s.key] = {...}` never reassigns `config`
- * itself — `extractAssignedIdentifiersFromNode` (correctly) reports no
- * assigned identifiers, since `config[s.key] = …` doesn't create an
- * implicit global — but the compiler must still know `config`'s value is
- * no longer just `{}` by the time this statement has run, so a consumer
- * that inlines the stale literal (instead of referencing the live `config`
- * binding) silently drops everything the mutation was supposed to do. See
- * `ConstantInfo.mutatedAfterDeclaration` for where this is consumed.
- */
+// `StatementWrites.mutated` (`collectStatementWrites`) holds the identifiers a
+// statement mutates IN PLACE — a property/element
+// write (`config[k] = …`, `config.a.b += 1`), an `Object.assign(config, …)`
+// call, or a call to a known mutating method on the receiver
+// (`items.push(...)`) — as opposed to `StatementWrites.assigned`,
+// which only tracks reassignment of the BINDING itself (#2910).
+//
+// This distinction matters because `expandDynamicPropValue` /
+// `expandConstantForReactivity` (`ir-to-client-js/prop-handling.ts`) inline
+// a `localConstants` entry's DECLARATION-TIME initializer text wherever the
+// bare identifier is referenced. A `const config = {}` later populated by
+// `for (const s of series) config[s.key] = {...}` never reassigns `config`
+// itself — `StatementWrites.assigned` (correctly) reports no
+// assigned identifiers, since `config[s.key] = …` doesn't create an
+// implicit global — but the compiler must still know `config`'s value is
+// no longer just `{}` by the time this statement has run, so a consumer
+// that inlines the stale literal (instead of referencing the live `config`
+// binding) silently drops everything the mutation was supposed to do. See
+// `ConstantInfo.mutatedAfterDeclaration` for where this is consumed.
+
 /**
  * The identifier a (possibly chained) member/element-access/parenthesized/
  * non-null-asserted expression is ultimately rooted at (`a.b.c`, `a?.b[0]`,
  * `(a!).b` all resolve to `a`), or `null` when the root isn't a bare
- * identifier (e.g. a call result). Shared by `extractMutatedIdentifiersFromNode`
- * below and `isArrayExprDirectPropRef` (`jsx-to-ir.ts`, #3044 pullfrog
+ * identifier (e.g. a call result). Shared with `isArrayExprDirectPropRef` (`jsx-to-ir.ts`, #3044 pullfrog
  * review) — the same "walk a member chain to its root" question, structural
  * and side-effect-free, so one implementation serves both instead of a
  * second inline while-loop reinventing it with narrower node coverage.
@@ -2558,124 +2506,71 @@ export function rootIdentifierOf(expr: ts.Expression): string | null {
   }
 }
 
-function extractMutatedIdentifiersFromNode(node: ts.Node): Set<string> {
-  const ids = new Set<string>()
-
-  function visit(n: ts.Node): void {
-    // Same init/sub-init boundary as `extractAssignedIdentifiersFromNode`:
-    // a mutation inside a nested function literal doesn't run at init time.
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n) ||
-      ts.isMethodDeclaration(n) ||
-      ts.isGetAccessorDeclaration(n) ||
-      ts.isSetAccessorDeclaration(n) ||
-      ts.isConstructorDeclaration(n)
-    ) {
-      return
+/**
+ * The in-place write whose target chain is rooted at `root` (`root.a.b = v`,
+ * `root.items.push(x)`, `root[k]++`, `Object.assign(root, …)`), or `null`
+ * when `root` is only read there.
+ *
+ * `member` is the member directly under the root that the write goes
+ * through (`a`, `items`), or `null` for a write to the root as a whole or
+ * through a computed member. `deep` is true when the object changed is not
+ * the root itself but one it holds (`root.a.b = v`, `root.items.push(x)`):
+ * a shallow copy of the root made earlier shares that object.
+ */
+function inPlaceWriteRootedAt(root: ts.Identifier): { member: string | null; deep: boolean } | null {
+  let chain: ts.Expression = root
+  let member: string | null = null
+  // The accesses between the root and `chain`.
+  let depth = 0
+  for (;;) {
+    const parent: ts.Node = chain.parent
+    if (ts.isParenthesizedExpression(parent) || ts.isNonNullExpression(parent)) {
+      chain = parent
+    } else if (ts.isPropertyAccessExpression(parent) && parent.expression === chain) {
+      // `chain.push(…)`: the method changes `chain` itself.
+      if (isMutatingMethodCallee(parent)) return { member, deep: depth > 0 }
+      if (depth === 0) member = parent.name.text
+      depth++
+      chain = parent
+    } else if (ts.isElementAccessExpression(parent) && parent.expression === chain) {
+      const key = parent.argumentExpression
+      if (depth === 0) member = ts.isStringLiteralLike(key) ? key.text : null
+      depth++
+      chain = parent
+    } else {
+      break
     }
-
-    if (ts.isBinaryExpression(n) && isAssignmentOperator(n.operatorToken.kind)) {
-      if (ts.isPropertyAccessExpression(n.left) || ts.isElementAccessExpression(n.left)) {
-        const root = rootIdentifierOf(n.left)
-        if (root) ids.add(root)
-      }
-    } else if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) {
-      const isIncDec = n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken
-      if (isIncDec && (ts.isPropertyAccessExpression(n.operand) || ts.isElementAccessExpression(n.operand))) {
-        const root = rootIdentifierOf(n.operand)
-        if (root) ids.add(root)
-      }
-    } else if (ts.isCallExpression(n)) {
-      const callee = n.expression
-      if (ts.isPropertyAccessExpression(callee)) {
-        const methodName = callee.name.text
-        if (MUTATING_METHOD_NAMES.has(methodName)) {
-          const root = rootIdentifierOf(callee.expression)
-          if (root) ids.add(root)
-        } else if (
-          methodName === 'assign' &&
-          ts.isIdentifier(callee.expression) &&
-          callee.expression.text === 'Object' &&
-          n.arguments.length > 0
-        ) {
-          // `Object.assign(target, ...)` mutates `target` in place.
-          const root = rootIdentifierOf(n.arguments[0])
-          if (root) ids.add(root)
-        }
-      }
-    }
-
-    ts.forEachChild(n, visit)
   }
+  if (isObjectAssignTarget(chain)) return { member, deep: depth > 0 }
+  // `chain = v` / `chain++` writes a slot of the object one access up.
+  return depth > 0 && isMemberWriteTarget(chain) ? { member, deep: depth > 1 } : null
+}
 
-  visit(node)
-  return ids
+/** `<receiver>.<method>` called, where `method` changes its receiver in place. */
+function isMutatingMethodCallee(access: ts.PropertyAccessExpression): boolean {
+  return MUTATING_METHOD_NAMES.has(access.name.text) && ts.isCallExpression(access.parent) && access.parent.expression === access
+}
+
+/** `target` is the first argument of `Object.assign(target, …)`. */
+function isObjectAssignTarget(target: ts.Expression): boolean {
+  const call = target.parent
+  if (!ts.isCallExpression(call) || call.arguments[0] !== target) return false
+  const callee = call.expression
+  return ts.isPropertyAccessExpression(callee) && callee.name.text === 'assign' && ts.isIdentifier(callee.expression) && callee.expression.text === 'Object'
 }
 
 function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
-  return (
-    kind === ts.SyntaxKind.EqualsToken ||
-    kind === ts.SyntaxKind.PlusEqualsToken ||
-    kind === ts.SyntaxKind.MinusEqualsToken ||
-    kind === ts.SyntaxKind.AsteriskEqualsToken ||
-    kind === ts.SyntaxKind.SlashEqualsToken ||
-    kind === ts.SyntaxKind.PercentEqualsToken ||
-    kind === ts.SyntaxKind.AsteriskAsteriskEqualsToken ||
-    kind === ts.SyntaxKind.AmpersandEqualsToken ||
-    kind === ts.SyntaxKind.BarEqualsToken ||
-    kind === ts.SyntaxKind.CaretEqualsToken ||
-    kind === ts.SyntaxKind.LessThanLessThanEqualsToken ||
-    kind === ts.SyntaxKind.GreaterThanGreaterThanEqualsToken ||
-    kind === ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken ||
-    kind === ts.SyntaxKind.AmpersandAmpersandEqualsToken ||
-    kind === ts.SyntaxKind.BarBarEqualsToken ||
-    kind === ts.SyntaxKind.QuestionQuestionEqualsToken
-  )
+  return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment
 }
 
-/**
- * Collect all variable names declared within a statement tree (for-loop
- * initializers, for-in/of bindings, nested `let`/`const`/`var` blocks).
- * These names are local to the statement and must not be flagged by BF052.
- */
-function collectLocalDeclarations(root: ts.Node): Set<string> {
-  const names = new Set<string>()
-
-  function addBindingName(name: ts.BindingName): void {
-    if (ts.isIdentifier(name)) {
-      names.add(name.text)
-      return
-    }
-    if (ts.isArrayBindingPattern(name)) {
-      for (const el of name.elements) {
-        if (ts.isBindingElement(el)) addBindingName(el.name)
-      }
-      return
-    }
-    if (ts.isObjectBindingPattern(name)) {
-      for (const el of name.elements) {
-        addBindingName(el.name)
-      }
-    }
+/** `target` is the left of an assignment, or the operand of `++` / `--`. */
+function isMemberWriteTarget(target: ts.Expression): boolean {
+  const parent = target.parent
+  if (ts.isBinaryExpression(parent)) return parent.left === target && isAssignmentOperator(parent.operatorToken.kind)
+  if (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) {
+    return parent.operator === ts.SyntaxKind.PlusPlusToken || parent.operator === ts.SyntaxKind.MinusMinusToken
   }
-
-  function visit(n: ts.Node): void {
-    if (
-      ts.isArrowFunction(n) ||
-      ts.isFunctionExpression(n) ||
-      ts.isFunctionDeclaration(n)
-    ) return
-
-    if (ts.isVariableDeclaration(n)) {
-      addBindingName(n.name)
-    }
-
-    ts.forEachChild(n, visit)
-  }
-  visit(root)
-  return names
+  return false
 }
 
 // =============================================================================
@@ -4678,6 +4573,7 @@ function collectConstant(
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers,
+    valueUses: classifyValueUses(node.initializer),
     isJsx,
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
@@ -5932,30 +5828,6 @@ function statementTiming(id: ts.Identifier, root: ts.Node): 'statement' | 'defer
     if (isFunctionScope(n.parent) && !isInvokedInPlace(n.parent)) return 'deferred'
   }
   return 'statement'
-}
-
-/**
- * Whether a function literal outside markup is called where it stands: the
- * callee of a call (an IIFE, `(() => …)()`), or the callback of an array
- * iteration method, which calls it before returning (`xs.map(cb)`, the
- * higher-order methods of `CALLBACK_METHODS`, plus `forEach`). Any other
- * function there is deferred, which only decides whether a later read may
- * inline the binding's declared value (`mutatedAfterDeclaration`).
- */
-function isInvokedInPlace(fn: ts.Node): boolean {
-  let node = fn
-  while (ts.isParenthesizedExpression(node.parent)) node = node.parent
-  const call = node.parent
-  if (!ts.isCallExpression(call)) return false
-  if (call.expression === node) return true
-  return call.arguments[0] === node && isArrayIterationCallee(call.expression)
-}
-
-/** `<receiver>.<method>` where `method` is an array iteration method that calls its callback in place. */
-function isArrayIterationCallee(callee: ts.Expression): boolean {
-  if (!ts.isPropertyAccessExpression(callee)) return false
-  const method = callee.name.text
-  return CALLBACK_METHODS.has(method) || method === 'forEach'
 }
 
 /**

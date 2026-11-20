@@ -109,7 +109,9 @@ describe('a destructured prop the component writes is an init local', () => {
   })
 
   test('a top-level reassignment', () => {
-    const js = clientJs(`start = start + 1\n      return <p>{start}</p>`, P)
+    // The markup defers its read: a server read of a binding a body statement
+    // writes is refused (BF101, `checkStatementWrites`).
+    const js = clientJs(`start = start + 1\n      return <p>{/* @client */ start}</p>`, P)
     expect(js).toContain('let start = _p.start === undefined ? 0 : _p.start')
     expect(js).toContain('start = start + 1')
   })

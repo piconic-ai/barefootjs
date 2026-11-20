@@ -59,4 +59,15 @@ export const conformancePins: ConformancePins = {
   'body-destructure-non-identifier-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
+  // A binding a body statement writes after its declaration, read by the
+  // markup or by a declaration after the statement, is refused in the shared
+  // compile, ahead of any adapter (#3719).
+  'destructure-default-body-mutated-memo': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-direct-read': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-block-shadowed-callback': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-computed-method-name': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-sibling-getter-spread': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-through-holder': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-copied-closure-holder': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-aliased-closure-reassigned': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
 }
