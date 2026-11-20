@@ -4135,5 +4135,5 @@ export function initCommandFilterDemo(__scope, _p = {}) {
   initChild('CommandItem', _s7, { value: "Cranberry" })
 }
 
-hydrate('CommandFilterDemo', { init: initCommandFilterDemo, template: (_p) => `<div data-bf-ph="s10"></div>`, comment: true })
+hydrate('CommandFilterDemo', { init: initCommandFilterDemo, template: (_p) => `<template data-bf-ph="s10"></template>`, comment: true })
 export function CommandFilterDemo(_p, __bfKey) { return createComponent('CommandFilterDemo', _p, __bfKey) }

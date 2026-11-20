@@ -5125,10 +5125,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L180"
       },
       "example": {
-        "fixture": "filter-nested-callback-reads-outer-param",
-        "description": "A nested filter callback reading the outer callback param sees the outer element (#3542)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/filter-nested-callback-reads-outer-param.ts",
-        "code": "g => g === t.main"
+        "fixture": "deferred-child-phrasing-parent",
+        "description": "A child deferred to init under a <p> (and a <span> in a <p>) mounts inside its parent",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/deferred-child-phrasing-parent.ts",
+        "code": "() => name()"
       }
     },
     "binary": {
