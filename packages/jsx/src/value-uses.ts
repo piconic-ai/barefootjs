@@ -70,7 +70,7 @@
  */
 
 import ts from 'typescript'
-import { runsInPlace } from './in-place-function.ts'
+import { isInvokedInPlace, runsInPlace } from './in-place-function.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
 
 /**
@@ -78,7 +78,9 @@ import { walkWithScope } from './scope/lexical-scope-walk.ts'
  *
  * - `deferred` — inside a function the initializer can only create, store
  *   or copy (the file header lists the forms): nothing is read until that
- *   function is called.
+ *   function is called. Also, beside the use it makes now, inside a
+ *   function that may run now and may be kept (anything but an IIFE or an
+ *   array iteration callback): a later call reads the binding again.
  * - `alias` — the value is, or holds, the named object itself (the
  *   initializer's own value, an array element, a property value, a branch
  *   of a conditional or of `||` / `??`).
@@ -124,6 +126,10 @@ export function classifyValueUses(root: ts.Node | undefined): Map<string, Set<Va
     // What the call returns is used in turn: computed into a primitive, it
     // leaves nothing behind; anything else may be what the function read.
     if (use === 'call' && resultUse(ident, root) !== 'read') known.add('opaque')
+    // A function that may run now may also be kept and run again later
+    // (`wrap(() => local.length)`, an IIFE's returned arrow): it then reads
+    // the binding as it is at that later call.
+    if (!runsInPlace(ident, root, scope => !isInvokedInPlace(scope))) known.add('deferred')
   })
   return uses
 }

@@ -48,7 +48,12 @@
  * declared. What such a declaration took BEFORE the write keeps what it
  * took: `copy.length` after `const copy = [...local]` and `local.push('z')`
  * reads a copy the push does not change (a write to an element the copy
- * shares, `rows[0].done = true`, does show through it).
+ * shares, `rows[0].done = true`, does show through it), but a closure the
+ * copy keeps (`{ ...{ read: () => local.length } }`) reads `local` when it
+ * is called. The differential audit
+ * (`packages/client/__tests__/runtime/issue-3719-write-audit.test.ts`)
+ * mounts every program of a small grammar of these shapes it accepts and
+ * compares it with JS.
  *
  * A write to one member of the props object (`props.items.push('z')`) is
  * observed only by a read of that member: `props.title` beside it compiles.
@@ -279,19 +284,24 @@ interface Others {
 type Reach = 'alias' | 'deferred' | 'read' | 'opaque'
 
 /**
- * Which writes a path through other declarations observes: any (`0`); only
- * one in place, when a declaration on it took the object before the write
- * (`1`: a reassignment leaves it the object it took); only one in place to
- * an object the written value holds, when a declaration on it took a shallow
- * copy before the write (`2`: the copy's own slots are its own).
+ * Which writes to the written binding a path through other declarations
+ * observes. Only the LAST step of the path decides it, the one that reaches
+ * the binding itself: every step above it reaches a value that holds what
+ * that step holds (an alias or a copy of a holder shares the objects the
+ * holder keeps), and a function on the path reads its names when it is
+ * called. The last step observes any write (`0`) when it is a function that
+ * reads the binding or a declaration declared after the write; only an
+ * in-place write (`1`) when a declaration declared before the write took the
+ * object (a reassignment leaves it the object it took); only an in-place
+ * write to an object the binding holds (`2`) when it took a shallow copy
+ * before the write (the copy's own slots are its own).
  */
 type Observes = 0 | 1 | 2
 
-/** One step of a path: a name a declaration reaches, how, and which writes the path so far observes. */
+/** One step of a path: a name a declaration reaches, and how. */
 interface Step {
   name: string
   reach: Reach
-  observes: Observes
 }
 
 /**
@@ -312,19 +322,19 @@ function usesThroughOthers(declaration: EagerDeclaration, others: Others, target
   const seen = new Set<string>()
   const pending: Step[] = []
   const enter = (step: Step): void => {
-    const key = `${step.reach} ${step.observes} ${step.name}`
+    const key = `${step.reach} ${step.name}`
     if (step.name === declaration.name || seen.has(key)) return
     seen.add(key)
     pending.push(step)
   }
   const own = declaration.uses instanceof Map ? declaration.uses : opaqueUses(declaration.reads)
   for (const [name, uses] of own) {
-    for (const reach of reachesOf(uses, others.functions.has(name))) enter({ name, reach, observes: 0 })
+    for (const reach of reachesOf(uses, others.functions.has(name))) enter({ name, reach })
   }
   for (let step = pending.pop(); step; step = pending.pop()) {
     for (const edge of heldBy(step, others, writer)) {
       if (edge.name === target && observed(writer, edge.observes)) found.add(edge.use)
-      for (const reach of reachesOf(new Set([edge.use]), false)) enter({ name: edge.name, reach, observes: edge.observes })
+      for (const reach of reachesOf(new Set([edge.use]), false)) enter({ name: edge.name, reach })
     }
   }
   return found
@@ -355,7 +365,7 @@ function reachesOf(uses: ReadonlySet<ValueUse>, isFunction: boolean): Reach[] {
   return reaches
 }
 
-/** A name a reached declaration holds or reads: the use the reaching declaration then makes of it, and which writes it observes. */
+/** A name a reached declaration holds or reads: the use the reaching declaration then makes of it, and which writes that step observes. */
 interface Edge {
   name: string
   use: ValueUse
@@ -376,15 +386,14 @@ function heldBy(step: Step, others: Others, writer: Writer): Edge[] {
     for (const [name, uses] of holder.uses) {
       for (const kept of uses) {
         if (!KEPT_USES.includes(kept)) continue
-        const observes = Math.max(step.observes, before ? keptObserves(kept) : 0) as Observes
-        edges.push({ name, use: step.reach === 'alias' ? kept : step.reach, observes })
+        edges.push({ name, use: step.reach === 'alias' ? kept : step.reach, observes: before ? keptObserves(kept) : 0 })
       }
     }
   }
   const reads = others.functions.get(step.name)
   if (reads instanceof Set) {
     const use: ValueUse = step.reach === 'alias' || step.reach === 'deferred' ? 'deferred' : step.reach
-    for (const name of reads) edges.push({ name, use, observes: step.observes })
+    for (const name of reads) edges.push({ name, use, observes: 0 })
   }
   return edges
 }

@@ -581,6 +581,22 @@ describe('#3719: a read through another declaration that holds the binding', () 
     'a memo over a signal seeded with it': `local.push('z')
   const [s] = createSignal(local)
   const m = createMemo(() => s().length)`,
+    // A copy or an alias of a holder keeps its closure, which reads the
+    // binding when it is called, whatever the holder took before the write.
+    'a call of a closure a copy of an earlier holder keeps': `const box = { read: () => local.length }
+  const copy = { ...box }
+  local.push('z')
+  const m = copy.read()`,
+    'a call of a closure an array copy of an earlier holder keeps': `const fns = [() => local.length]
+  const copy = fns.slice()
+  local.push('z')
+  const m = copy[0]()`,
+    'a call of a closure kept by a function an earlier call returned': `const box = Object.freeze({ read: () => local.length })
+  local.push('z')
+  const m = box.read()`,
+    'a call of a closure an IIFE returned': `const read = (() => () => local.length)()
+  local.push('z')
+  const m = read()`,
   }
   for (const [name, declarations] of Object.entries(refused)) {
     test(`${name}: refused`, () => {
@@ -654,6 +670,19 @@ describe('#3719: a read through another declaration that holds the binding', () 
       expect(refusals(component(declarations, name.startsWith('a memo') ? 'm()' : 'm'))).toEqual([])
     })
   }
+
+  test('a call of a closure an alias of an earlier holder keeps, after a reassignment: refused', () => {
+    const found = refusals(`${CLIENT}export function C() {
+  let local = ['y']
+  const box = { read: () => local.length }
+  const alias = box
+  local = ['y', 'z']
+  const m = alias.read()
+  return <button onClick={() => console.log(m)}>x</button>
+}`)
+    expect(found).toHaveLength(1)
+    expect(found[0]!.message).toMatch(/^'m' reads 'local' after a statement/)
+  })
 
   test('a read of an alias taken before the binding is reassigned: compiles', () => {
     expect(refusals(`${CLIENT}export function C() {
