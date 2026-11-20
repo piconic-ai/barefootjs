@@ -366,6 +366,12 @@ export function C() {
   ;['a'].forEach(x => { const out: string[] = []; out.push(x) })
   return <p>{out.length}</p>
 }`,
+    'a function destructured out of an array literal after the statement, not called': `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const [read] = [() => local.length]
+  return <button onClick={() => console.log(read())}>x</button>
+}`,
     'a pure let reassignment, folded into its initializer': `${CLIENT}export function C(props: { l?: string }) {
   let label = props.l ?? 'd'
   if (!label) label = 'f'
@@ -429,13 +435,16 @@ describe('#3719: what an initializer declared after the write evaluates where it
   const component = (initializer: string): string => `${CLIENT}
 function tag(strings: TemplateStringsArray, ...values: unknown[]) { return values.length + strings.length }
 function wrap<T>(value: T): T { return value }
+let slot: unknown
 export function C(props: { flag?: boolean }) {
   const local = ['y']
   local.push('z')
   const box = ${initializer}
-  return <button onClick={() => console.log(box, props.flag)}>x</button>
+  return <button onClick={() => console.log(box, props.flag, slot)}>x</button>
 }`
 
+  // The two columns of `value-uses.ts`'s contract: MAY INVOKE (refused) and
+  // NON-INVOKING (compiles).
   const eager: Record<string, string> = {
     'a computed method name': `{ [local.join(',')]() { return 1 } }`,
     'a computed getter name': `{ get [local.join(',')]() { return 1 } }`,
@@ -459,6 +468,15 @@ export function C(props: { flag?: boolean }) {
     'a spread of an object with a getter': `{ ...{ get n() { return local.length } } }`,
     'a function called out of the array that holds it': `[() => local.length][0]()`,
     'an instance field of a class constructed in place': `new (class { n = local.length })()`,
+    'a static getter read on the class that defines it': `(class { static get n() { return local.length } }).n`,
+    'a function a static field stores, called by a static block': `class { static read = () => local.length; static { this.read() } }`,
+    'a function a static field stores, called by another static initializer': `class { static read = () => local.length; static n = this.read() }`,
+    'a spread of something that is not an array literal': `[...wrap([() => local.length])]`,
+    'a spread of something that is not an object literal': `{ ...wrap({ get n() { return local.length } }) }`,
+    'a member read on something that is not a literal': `wrap({ get n() { return local.length } }).n`,
+    'a function stored under a name the initializer then calls': `(slot = () => local.length, (slot as () => number)())`,
+    'an object coerced by a template string': `\`\${{ toString: () => local.join(',') }}\``,
+    'an object coerced by an operator': `'' + { toString: () => local.join(',') }`,
   }
   for (const [name, initializer] of Object.entries(eager)) {
     test(`${name} is evaluated with the initializer: refused`, () => {
@@ -476,6 +494,19 @@ export function C(props: { flag?: boolean }) {
     'an async method and a generator method body': `{ async a() { return local.length }, *g() { yield local.length } }`,
     'an arrow returned by a kept arrow': `{ f: () => () => local.length }`,
     'a method, constructor and instance field of a kept class': `class { n = local.length; constructor() { local.length }; m() { return local.length } }`,
+    'an arrow a static field stores': `class { static read = () => local.length }`,
+    'an arrow in an object a static field stores, beside other static values': `class { static label = 'x'; static handlers = { read: () => local.length } }`,
+    'an arrow an instance field stores': `class { read = () => local.length }`,
+    'an array-literal spread of an array literal': `[...[() => local.length]]`,
+    'an object-literal spread of an object literal': `{ ...{ read: () => local.length } }`,
+    'nested literals and spreads': `[{ a: [...[{ ...{ read: () => local.length } }]] }]`,
+    'parentheses, as, satisfies and a non-null assertion': `((({ read: () => local.length } as { read: () => number }) satisfies object)!)`,
+    'a selection by && and ??': `(props.flag && { read: () => local.length }) ?? [() => local.length]`,
+    'a comma operand': `(0, { read: () => local.length })`,
+    'a function read out of the object literal that holds it, not called': `({ read: () => local.length }).read`,
+    'a function read out of the array literal that holds it, not called': `[() => local.length][0]`,
+    'a function read out of the class that stores it, not called': `(class { static read = () => local.length }).read`,
+    'a function stored under a name nothing else in the initializer mentions': `(slot = () => local.length)`,
   }
   for (const [name, initializer] of Object.entries(deferred)) {
     test(`${name} runs later: compiles`, () => {
@@ -521,4 +552,41 @@ describe('#3719: what a body statement writes when it runs', () => {
       expect(refusals(component(statement))).toEqual([])
     })
   }
+})
+
+describe('#3719: a module-level let the component body writes', () => {
+  // The module's `let` is one binding for every render. The server function
+  // carries its declaration and no body statement, so the markup would render
+  // the declared value (`fallback`) where JS renders the written one
+  // (`fallback!`); the client's init runs the statement but re-renders no
+  // static text. The markup read is refused like a component binding's. A
+  // read in a handler runs after the statement and compiles.
+  test('read by the markup: refused', () => {
+    const found = refusals(`'use client'
+let counter = '' || 'fallback'
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>{counter}</button>
+}`)
+    expect(found).toHaveLength(1)
+    expect(found[0]!.message).toContain("'counter' is written by a statement in the component body")
+    expect(escapeKinds(found[0])).toEqual(['rewrite', 'client-directive'])
+  })
+
+  test('read by a handler, or by the markup under /* @client */: compiles', () => {
+    expect(errorsOf(`'use client'
+let counter = '' || 'fallback'
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>{/* @client */ counter}</button>
+}`)).toEqual([])
+  })
+
+  test('written only by a handler, read by the markup: compiles', () => {
+    expect(refusals(`'use client'
+let counter = 'a'
+export function C() {
+  return <button onClick={() => { counter = counter + '!' }}>{counter}</button>
+}`)).toEqual([])
+  })
 })
