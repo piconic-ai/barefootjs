@@ -4,7 +4,7 @@
 
 import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, IRText, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
-import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
+import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, componentPlaceholderMarkup, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
@@ -1508,7 +1508,7 @@ function walkSkeletonPathChildren(
 /**
  * Generate an HTML template for composite element reconciliation.
  * Identical to irToHtmlTemplate except component nodes become placeholder
- * elements (`<div data-bf-ph="sN"></div>`) instead of renderChild() calls.
+ * elements (`componentPlaceholderMarkup`) instead of renderChild() calls.
  * The placeholders are replaced with real createComponent() elements at runtime.
  */
 export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: ReadonlySet<string>, loopDepth = 0, loopParams?: ReadonlyArray<string | LoopParamSpec>): string {
@@ -1574,9 +1574,8 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
       if (node.name === 'Portal') {
         return node.children.map(recurse).join('')
       }
-      // Emit a placeholder div that will be replaced with createComponent() at runtime
-      const phId = node.slotId || node.name
-      return `<div ${DATA_BF_PH}="${phId}"></div>`
+      // Emit a placeholder that will be replaced with createComponent() at runtime
+      return componentPlaceholderMarkup(node.slotId || node.name)
     }
 
     case 'loop': {
@@ -2864,7 +2863,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // getter props (mirrors the `irToPlaceholderTemplate` deferral and
       // the clientOnly-conditional empty-marker precedent).
       if (node.slotId && opts.deferredChildSlots?.has(node.slotId)) {
-        return `<div ${DATA_BF_PH}="${node.slotId}"></div>`
+        return componentPlaceholderMarkup(node.slotId)
       }
 
       const propsEntries = node.props
