@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysForAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedEverywhere, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -7519,18 +7519,25 @@ function closedRestFallbacks(
 }
 
 /**
- * The keys of each closed rest spread on an element that an explicit
- * attribute or a static const spread written after it also writes. JSX
- * keeps the last write, so `<label {...rest} htmlFor="x">` renders
- * `for="x"` whatever `rest.htmlFor` holds: the spread's expansion drops
- * those keys. A later attribute writes a key when it is spelled the same
- * (`htmlFor`) or names the attribute the key renders as
- * (`toSpreadAttrName`: a later `for` writes `htmlFor`). An open spread
- * after it writes keys nothing knows statically and overrides nothing here.
+ * The keys of each closed rest spread on an element that a write after it
+ * always replaces on the server. JSX keeps the last write, so
+ * `<label {...rest} htmlFor="x">` renders `for="x"` whatever `rest.htmlFor`
+ * holds: the spread's expansion drops those keys. A later write replaces a
+ * key when it is spelled the same (`htmlFor`) or names the attribute the
+ * key renders as (`toSpreadAttrName`: a later `for` replaces `htmlFor`).
+ *
+ * What counts as a later write: an explicit attribute the server renders
+ * (not a client-only one, {@link isClientOnlyAttr}, which the server skips),
+ * a static const spread's entry, and a later closed rest's key only where
+ * that expansion carries the earlier value as its fallback
+ * (`restFallbacks`): a rest may omit an optional key, so without the
+ * fallback the earlier write is still the value when it does. An open
+ * spread writes keys nothing knows statically and replaces nothing here.
  */
 function closedRestKeysWrittenLater(
   properties: readonly ts.JsxAttributeLike[],
   entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
+  restFallbacks: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyMap<string, RestKeyFallback>>,
   ctx: TransformContext,
 ): Map<ts.JsxSpreadAttribute, Set<string>> {
   const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
@@ -7542,7 +7549,7 @@ function closedRestKeysWrittenLater(
   }
   for (const attr of [...properties].reverse()) {
     if (ts.isJsxAttribute(attr)) {
-      noteWrite(attr.name.getText(ctx.sourceFile))
+      if (!isClientOnlyAttr(attr, ctx)) noteWrite(attr.name.getText(ctx.sourceFile))
       continue
     }
     if (!ts.isJsxSpreadAttribute(attr)) continue
@@ -7554,9 +7561,20 @@ function closedRestKeysWrittenLater(
     if (closedRestSpreadSource(attr, ctx) === null) continue
     const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(toSpreadAttrName(key)))
     if (written.length > 0) result.set(attr, new Set(written))
-    for (const key of ctx.analyzer.restPropsExpandedKeys) noteWrite(key)
+    for (const key of restFallbacks.get(attr)?.keys() ?? []) noteWrite(key)
   }
   return result
+}
+
+/**
+ * Whether the server skips the explicit attribute `attr`: a `/* @client *\/`
+ * value, or a reactive brand-package read deferred to hydrate (#1638). Its
+ * binding is applied only on the client.
+ */
+function isClientOnlyAttr(attr: ts.JsxAttribute, ctx: TransformContext): boolean {
+  const init = attr.initializer
+  if (!init || !ts.isJsxExpression(init) || !init.expression) return false
+  return hasLeadingClientDirective(init.expression, ctx.sourceFile) || shouldAutoDeferReactiveBrand(init.expression, ctx)
 }
 
 /** {@link closedRestFallbacks} for one closed rest spread reading its keys off `source`. */
@@ -7922,7 +7940,7 @@ function processAttributes(
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
   const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
-  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, ctx)
+  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, restPlan.fallbacks, ctx)
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
@@ -7998,8 +8016,7 @@ function processAttributes(
       // Reactive brand-package reads (`value={form.field('x').value()}`)
       // are auto-deferred the same way: the SSR lambda can't evaluate the
       // init-scope form state, so defer instead of raising BF061 (#1638).
-      if (hasLeadingClientDirective(attr.initializer.expression, ctx.sourceFile)
-        || shouldAutoDeferReactiveBrand(attr.initializer.expression, ctx)) {
+      if (isClientOnlyAttr(attr, ctx)) {
         clientOnly = true
       }
     }
@@ -8060,11 +8077,12 @@ function markAttrsOverridableBySpread(
     const value = attr.value
     if (value.kind !== 'literal' && value.kind !== 'boolean-attr') return
     // The keys a spread bag writes the attribute under: the name as the IR
-    // has it, and every bag key a spread renders as that attribute
-    // (`spreadKeysForAttrName`: `htmlFor` for `for`), since a template's
-    // spread helper renames it to the same attribute. `class` is read only
-    // as `className`, the key the reference adapter writes it under.
-    const aliases = spreadKeysForAttrName(attr.name)
+    // has it, and every bag key each adapter's spread helper renders as that
+    // attribute (`spreadKeysRenamedEverywhere`: `htmlFor` for `for`). A key
+    // only some helpers rename (`crossOrigin`) is left out, so the literal
+    // stays where the bag writes another attribute (`cross-origin`). `class`
+    // is read only as `className`, the key the reference writes it under.
+    const aliases = spreadKeysRenamedEverywhere(attr.name)
     const keys = attr.name === 'class' ? aliases : [attr.name, ...aliases]
     const missing: string[] = []
     const templateMissing: string[] = []

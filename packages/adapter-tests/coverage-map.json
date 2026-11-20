@@ -19980,12 +19980,42 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-client-literal-after": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-literal-alias-after": {
       "kinds": [
         "identifier",
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
       "contexts": [
         "attribute"
       ]
@@ -20015,6 +20045,15 @@
       ]
     },
     "spread-open-bag-literal-alias-before": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-renamed-elsewhere": {
       "kinds": [
         "identifier"
       ],

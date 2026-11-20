@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysForAttrName, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedEverywhere, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -262,16 +262,17 @@ describe('toSpreadAttrName', () => {
   })
 })
 
-describe('spreadKeysForAttrName', () => {
-  test('lists the bag keys that render as the attribute', () => {
-    expect(spreadKeysForAttrName('for')).toEqual(['htmlFor'])
-    expect(spreadKeysForAttrName('class')).toEqual(['className'])
-    expect(spreadKeysForAttrName('http-equiv')).toEqual(['httpEquiv'])
+describe('spreadKeysRenamedEverywhere', () => {
+  test('lists the bag keys every spread helper renders as the attribute', () => {
+    expect(spreadKeysRenamedEverywhere('for')).toEqual(['htmlFor'])
+    expect(spreadKeysRenamedEverywhere('class')).toEqual(['className'])
+    expect(spreadKeysRenamedEverywhere('http-equiv')).toEqual(['httpEquiv'])
   })
 
-  test('lists nothing for a name no key renames to', () => {
-    expect(spreadKeysForAttrName('id')).toEqual([])
-    expect(spreadKeysForAttrName('tabindex')).toEqual([])
-    expect(spreadKeysForAttrName('htmlFor')).toEqual([])
+  test('lists nothing for a key only some helpers rename, or a name no key renames to', () => {
+    expect(spreadKeysRenamedEverywhere('crossorigin')).toEqual([])
+    expect(spreadKeysRenamedEverywhere('formaction')).toEqual([])
+    expect(spreadKeysRenamedEverywhere('id')).toEqual([])
+    expect(spreadKeysRenamedEverywhere('htmlFor')).toEqual([])
   })
 })

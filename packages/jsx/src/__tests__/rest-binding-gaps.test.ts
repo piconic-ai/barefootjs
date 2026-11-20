@@ -81,6 +81,28 @@ export function P({ label, ...rest }: { label: string; htmlFor?: string; classNa
     expect(label.attrs.map(a => a.name)).toEqual(['for', 'class'])
   })
 
+  test('a client-only attribute after the spread leaves the rest key in place', () => {
+    const ir = irOf(`
+export function P({ label, ...rest }: { label: string; htmlFor?: string }) {
+  return <label {...rest} htmlFor={/* @client */ 'c'}>{label}</label>
+}
+`)
+    const [label] = elements(ir.root, 'label')
+    expect(label.attrs.map(a => a.name)).toEqual(['htmlFor', 'for'])
+  })
+
+  test('a later closed rest replaces an earlier one only where it carries its value as fallback', () => {
+    const ir = irOf(`
+export function P({ label, bag, ...rest }: { label: string; bag: Record<string, string>; title?: string }) {
+  return <div><p title="f" {...rest} {...bag} {...rest}>{label}</p><i title="f" {...rest} {...rest}>{label}</i></div>
+}
+`)
+    const [p] = elements(ir.root, 'p')
+    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title'])
+    const [i] = elements(ir.root, 'i')
+    expect(attrExpr(i, 'title')).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
+  })
+
   test('a member read before the spread is a fallback', () => {
     expect(codes(`
 export function P({ label, row, ...rest }: { label: string; row: { t: string }; title?: string }) {

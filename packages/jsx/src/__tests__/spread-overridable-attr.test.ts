@@ -65,6 +65,22 @@ export function C({ ...rest }: P) { return <p title="a" {...rest}>x</p> }`)
     expect(title.spreadOverridable?.parsed?.kind).toBe('conditional')
   })
 
+  test('a literal is guarded by every bag key each spread helper renames to it', () => {
+    const ir = irOf(`${open}
+export function C({ ...rest }: P) { return <label htmlFor="a" className="b" {...rest}>x</label> }`)
+    const el = elementOf(ir, 'label')
+    expect(attrOf(el, 'for').spreadOverridable?.expr).toBe('rest.for == null && rest.htmlFor == null ? "a" : undefined')
+    expect(attrOf(el, 'class').spreadOverridable?.expr).toBe('rest.className == null ? "b" : undefined')
+  })
+
+  test('a bag key only some spread helpers rename does not guard the literal', () => {
+    // `crossOrigin` renders as `cross-origin` on most template helpers, so a
+    // bag carrying it must not remove the literal `crossorigin` there.
+    const ir = irOf(`${open}
+export function C({ ...rest }: P) { return <img crossOrigin="anonymous" {...rest} /> }`)
+    expect(attrOf(elementOf(ir, 'img'), 'crossorigin').spreadOverridable?.expr).toBe('rest.crossorigin == null ? "anonymous" : undefined')
+  })
+
   test('a guarded literal prints as written, whatever the attribute name', () => {
     const ir = irOf(`${open}
 export function C({ ...rest }: P) { return <input disabled="" hidden {...rest} /> }`)

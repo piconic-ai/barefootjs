@@ -14808,6 +14808,14 @@
           }
         }
       },
+      "spread-closed-rest-repeated": {
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-after-open-spread-omitted-key"
+          ]
+        }
+      },
       "spread-open-bag-hono-renamed-keys": {
         "blade": {
           "kind": "render",
@@ -14860,6 +14868,68 @@
       },
       "spread-open-bag-literal-alias-before": {
         "hono": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        }
+      },
+      "spread-open-bag-literal-renamed-elsewhere": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "xslate": {
           "kind": "render",
           "limitations": [
             "spread-key-alias-literal-duplicate"
@@ -17183,6 +17253,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-closed-rest-repeated": {
+        "description": "A literal before a closed rest spread twice survives when no spread carries its key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated.ts"
+      },
       "spread-open-bag-hono-renamed-keys": {
         "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
@@ -17190,6 +17264,10 @@
       "spread-open-bag-literal-alias-before": {
         "description": "A literal htmlFor before an open bag carrying htmlFor renders the bag value once; literals the bag…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-alias-before.ts"
+      },
+      "spread-open-bag-literal-renamed-elsewhere": {
+        "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-renamed-elsewhere.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
@@ -18003,6 +18081,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "closed-rest-after-open-spread-omitted-key": {
+      "title": "A closed rest spread after an open spread, missing a key an earlier write set",
+      "kind": "silent",
+      "given": "a literal (`title=\"fallback\"`), then a closed rest spread, an open spread and the closed rest spread again, where the caller omits the optional key (`title`) and the open bag lacks it",
+      "expected": "the literal renders, since no later spread carries the key (`title=\"fallback\"`)",
+      "actual": "Renders no attribute: the later expansion writes the omitted key as an explicit `undefined`, which replaces the literal",
+      "fixtures": [
+        "spread-closed-rest-repeated"
+      ],
+      "adapters": [
+        "hono"
       ]
     },
     "component-scope-helper-call": {
@@ -19135,14 +19226,24 @@
     "spread-key-alias-literal-duplicate": {
       "title": "A literal attribute and an open spread bag key that renames to it",
       "kind": "silent",
-      "given": "a literal written with a React-style name a spread renames (`htmlFor=\"explicit\"`) before an open spread (`{...rest}`) whose bag carries that key (`htmlFor`)",
+      "given": "a literal written with a React-style name a spread renames (`htmlFor=\"explicit\"`, `crossOrigin`) before an open spread (`{...rest}`) whose bag carries that key",
       "expected": "the attribute renders once, with the bag's value (`for=\"spread\"`); a key the bag lacks keeps the literal",
-      "actual": "Renders the attribute twice (`for=\"explicit\" for=\"spread\"`), so a browser keeps the literal",
+      "actual": "Renders the attribute twice (`for=\"explicit\" for=\"spread\"`), or the literal beside the bag key kebab-cased (`crossorigin=\"anonymous\" cross-origin=\"use-credentials\"`), so a browser keeps the literal",
       "fixtures": [
-        "spread-open-bag-literal-alias-before"
+        "spread-open-bag-literal-alias-before",
+        "spread-open-bag-literal-renamed-elsewhere"
       ],
       "adapters": [
-        "hono"
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "statement-body-callback": {

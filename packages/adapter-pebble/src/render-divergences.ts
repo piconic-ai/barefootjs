@@ -32,6 +32,11 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // A literal `crossOrigin` before an open bag carrying `crossOrigin`: the
+  // helper renames the bag key to the literal's `crossorigin`, which the
+  // compiler does not guard against (the other helpers write `cross-origin`),
+  // so it renders twice.
+  'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
   // A binding a body statement mutates (`items.push('z')`) handed to a
   // child as a prop: the template runs no body statement and does not pass
   // on a binding whose declared value a statement changes, so the child

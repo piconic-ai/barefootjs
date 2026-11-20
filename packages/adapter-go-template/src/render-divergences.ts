@@ -126,6 +126,9 @@ export const renderDivergences: RenderDivergences = {
   // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
   // writes it as it is or renames only its own few keys (`crossorigin`).
   'spread-open-bag-hono-renamed-keys': { limitation: 'spread-bag-camel-key-name' },
+  // The bag's `crossOrigin` renders as `cross-origin` beside the literal
+  // `crossorigin`, which the compiler keeps since it is another attribute here.
+  'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },

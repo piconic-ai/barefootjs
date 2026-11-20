@@ -7313,6 +7313,12 @@
               "limitations": [
                 "namespace-import-primitive-without-program"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
             }
           ]
         },
@@ -13503,7 +13509,19 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-alias-before",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
               ]
@@ -14182,6 +14200,12 @@
               "fixture": "spread-open-bag-hono-renamed-keys",
               "limitations": [
                 "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -14912,6 +14936,12 @@
               "fixture": "spread-open-bag-hono-renamed-keys",
               "limitations": [
                 "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -15939,6 +15969,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -16723,6 +16759,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17477,6 +17519,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18210,6 +18258,12 @@
               "fixture": "spread-open-bag-hono-renamed-keys",
               "limitations": [
                 "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -18964,6 +19018,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -19715,6 +19775,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20457,6 +20523,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -21083,6 +21155,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
               ]
             }
           ]
@@ -26923,6 +27001,12 @@
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
             }
           ]
         },
@@ -28086,6 +28170,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
               ]
             }
           ]
@@ -33529,6 +33619,12 @@
               "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
               ]
             }
           ]
@@ -44683,6 +44779,12 @@
               "limitations": [
                 "authored-format-date-call"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
+              ]
             }
           ]
         },
@@ -49853,6 +49955,12 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-after-open-spread-omitted-key"
               ]
             }
           ]

@@ -172,6 +172,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-attr-names',
   'spread-open-bag-hono-renamed-keys',
   'spread-open-bag-literal-alias-before',
+  'spread-open-bag-literal-renamed-elsewhere',
+  // The CSR template, like the Hono render, writes the later closed rest's
+  // omitted `title` over the literal (limitation
+  // `closed-rest-after-open-spread-omitted-key`).
+  'spread-closed-rest-repeated',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

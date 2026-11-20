@@ -39,7 +39,7 @@ export {
   toHTMLAttrName,
   toHTMLAttrNameRuntime,
   toSpreadAttrName,
-  spreadKeysForAttrName,
+  spreadKeysRenamedEverywhere,
   SPREAD_KEY_ATTR_NAMES,
   isBooleanAttr,
   isEventProp,
