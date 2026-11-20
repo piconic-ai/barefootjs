@@ -66,4 +66,6 @@ export const conformancePins: ConformancePins = {
   'body-statement-write-direct-read': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-block-shadowed-callback': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-computed-method-name': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-sibling-getter-spread': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-through-holder': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
 }

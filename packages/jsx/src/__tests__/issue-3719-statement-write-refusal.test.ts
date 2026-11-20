@@ -471,6 +471,25 @@ export function C(props: { flag?: boolean }) {
     'a static getter read on the class that defines it': `(class { static get n() { return local.length } }).n`,
     'a function a static field stores, called by a static block': `class { static read = () => local.length; static { this.read() } }`,
     'a function a static field stores, called by another static initializer': `class { static read = () => local.length; static n = this.read() }`,
+    'a spread of a literal whose getter calls the stored function': `{ ...{ read: () => local.length, get n() { return this.read() } } }`,
+    'a member read on a literal whose getter calls the stored function': `({ read: () => local.length, get n() { return this.read() } }).n`,
+    'a spread of a literal whose getter calls a function nested in it': `{ ...{ h: { read: () => local.length }, get n() { return this.h.read() } } }`,
+    'a member read on a class whose static getter calls the stored function': `(class { static read = () => local.length; static get n() { return this.read() } }).n`,
+    'a member read on a literal whose prototype has a getter': `({ read: () => local.length, __proto__: { get n(): number { return (this as any).read() } } } as any).n`,
+    'a spread of a literal with a computed key': `{ ...{ read: () => local.length, [String(props.flag)]: 1 } }`,
+    'a spread of a literal that itself spreads something unknown': `{ ...{ read: () => local.length, ...wrap({}) } }`,
+    'a member read on a literal with a setter': `({ read: () => local.length, set n(v: number) {} }).read`,
+    'a member read on a class that extends another': `(class extends Object { static read = () => local.length }).read`,
+    'a function a decorated static field stores': `class { @wrap static read = () => local.length }`,
+    'a decorated static method': `class { @wrap static m() { return local.length } }`,
+    'a decorated method': `class { @wrap m() { return local.length } }`,
+    'a function a static field of a decorated class stores': `@wrap class { static read = () => local.length }`,
+    'a constructor with a decorated parameter': `class { constructor(@wrap x: number) { local.length } }`,
+    'a spread of a class expression': `{ ...class { static read = () => local.length } }`,
+    'a member read of a name the object literal does not hold': `({ read: () => local.length } as any).other`,
+    'a member read of a name the class does not hold as static': `(class { static read = () => local.length } as any).other`,
+    'a member read past the elements of an array literal': `([() => local.length] as any)[1]`,
+    'a member read of a string-keyed __proto__ literal': `({ read: () => local.length, '__proto__': { get n(): number { return (this as any).read() } } } as any).n`,
     'a spread of something that is not an array literal': `[...wrap([() => local.length])]`,
     'a spread of something that is not an object literal': `{ ...wrap({ get n() { return local.length } }) }`,
     'a member read on something that is not a literal': `wrap({ get n() { return local.length } }).n`,
@@ -499,6 +518,8 @@ export function C(props: { flag?: boolean }) {
     'an arrow an instance field stores': `class { read = () => local.length }`,
     'an array-literal spread of an array literal': `[...[() => local.length]]`,
     'an object-literal spread of an object literal': `{ ...{ read: () => local.length } }`,
+    'an object-literal spread of a literal holding a method and a nested object': `{ ...{ read() { return local.length }, h: { get n() { return local.length } } } }`,
+    'a literal with a getter that is only stored': `{ read: () => local.length, get n() { return this.read() } }`,
     'nested literals and spreads': `[{ a: [...[{ ...{ read: () => local.length } }]] }]`,
     'parentheses, as, satisfies and a non-null assertion': `((({ read: () => local.length } as { read: () => number }) satisfies object)!)`,
     'a selection by && and ??': `(props.flag && { read: () => local.length }) ?? [() => local.length]`,
@@ -506,11 +527,97 @@ export function C(props: { flag?: boolean }) {
     'a function read out of the object literal that holds it, not called': `({ read: () => local.length }).read`,
     'a function read out of the array literal that holds it, not called': `[() => local.length][0]`,
     'a function read out of the class that stores it, not called': `(class { static read = () => local.length }).read`,
+    'a function a static auto-accessor stores': `class { static accessor read = () => local.length }`,
+    'a function read out of a class beside a static method that calls it': `(class { static read = () => local.length; static m() { return this.read() } }).read`,
     'a function stored under a name nothing else in the initializer mentions': `(slot = () => local.length)`,
   }
   for (const [name, initializer] of Object.entries(deferred)) {
     test(`${name} runs later: compiles`, () => {
       expect(refusals(component(initializer))).toEqual([])
+    })
+  }
+})
+
+describe('#3719: a read through another declaration that holds the binding', () => {
+  // `m` is created by init before the statement runs. What it does with a
+  // declaration that holds `local`, or a function reading it, it does with
+  // `local` as declared, wherever that declaration stands.
+  const component = (declarations: string, read = 'm'): string => `${CLIENT}export function C() {
+  const local = ['y']
+  ${declarations}
+  return <button onClick={() => console.log(${read})}>x</button>
+}`
+
+  const refused: Record<string, string> = {
+    'a call of a function an earlier object holds': `const box = { read: () => local.length }
+  local.push('z')
+  const m = box.read()`,
+    'a call of a function an object declared after the statement holds': `local.push('z')
+  const box = { read: () => local.length }
+  const m = box.read()`,
+    'a getter read of an object whose getter calls a function it holds': `local.push('z')
+  const box = { read: () => local.length, get n() { return this.read() } }
+  const m = box.n`,
+    'a spread of an object whose getter calls a function it holds': `local.push('z')
+  const box = { read: () => local.length, get n() { return this.read() } }
+  const m = { ...box }`,
+    'a read of an alias declared after the statement': `local.push('z')
+  const alias = local
+  const m = alias.length`,
+    'a read of an alias declared before the statement': `const alias = local
+  local.push('z')
+  const m = alias.length`,
+    'a read through an object holding it': `local.push('z')
+  const o = { a: local }
+  const m = o.a.length`,
+    'a read through two aliases': `local.push('z')
+  const a = local
+  const b = a
+  const m = b.length`,
+    'a call of a function an object holds by name': `const read = () => local.length
+  local.push('z')
+  const box = { read }
+  const m = box.read()`,
+    'a memo over a signal seeded with it': `local.push('z')
+  const [s] = createSignal(local)
+  const m = createMemo(() => s().length)`,
+  }
+  for (const [name, declarations] of Object.entries(refused)) {
+    test(`${name}: refused`, () => {
+      const found = refusals(component(declarations, name.startsWith('a memo') ? 'm()' : 'm'))
+      expect(found).toHaveLength(1)
+      expect(found[0]!.message).toMatch(/^(Memo )?'m' reads 'local' after a statement/)
+    })
+  }
+
+  test('a server read through two aliases: refused', () => {
+    const found = refusals(`${CLIENT}export function C() {
+  const local = ['y']
+  const a = local
+  local.push('z')
+  const b = a
+  return <p>{b.length}</p>
+}`)
+    expect(found).toHaveLength(1)
+  })
+
+  const accepted: Record<string, string> = {
+    'an object holding the function, held again': `local.push('z')
+  const box = { read: () => local.length, get n() { return this.read() } }
+  const m = box`,
+    'an alias held again': `local.push('z')
+  const alias = local
+  const m = alias`,
+    'a primitive computed before the statement': `const n = local.length
+  local.push('z')
+  const m = n + 1`,
+    'a function that calls the held function later': `local.push('z')
+  const box = { read: () => local.length }
+  const m = () => box.read()`,
+  }
+  for (const [name, declarations] of Object.entries(accepted)) {
+    test(`${name}: compiles`, () => {
+      expect(refusals(component(declarations))).toEqual([])
     })
   }
 })

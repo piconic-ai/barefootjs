@@ -32,25 +32,36 @@
  *     shorthand, an element, at any depth;
  *   - a `static` field that stores it, in a class whose other creation-time
  *     parts (its `extends`, computed names and other `static` initializers)
- *     create only, and which has no `static { … }` block;
+ *     create only, and which has no `static { … }` block and no decorator
+ *     (a decorator is called with the member it decorates, and a class
+ *     member counts as created only in a class that meets this too);
  *   - a spread of an ARRAY LITERAL into an array literal (the built-in array
- *     iterator runs no user code), and a spread of an OBJECT LITERAL into an
- *     object literal, for anything but an accessor of that literal;
- *   - a member read (`.name`, `[literal]`) on a literal or class expression
- *     built in the same expression, for anything but an accessor of it,
- *     yielding the function without calling it;
+ *     iterator runs no user code), and a spread of an ACCESSOR-FREE OBJECT
+ *     LITERAL into an object literal;
+ *   - a member read (`.name`, `[literal]`) of one of its OWN members on an
+ *     array literal, or on an ACCESSOR-FREE object literal or class
+ *     expression (a `static` member), built in the same expression, yielding
+ *     the function without calling it (any other name is looked up on the
+ *     prototype, whose getters run the same way);
  *   - parentheses, `as`, `satisfies`, `!` and type assertions;
  *   - `?:`, `||`, `&&`, `??` and the comma operator (a value they select, or
  *     only test, is not called);
  *   - an assignment to a plain name nothing else in the initializer
  *     mentions.
  *
+ * ACCESSOR-FREE (`isAccessorFree`): spreading or reading a member of an
+ * object runs its getters, and a getter can call any other member through
+ * `this` (`{ read: () => …, get n() { return this.read() } }`). So such a
+ * holder must have no getter or setter, no computed key, no spread member
+ * and no `__proto__` (a prototype's getters run the same way), and a class
+ * no `extends` either (inherited static getters).
+ *
  * EVERYTHING ELSE MAY INVOKE it, and the function's body then counts as
  * evaluated with the initializer: a call or `new` it is the callee or an
  * argument of, a tagged template, a spread or member read of anything that
- * is not such a literal, a read or spread that reaches an accessor, any
- * other operator (a coercion may call into user code), an assignment to a
- * member or to a name used elsewhere, `await` / `yield`, a function or class
+ * is not such a literal, a member read of a name it does not hold, any other
+ * operator (a coercion may call into user code), an assignment to a member
+ * or to a name used elsewhere, `await` / `yield`, a function or class
  * DECLARATION (later statements of the same body may call it). The parts of
  * a function or class that are not deferred at all (a computed member name,
  * a `static` initializer or block, `extends`) are `runsInPlace`'s to say.
@@ -128,13 +139,6 @@ function isValueReference(id: ts.Identifier): boolean {
   return !ts.isTypeNode(p) && !ts.isQualifiedName(p)
 }
 
-/** A function value on its way out of the initializer: the node that holds it, and whether it is an accessor of that node. */
-interface Carried {
-  node: ts.Node
-  /** The function is a getter or setter of `node` (an object literal or class): reading or spreading `node` may run it. */
-  accessor: boolean
-}
-
 /**
  * Whether a deferred scope inside an initializer (a function literal's
  * parameters and body, an instance field's initializer) is certain not to
@@ -142,38 +146,34 @@ interface Carried {
  * is one of the header's non-invoking forms.
  */
 function staysUncalled(scope: ts.Node, root: ts.Node): boolean {
-  let carried = createdAs(scope)
-  while (carried && carried.node !== root) carried = carriedBy(carried, root)
-  return carried !== null
+  let holder = createdAs(scope)
+  while (holder && holder !== root) holder = carriedBy(holder, root)
+  return holder !== null
 }
 
 /** Where the function of a deferred scope first lives: itself, or the object literal or class expression it is a member of. */
-function createdAs(scope: ts.Node): Carried | null {
-  if (ts.isArrowFunction(scope) || ts.isFunctionExpression(scope)) return { node: scope, accessor: false }
+function createdAs(scope: ts.Node): ts.Node | null {
+  if (ts.isArrowFunction(scope) || ts.isFunctionExpression(scope)) return scope
   const holder = scope.parent
-  if (ts.isClassExpression(holder)) return classCreatesOnly(holder, scope) ? { node: holder, accessor: ts.isAccessor(scope) } : null
+  if (ts.isClassExpression(holder)) return classCreatesOnly(holder, scope) ? holder : null
   // A function or class declaration: a later statement may call it.
-  return ts.isObjectLiteralExpression(holder) ? { node: holder, accessor: ts.isAccessor(scope) } : null
+  return ts.isObjectLiteralExpression(holder) ? holder : null
 }
 
 /**
- * One step outwards: what the parent of the node holding the function does
- * with it. The holder that carries it on, or `null` when the parent may
- * invoke it.
+ * One step outwards: what the parent of `holder`, the node holding the
+ * function, does with it. The node that carries it on, or `null` when the
+ * parent may invoke it.
  */
-function carriedBy(carried: Carried, root: ts.Node): Carried | null {
-  const { node, accessor } = carried
-  const parent = node.parent
-  if (isTransparent(parent) || ts.isConditionalExpression(parent)) return { node: parent, accessor }
-  if (ts.isBinaryExpression(parent)) return isSelectingOrStoring(parent, node, root) ? { node: parent, accessor } : null
-  // Held by a literal: no longer a member of the thing being read or spread.
-  if (ts.isArrayLiteralExpression(parent)) return { node: parent, accessor: false }
-  if (ts.isPropertyAssignment(parent) || ts.isShorthandPropertyAssignment(parent)) return { node: parent.parent, accessor: false }
-  if (ts.isPropertyDeclaration(parent)) return storedInClass(parent, node)
-  if (accessor) return null
-  if (ts.isSpreadElement(parent)) return isLiteralSpread(parent, ts.isArrayLiteralExpression) ? { node: parent.parent, accessor: false } : null
-  if (ts.isSpreadAssignment(parent)) return isLiteralSpread(parent, ts.isObjectLiteralExpression) ? { node: parent.parent, accessor: false } : null
-  return isLiteralMemberRead(parent, node) ? { node: parent, accessor: false } : null
+function carriedBy(holder: ts.Node, root: ts.Node): ts.Node | null {
+  const parent = holder.parent
+  if (isTransparent(parent) || ts.isConditionalExpression(parent)) return parent
+  if (ts.isBinaryExpression(parent)) return isSelectingOrStoring(parent, holder, root) ? parent : null
+  if (ts.isArrayLiteralExpression(parent)) return parent
+  if (ts.isPropertyAssignment(parent) || ts.isShorthandPropertyAssignment(parent)) return parent.parent
+  if (ts.isPropertyDeclaration(parent)) return storedInClass(parent, holder)
+  if (ts.isSpreadElement(parent) || ts.isSpreadAssignment(parent)) return isLiteralSpread(parent) ? parent.parent : null
+  return isLiteralMemberRead(parent, holder) ? parent : null
 }
 
 /** `?:` aside, the operators that select or only test an operand (`||`, `&&`, `??`, `,`), and an assignment that stores it under a name nothing else mentions. */
@@ -203,26 +203,78 @@ function mentions(root: ts.Node, name: string): number {
 }
 
 /** A field initializer's value is stored on the class (`static`) or on each instance: carried by the class expression. */
-function storedInClass(field: ts.PropertyDeclaration, value: ts.Node): Carried | null {
+function storedInClass(field: ts.PropertyDeclaration, value: ts.Node): ts.Node | null {
   const cls = field.parent
   if (field.initializer !== value || !ts.isClassExpression(cls)) return null
-  return classCreatesOnly(cls, field) ? { node: cls, accessor: false } : null
+  return classCreatesOnly(cls, field) ? cls : null
 }
 
-/** A spread whose operand is a literal of the kind `isLiteral` tests, into a literal of the same kind. */
-function isLiteralSpread(spread: ts.SpreadElement | ts.SpreadAssignment, isLiteral: (n: ts.Node) => boolean): boolean {
-  return isLiteral(unwrap(spread.expression)) && isLiteral(spread.parent)
+/** An array literal spread into an array literal, or an accessor-free object literal spread into an object literal. */
+function isLiteralSpread(spread: ts.SpreadElement | ts.SpreadAssignment): boolean {
+  const operand = unwrap(spread.expression)
+  if (ts.isSpreadElement(spread)) return ts.isArrayLiteralExpression(operand) && ts.isArrayLiteralExpression(spread.parent)
+  return ts.isObjectLiteralExpression(operand) && isAccessorFree(operand)
 }
 
-/** `<literal or class expression>.name` / `<literal>[<literal key>]`, read and not written. */
+/**
+ * `<array literal, or accessor-free object literal or class expression>.name`
+ * / `[<literal key>]`, read and not written, naming one of its own members:
+ * a name it does not hold is looked up on its prototype, whose getter could
+ * call it through `this` like a sibling's.
+ */
 function isLiteralMemberRead(access: ts.Node, object: ts.Node): boolean {
+  let key: string
   if (ts.isElementAccessExpression(access)) {
     if (access.expression !== object || !ts.isLiteralExpression(access.argumentExpression)) return false
-  } else if (!ts.isPropertyAccessExpression(access) || access.expression !== object) {
+    key = access.argumentExpression.text
+  } else if (ts.isPropertyAccessExpression(access) && access.expression === object) {
+    key = access.name.text
+  } else {
     return false
   }
   const built = unwrap(object as ts.Expression)
-  return ts.isObjectLiteralExpression(built) || ts.isArrayLiteralExpression(built) || ts.isClassExpression(built)
+  if (ts.isArrayLiteralExpression(built)) return isOwnElement(built, key)
+  return isAccessorFree(built) && ownNames(built).has(key)
+}
+
+/** `length`, or an index below the length of an array literal with no spread or hole before it. */
+function isOwnElement(array: ts.ArrayLiteralExpression, key: string): boolean {
+  if (key === 'length') return true
+  const index = Number(key)
+  if (!Number.isInteger(index) || index < 0 || String(index) !== key || index >= array.elements.length) return false
+  return array.elements.slice(0, index + 1).every(e => !ts.isSpreadElement(e) && !ts.isOmittedExpression(e))
+}
+
+/** The names an accessor-free object literal, or a class expression's `static` side, holds as its own. */
+function ownNames(holder: ts.ObjectLiteralExpression | ts.ClassExpression): Set<string> {
+  const names = new Set<string>()
+  const members: readonly (ts.ObjectLiteralElementLike | ts.ClassElement)[] = ts.isClassExpression(holder)
+    ? holder.members.filter(m => ts.canHaveModifiers(m) && ts.getModifiers(m)?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword))
+    : holder.properties
+  for (const member of members) {
+    const name = member.name
+    if (name && (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))) names.add(name.text)
+  }
+  return names
+}
+
+/**
+ * Whether spreading `holder`, or reading a member of it, runs no function
+ * it holds: an object literal or class expression with no getter or setter
+ * (a getter may call any sibling through `this`), no computed key, no
+ * spread member, no `__proto__`, and for a class no `extends`.
+ */
+function isAccessorFree(holder: ts.Node): holder is ts.ObjectLiteralExpression | ts.ClassExpression {
+  if (ts.isClassExpression(holder)) return !holder.heritageClauses?.length && holder.members.every(isPlainMember)
+  return ts.isObjectLiteralExpression(holder) && holder.properties.every(isPlainMember)
+}
+
+function isPlainMember(member: ts.ClassElement | ts.ObjectLiteralElementLike): boolean {
+  if (ts.isAccessor(member) || ts.isSpreadAssignment(member)) return false
+  const name = member.name
+  if (!name) return true
+  if (ts.isComputedPropertyName(name)) return false
+  return !((ts.isIdentifier(name) || ts.isStringLiteral(name)) && name.text === '__proto__')
 }
 
 function unwrap(expr: ts.Expression): ts.Expression {
@@ -233,15 +285,24 @@ function unwrap(expr: ts.Expression): ts.Expression {
 
 /**
  * Whether creating `cls` can only create and store: no `static { … }` block
- * (its statements may call a function a `static` field stores), and every
- * creation-time expression other than `through` (the member the function
- * being followed came from) creates only: its `extends` expression, its
- * computed member names and its other `static` initializers.
+ * (its statements may call a function a `static` field stores), no
+ * decorator (one is called with the class, member or parameter it
+ * decorates, and a field decorator's initializer receives the stored
+ * value), and every creation-time expression other than `through` (the
+ * member the function being followed came from) creates only: its `extends`
+ * expression, its computed member names and its other `static` initializers.
  */
 function classCreatesOnly(cls: ts.ClassExpression, through: ts.Node): boolean {
+  if (hasDecorator(cls)) return false
   const heritage = cls.heritageClauses?.flatMap(clause => clause.types.map(type => type.expression)) ?? []
   if (!heritage.every(createsOnly)) return false
   return cls.members.every(member => member === through || memberCreatesOnly(member))
+}
+
+/** A decorator on `cls`, on one of its members or on a parameter of one. */
+function hasDecorator(cls: ts.ClassExpression): boolean {
+  const decorated = (n: ts.Node): boolean => ts.canHaveDecorators(n) && (ts.getDecorators(n)?.length ?? 0) > 0
+  return decorated(cls) || cls.members.some(m => decorated(m) || (ts.isFunctionLike(m) && m.parameters.some(decorated)))
 }
 
 function memberCreatesOnly(member: ts.ClassElement): boolean {
@@ -287,8 +348,8 @@ function propertyCreatesOnly(property: ts.ObjectLiteralElementLike): boolean {
   if (ts.isPropertyAssignment(property)) return createsOnly(property.initializer)
   if (ts.isSpreadAssignment(property)) {
     const operand = unwrap(property.expression)
-    // Spreading a literal runs its getters.
-    return ts.isObjectLiteralExpression(operand) && createsOnly(operand) && !operand.properties.some(ts.isGetAccessor)
+    // Spreading a literal runs its getters, which may call its other members.
+    return ts.isObjectLiteralExpression(operand) && isAccessorFree(operand) && createsOnly(operand)
   }
   // A shorthand reads a name; a method or accessor is created, not run.
   return true

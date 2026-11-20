@@ -40,7 +40,12 @@
  *     the same object once the statement ran.
  *
  * Which of these a declaration does with each name is a Phase 1 fact
- * (`valueUses`, `value-uses.ts`).
+ * (`valueUses`, `value-uses.ts`). A declaration also uses what the other
+ * signals, memos, constants and functions it uses hold or read, transitively
+ * (`usesThroughOthers`): `box.read()` after `const box = { read: () =>
+ * local.length }` runs the closure where it stands, and `alias.length` after
+ * `const alias = local` reads `local`, wherever `box` and `alias` are
+ * declared.
  *
  * A write to one member of the props object (`props.items.push('z')`) is
  * observed only by a read of that member: `props.title` beside it compiles.
@@ -123,13 +128,17 @@ export function checkStatementWrites(ir: ComponentIR, errors: CompilerError[]): 
   const writers = statementWriters(ir.metadata.initStatements ?? [], resolve)
   if (writers.size === 0) return
   const refused = new Set<string>()
-  const lazy = lazyReads(ir.metadata)
+  const eager = eagerDeclarations(ir.metadata)
+  const others: Others = {
+    holders: new Map(eager.map(d => [d.name, d.uses instanceof Map ? d.uses : opaqueUses(d.reads)])),
+    functions: lazyReads(ir.metadata),
+  }
   const check: Check = {
     ir,
     resolve,
     writers,
-    eager: eagerDeclarations(ir.metadata),
-    writtenReads: declaration => writtenReadsOf(declaration, writers, lazy, ir.metadata.propsObjectName ?? null),
+    eager,
+    writtenReads: declaration => writtenReadsOf(declaration, writers, others, ir.metadata.propsObjectName ?? null),
     refuse: (name, error) => {
       if (refused.has(name)) return
       refused.add(name)
@@ -226,21 +235,18 @@ function mayHoldWrittenObject(declaration: EagerDeclaration, writer: Writer, use
 function writtenReadsOf(
   declaration: EagerDeclaration,
   writers: ReadonlyMap<string, Writer>,
-  lazy: ReadonlyMap<string, ReadonlySet<string> | undefined>,
+  others: Others,
   propsObject: string | null,
 ): WrittenRead[] {
   const found: WrittenRead[] = []
-  const throughFunctions = namesReadThroughCalls(declaration, lazy)
+  const throughOthers = usesThroughOthers(declaration, others)
   for (const [name, writer] of writers) {
     const uses = new Set(usesOf(declaration, name))
-    // What a called function does with the name is not told apart, beyond
-    // whether the declaration keeps anything but a primitive of its result.
-    const through = throughFunctions.get(name)
-    if (through) uses.add(through)
+    for (const use of throughOthers.get(name) ?? []) uses.add(use)
     if (uses.size === 0) continue
     // A member read is told apart only on the props object, and only when
     // the declaration's own expression is all that reads it.
-    const members = name === propsObject && !throughFunctions.has(name) ? membersRead(declaration.expr, name) : null
+    const members = name === propsObject && !throughOthers.has(name) ? membersRead(declaration.expr, name) : null
     if (overlaps(writer, members)) found.push({ name, writer, after: isAfter(declaration.loc, writer.statement.loc), uses })
   }
   return found
@@ -252,27 +258,101 @@ function usesOf(declaration: EagerDeclaration, name: string): Iterable<ValueUse>
   return declaration.reads instanceof Set && declaration.reads.has(name) ? ['opaque'] : []
 }
 
+/** The component's other declarations a declaration can reach a written binding through. */
+interface Others {
+  /** The names each signal, memo and constant init evaluates in place uses, with how (`usesOf`). */
+  holders: ReadonlyMap<string, ReadonlyMap<string, ReadonlySet<ValueUse>>>
+  /** The names each of the component's functions reads, by the function's name. */
+  functions: ReadonlyMap<string, ReadonlySet<string> | undefined>
+}
+
 /**
- * The names read by the functions `declaration` runs when it is evaluated:
- * those it calls, or hands to a call that may run them. A function it only
- * stores (`{ read }`) or creates is not run. Each name is a `read` when the
- * declaration computes only primitives from what those functions return
- * (`count() + 1`), `opaque` otherwise.
+ * How a declaration reaches what another one holds, from its own use of
+ * that one: it holds it (`alias`), keeps it in a function it does not call
+ * (`deferred`), computes only a primitive from it or from what calling it
+ * returns (`read`), or does anything else with it (`opaque`: a member read,
+ * a spread, a call whose result it keeps may read or call whatever it holds).
  */
-function namesReadThroughCalls(
-  declaration: EagerDeclaration,
-  lazy: ReadonlyMap<string, ReadonlySet<string> | undefined>,
-): Map<string, 'read' | 'opaque'> {
-  const reached = new Map<string, 'read' | 'opaque'>()
-  for (const fn of lazy.keys()) {
-    const uses = new Set(usesOf(declaration, fn))
-    if (!uses.has('call') && !uses.has('opaque')) continue
-    const use = uses.has('opaque') ? 'opaque' : 'read'
-    for (const name of reachedNames(lazy.get(fn), lazy)) {
-      if (reached.get(name) !== 'opaque') reached.set(name, use)
+type Reach = 'alias' | 'deferred' | 'read' | 'opaque'
+
+/**
+ * What `declaration` does, through the other declarations it uses, with
+ * the names they hold or read: what it uses ITSELF is `usesOf`'s, but a
+ * name another declaration holds is used too when `declaration` uses that
+ * one (`const box = { read: () => local.length }` then `box.read()`, or
+ * `const alias = local` then `alias.length`), transitively. A signal, memo
+ * or constant holds what its own value keeps of a name (an `alias`, a
+ * `copy`, an `opaque` or a `deferred` use of it), not a primitive it
+ * computed from it; a function reads every name it mentions when it runs.
+ */
+function usesThroughOthers(declaration: EagerDeclaration, others: Others): Map<string, Set<ValueUse>> {
+  const found = new Map<string, Set<ValueUse>>()
+  const record = (name: string, use: ValueUse): void => {
+    const known = found.get(name) ?? new Set<ValueUse>()
+    known.add(use)
+    found.set(name, known)
+  }
+  const seen = new Set<string>()
+  const pending: Array<[string, Reach]> = []
+  const enter = (name: string, reach: Reach): void => {
+    const key = `${reach} ${name}`
+    if (name === declaration.name || seen.has(key)) return
+    seen.add(key)
+    pending.push([name, reach])
+  }
+  const own = declaration.uses instanceof Map ? declaration.uses : opaqueUses(declaration.reads)
+  for (const [name, uses] of own) {
+    for (const reach of reachesOf(uses, others.functions.has(name))) enter(name, reach)
+  }
+  for (let next = pending.pop(); next; next = pending.pop()) {
+    const [name, reach] = next
+    for (const [inner, uses] of heldBy(name, reach, others)) {
+      for (const use of uses) record(inner, use)
+      for (const innerReach of reachesOf(uses, false)) enter(inner, innerReach)
     }
   }
-  return reached
+  return found
+}
+
+function opaqueUses(reads: ReadonlySet<string> | undefined): Map<string, ReadonlySet<ValueUse>> {
+  const uses = new Map<string, ReadonlySet<ValueUse>>()
+  if (reads instanceof Set) for (const name of reads) uses.set(name, new Set<ValueUse>(['opaque']))
+  return uses
+}
+
+/**
+ * How a use of another declaration reaches into it. A function is reached
+ * only when it is called, or may be (`opaque`), or held: reading it, or
+ * coercing it, runs nothing of its own.
+ */
+function reachesOf(uses: ReadonlySet<ValueUse>, isFunction: boolean): Reach[] {
+  const reaches: Reach[] = []
+  if (uses.has('alias')) reaches.push('alias')
+  if (uses.has('deferred')) reaches.push('deferred')
+  if (uses.has('opaque') || uses.has('copy')) reaches.push('opaque')
+  else if (uses.has('call') || (uses.has('read') && !isFunction)) reaches.push('read')
+  return reaches
+}
+
+/** The names `name`, reached as `reach`, holds or reads, each with the use the reaching declaration then makes of it. */
+function heldBy(name: string, reach: Reach, others: Others): Map<string, ReadonlySet<ValueUse>> {
+  const held = new Map<string, ReadonlySet<ValueUse>>()
+  const holder = others.holders.get(name)
+  if (holder) {
+    for (const [inner, uses] of holder) {
+      const kept = [...uses].filter(use => HOLDING_USES.includes(use) || use === 'copy')
+      if (kept.length === 0) continue
+      // Held, it is held as the holder holds it; anything else done to the holder is done to what it keeps.
+      held.set(inner, new Set<ValueUse>(reach === 'alias' ? kept : [reach]))
+    }
+  }
+  const reads = others.functions.get(name)
+  if (reads instanceof Set) {
+    // A function held is a function kept uncalled; one called reads all it mentions.
+    const use: ValueUse = reach === 'alias' || reach === 'deferred' ? 'deferred' : reach
+    for (const inner of reads) held.set(inner, new Set<ValueUse>([use]))
+  }
+  return held
 }
 
 /**
@@ -374,22 +454,6 @@ function lazyReads(metadata: IRMetadata): Map<string, ReadonlySet<string> | unde
     if (!c.isModule && isLazyConstant(c)) lazy.set(c.name, c.freeIdentifiers)
   }
   return lazy
-}
-
-/** The names `reads` reaches: its own, and those of every function among them, transitively. */
-function reachedNames(reads: ReadonlySet<string> | undefined, lazy: ReadonlyMap<string, ReadonlySet<string> | undefined>): Set<string> {
-  const reached = new Set<string>()
-  const pending: Array<ReadonlySet<string> | undefined> = [reads]
-  while (pending.length > 0) {
-    const next = pending.pop()
-    if (!(next instanceof Set)) continue
-    for (const name of next) {
-      if (reached.has(name)) continue
-      reached.add(name)
-      if (lazy.has(name)) pending.push(lazy.get(name))
-    }
-  }
-  return reached
 }
 
 function isAfter(a: SourceLocation, b: SourceLocation): boolean {
