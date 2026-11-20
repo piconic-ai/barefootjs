@@ -1,5 +1,12 @@
 # @barefootjs/vite
 
+## 0.41.4
+
+### Patch Changes
+
+- Updated dependencies [f057fd4]
+  - @barefootjs/shared@0.41.4
+
 ## 0.41.3
 
 ### Patch Changes

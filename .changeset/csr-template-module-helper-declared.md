@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-A stateless client component whose template reads a module const initialized by a module helper call (`const mk = () => ({ k: 'v' }); const B = mk()`, or `{ ...mk('v') }`, read as `{B.k}`) now declares that helper in its client module. The client template inlines the initializer, so it used to call an undeclared `mk` and a client mount threw a `ReferenceError`. The module also keeps the imports that helper reads, including a runtime export imported under an alias (`import { untrack as read } from '@barefootjs/client'`): a stateless component's client module now resolves its imports as a stateful one's does. Such a helper named like a runtime helper the client JS calls (`escapeText`) is refused with BF057, as it already was in a stateful component.

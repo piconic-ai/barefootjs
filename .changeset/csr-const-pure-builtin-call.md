@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-A component const computed by a catalogued method on a literal (`['doc', 'api'].includes(props.kind) ? 'known' : 'other'`) or read from an env signal (`createSearchParams()`'s `sp().get('sort') ?? 'none'`) now has a CSR-template form, so a client-side mount renders its value in the first template pass instead of `undefined` (an empty attribute and empty text until `init` ran). The template check took a call with a prop argument for a helper that must not run at template scope; a method of `ARRAY_METHOD_NAMES` on an array or string literal (or on the result of another such method), and a call of an env signal's getter (which the template lambda declares itself) with the read-only `get` / `getAll` / `has` / `toString` methods on its result, are pure by construction and are accepted whatever the adapter allows. A const read through such a const, or through a local const holding the literal, resolves too. A call with a helper argument (`includes(bump(props.kind))`) and a method that is not catalogued still stay out of the template.
