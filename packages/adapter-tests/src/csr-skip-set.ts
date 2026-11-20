@@ -39,6 +39,8 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // `array-literal-element-spread`), and the CSR template does not carry a
   // const holding a function either, so the memo renders empty there too.
   'destructure-default-spread-method-memo',
+  // The same method called in markup (`{api.add()}`).
+  'destructure-default-spread-method-text',
   // #3912: a row condition calling a component-scope helper
   // (`isSel(item.id)`). The helper is an init local, which the CSR template
   // has no init to declare, so the template reads the call as `undefined`

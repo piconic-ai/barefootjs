@@ -96,6 +96,14 @@ describe('refuseUnloweredArrayElements', () => {
     expect(refused(`const api = { label: 'ok', add: () => [...b, 'z'].length }; const n = createMemo(() => api.label); return <p>{n()}</p>`)).toEqual([])
   })
 
+  test('a position that builds the array in place or through a function it calls', () => {
+    expect(refused(`const api = { add: () => [...b, 'z'].length }; return <p>{api.add()}</p>`)).toEqual([`This expression builds`])
+    expect(refused(`const add = () => [...b, 'z'].length; return <p data-n={add()}>x</p>`)).toEqual([`This expression builds`])
+    expect(escapes(`return <div><Kid n={[...b, 'z'].length} /></div>`)).toEqual([[]])
+    expect(escapes(`const api = { add: () => [...b, 'z'].length }; return <p>{api.add()}</p>`)).toEqual([['client-directive']])
+    expect(refused(`const api = { add: () => [...b, 'z'].length }; return <p>{/* @client */ api.add()}</p>`)).toEqual([])
+  })
+
   test('a declaration only a stored function reads is not read', () => {
     expect(refused(`const local = [...b, 'z']; const api = { label: 'ok', add: () => local.length }; return <p>{api.label}</p>`)).toEqual([])
     expect(refused(`const local = [...b, 'z']; const api = { label: 'ok', add: () => local.length }; const n = createMemo(() => api.label); return <p>{n()}</p>`)).toEqual([])
