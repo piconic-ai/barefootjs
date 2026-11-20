@@ -7073,6 +7073,125 @@
           }
         }
       },
+      "module-const-helper-call-child": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-helper-call-client"
+          }
+        }
+      },
       "module-const-helper-call-inlined": {
         "blade": {
           "kind": "refusal",
@@ -14952,6 +15071,10 @@
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
       },
+      "module-const-helper-call-child": {
+        "description": "a stateless child file reading a module const initialized by a module helper call renders on a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-child.ts"
+      },
       "module-const-helper-call-inlined": {
         "description": "a module const initialized by a module helper call (`const B = mk()`) renders on a client mount…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-inlined.ts"
@@ -16602,6 +16725,7 @@
       "fixtures": [
         "keyed-row-branch-call",
         "module-const-arrow-helper",
+        "module-const-helper-call-child",
         "module-const-helper-call-inlined",
         "module-function-helper-chain",
         "module-helper-boolcontext-call"

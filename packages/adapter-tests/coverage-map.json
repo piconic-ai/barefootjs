@@ -11968,6 +11968,22 @@
         "text"
       ]
     },
+    "module-const-helper-call-child": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-helper-call-client": {
       "kinds": [
         "arrow",
@@ -12013,6 +12029,7 @@
         "literal:string"
       ],
       "contexts": [
+        "attribute",
         "text"
       ]
     },
