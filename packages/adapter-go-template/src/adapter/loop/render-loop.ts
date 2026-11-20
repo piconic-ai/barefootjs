@@ -48,6 +48,7 @@ import { hasNoInputSlot, restBagOverrideFields, routesToRestBag, type ChildCompo
 import { loopRowType } from '../type/number-read.ts'
 import { isNillableSeedSignal } from '../type/state-fields.ts'
 import { spreadCarriedCallerKey } from '../props/props-spread.ts'
+import { derivedFieldReading } from '../props/derived-field-delivery.ts'
 
 
 /**
@@ -1129,11 +1130,7 @@ function derivedFieldRebuild(
   declaredName: string,
   escaped: boolean,
 ): boolean | null {
-  const derived = host.childDerivedFieldDeps(declaredName)
-  const overriddenField = capitalizeFieldName(prop.name)
-  const staleField = derived
-    ? [...derived].find(([, deps]) => deps.has(overriddenField))?.[0]
-    : undefined
+  const staleField = derivedFieldReading(host.childDerivedFieldDeps(declaredName), prop.name)
   if (staleField && !host.childRepropsReady(declaredName)) {
     if (escaped) return null
     host.ctx.state.errors.push({
