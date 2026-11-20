@@ -46,14 +46,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // is not defined there. The real-browser fixture-hydrate and oracle suites
   // check the client, and per-adapter render conformance pins the SSR HTML.
   'keyed-row-branch-preamble-signal',
-  // #3737: each component reads a const computed with `[…].includes(prop)`.
-  // That initializer has no CSR-template form (`populateCsrInlinable`'s
-  // post-substitution check refuses it), so the template reads the const as
-  // `undefined` and the init body's effects set the attribute and the text
-  // on a real mount. Per-adapter render conformance pins the SSR contract,
-  // which is what these fixtures exist for.
-  'derived-string-const-sibling-component',
-  'derived-string-const-child-files',
   // A value an init-time mutation computes (`const n = a.push('x') &&
   // b.length` over `let { a = [], b = a } = props`): the CSR template has no
   // init to run, and the template adapters refuse the call. The real-browser
@@ -289,10 +281,6 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // `_p.label` without the default, so an omitted prop renders empty (the
   // init body's `const a` keeps the default).
   'const-alias-default-prop-loop-shadow': { limitation: 'const-alias-signature-default' },
-  // `const L = a + '!'` over `{ a = 'x'.toUpperCase() }`, read through
-  // `{ b = L }`: the CSR template reads `L` as `_p.a + '!'`, without `a`'s
-  // default.
-  'destructure-default-local-const-prop-hop': { limitation: 'const-alias-signature-default' },
   // A JSX prop holding a nested component, read in a conditional arm or
   // forwarded to a grandchild: the CSR template stringifies the branded prop
   // in the arm (`[object Object]`) and resolves the forwarded element's scope

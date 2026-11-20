@@ -20,7 +20,7 @@ import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
 } from './adapters/interface.ts'
-import { tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
+import { ARRAY_METHOD_NAMES, tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { identifierPattern } from './identifier-pattern.ts'
 
@@ -114,6 +114,12 @@ export interface RelocateEnv {
    * `init-local`/`module-local` with no further resolution.
    */
   aliasTargets?: ReadonlyMap<string, string>
+  /**
+   * Getters of env signals (`const [sp] = createSearchParams()`). The CSR
+   * template lambda declares each one in its own prelude
+   * (`buildTemplateDefPart`), so a call of it runs there.
+   */
+  envGetters?: ReadonlySet<string>
 }
 
 export interface RelocateResult {
@@ -268,6 +274,24 @@ function decideAction(
 }
 
 /**
+ * `decideAction`, except that an env signal's getter stays as it is in
+ * template scope: the template lambda declares it in its own prelude
+ * (`buildTemplateDefPart`), so a call of it runs there, where any other
+ * reactive binding has no value.
+ */
+function decideReference(
+  kind: BindingKind,
+  toScope: Scope,
+  env: RelocateEnv,
+  name: string,
+): { action: RelocateDecision['action']; rewrittenAs: string } {
+  if (toScope === 'template' && kind === 'signal-getter' && env.envGetters?.has(name) === true) {
+    return { action: 'pass-through', rewrittenAs: name }
+  }
+  return decideAction(kind, toScope, env, name)
+}
+
+/**
  * Apply all per-name rewrites to the source text. Uses targeted
  * substitution (word-boundary regex) keyed by names that are AST-
  * confirmed free references. Pass-through decisions are skipped.
@@ -332,7 +356,7 @@ export function relocate(
 
   for (const [name] of refs) {
     const kind = classify(name, env)
-    const { action, rewrittenAs } = decideAction(kind, toScope, env, name)
+    const { action, rewrittenAs } = decideReference(kind, toScope, env, name)
     decisions.push({ name, kind, action, rewrittenAs })
     if (action === 'reject') ok = false
     // Track post-rewrite identifiers for import preservation.
@@ -504,6 +528,100 @@ function isAcceptedMethodCallOnInlinableLocal(
 }
 
 /**
+ * Methods of the env-signal reader (`URLSearchParams`, what
+ * `createSearchParams()`'s getter returns) that only read it.
+ */
+const ENV_READER_METHODS: ReadonlySet<string> = new Set(['get', 'getAll', 'has', 'toString'])
+
+const PURE_LITERAL_METHODS: ReadonlySet<string> = new Set(ARRAY_METHOD_NAMES)
+
+/**
+ * Methods whose RESULT may be a value the caller already holds: `at` returns
+ * an element of its receiver, so `[props.items].at(0)` is `props.items`
+ * itself, not a fresh value. Such a call is fine to read, but its result must
+ * not be treated as fresh (`.reverse()` on it would mutate the caller's array
+ * while the template runs, once per use of the const).
+ */
+const ELEMENT_RETURNING_METHODS: ReadonlySet<string> = new Set(['at'])
+
+/**
+ * Methods that may call a function they are given (`replace(re, fn)`). A
+ * catalogued method is pure only when no argument can be such a function, and
+ * only a literal is known not to be one: a prop or any other reference could
+ * hold a callback, which a template would run once per use of the const.
+ */
+const CALLBACK_CAPABLE_METHODS: ReadonlySet<string> = new Set(['replace', 'replaceAll'])
+
+function isLiteralArgument(node: ts.Expression): boolean {
+  const inner = unwrapParens(node)
+  return ts.isStringLiteralLike(inner)
+    || ts.isNumericLiteral(inner)
+    || ts.isRegularExpressionLiteral(inner)
+    || (ts.isPrefixUnaryExpression(inner) && ts.isNumericLiteral(inner.operand))
+}
+
+/** `method(...args)` cannot run caller-supplied code. */
+function callCannotInvokeArguments(call: ts.CallExpression, method: string): boolean {
+  return !CALLBACK_CAPABLE_METHODS.has(method) || call.arguments.every(isLiteralArgument)
+}
+
+function unwrapParens(node: ts.Expression): ts.Expression {
+  return ts.isParenthesizedExpression(node) ? unwrapParens(node.expression) : node
+}
+
+/** `receiver.method(...)` as `[receiver, method]`, or null for any other callee. */
+function methodCallParts(call: ts.CallExpression): [ts.Expression, string] | null {
+  const callee = unwrapParens(call.expression)
+  if (!ts.isPropertyAccessExpression(callee)) return null
+  return [callee.expression, callee.name.text]
+}
+
+/**
+ * A value built in the expression itself: an array or string literal, or a
+ * catalogued non-mutating method called on one (`['a', 'b'].concat(x)`). The
+ * methods in `ARRAY_METHOD_NAMES` only read their receiver, and here the
+ * receiver is a fresh value no other code holds, so calling them at template
+ * scope has no effect to duplicate and no identity to lose (#1138).
+ */
+function isFreshLiteralValue(node: ts.Expression): boolean {
+  const inner = unwrapParens(node)
+  if (ts.isArrayLiteralExpression(inner) || ts.isStringLiteralLike(inner) || ts.isTemplateExpression(inner)) return true
+  if (!ts.isCallExpression(inner)) return false
+  const parts = methodCallParts(inner)
+  return parts !== null
+    && PURE_LITERAL_METHODS.has(parts[1])
+    && !ELEMENT_RETURNING_METHODS.has(parts[1])
+    && callCannotInvokeArguments(inner, parts[1])
+    && isFreshLiteralValue(parts[0])
+}
+
+/** `sp()` for the getter `sp` of an env signal, whose template lambda declares it. */
+function isEnvGetterCall(node: ts.Expression, env: RelocateEnv): boolean {
+  const inner = unwrapParens(node)
+  if (!ts.isCallExpression(inner) || inner.arguments.length > 0) return false
+  const callee = unwrapParens(inner.expression)
+  return ts.isIdentifier(callee)
+    && env.envGetters?.has(callee.text) === true
+    && env.bindings.get(callee.text) === 'signal-getter'
+}
+
+/**
+ * A call that is pure by construction, whatever the adapter: a catalogued
+ * method on a literal value, a read of an env signal's getter, or a read-only
+ * method on that getter's result. Unlike a helper call (`useYjs(props.x)`),
+ * it has no effect to repeat when the template runs, so a bridged argument
+ * does not make it unsafe.
+ */
+function isPureBuiltinCall(call: ts.CallExpression, env: RelocateEnv): boolean {
+  if (isEnvGetterCall(call, env)) return true
+  const parts = methodCallParts(call)
+  if (parts === null) return false
+  const [receiver, method] = parts
+  if (PURE_LITERAL_METHODS.has(method) && callCannotInvokeArguments(call, method) && isFreshLiteralValue(receiver)) return true
+  return ENV_READER_METHODS.has(method) && isEnvGetterCall(receiver, env)
+}
+
+/**
  * Whether `env`'s adapter promises it can render this call in template
  * scope. Three independent acceptance paths, any of which is sufficient:
  *
@@ -597,6 +715,14 @@ function isCallAcceptedByAdapter(
 }
 
 /**
+ * Whether a call may run at template scope: pure by construction
+ * (`isPureBuiltinCall`), or accepted by the adapter.
+ */
+function isTemplateSafeCall(call: ts.CallExpression, env: RelocateEnv): boolean {
+  return isPureBuiltinCall(call, env) || isCallAcceptedByAdapter(call, env)
+}
+
+/**
  * Re-parse a value-position expression to a `ts.Node` so the inline-
  * safety check can walk it AST-aware. Returns null when the input
  * isn't a parseable expression — caller falls back to a string-only
@@ -645,7 +771,7 @@ function hasCallWithBridgedArg(
       // If the adapter accepts this call as a template primitive, the
       // bridged-arg risk doesn't apply to *this* call — but nested calls
       // inside its arguments still need checking.
-      const accepted = ts.isCallExpression(n) && isCallAcceptedByAdapter(n, env)
+      const accepted = ts.isCallExpression(n) && isTemplateSafeCall(n, env)
       if (!accepted) {
         const args = n.arguments
         if (args) {
@@ -681,7 +807,7 @@ function hasZeroArgCall(node: ts.Node, env: RelocateEnv): boolean {
       // rejection. Nested zero-arg calls inside the call's expression
       // (none for a plain `foo()`, but possible for `(getFn())()`) are
       // still walked.
-      if (!isCallAcceptedByAdapter(n, env)) {
+      if (!isTemplateSafeCall(n, env)) {
         found = true
         return
       }
@@ -937,6 +1063,7 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     propsObjectName,
     allowFallback: true,
     aliasTargets,
+    envGetters: new Set(src.signals.filter(s => s.envReader).map(s => s.getter)),
   }
 }
 

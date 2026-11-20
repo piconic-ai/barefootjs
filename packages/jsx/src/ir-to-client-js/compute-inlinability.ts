@@ -331,9 +331,10 @@ export function computeInlinability(
   // substitution semantics they have no use for.
   //
   // A const classified inlinable can still end with no CSR form here
-  // (`(choices).includes(name)` fails the post-substitution check). A
-  // method call on it was accepted on the provisional verdict, so it would
-  // read as `undefined.m()`: withdraw the receiver and classify again
+  // (`(choices).with(0, name)`: no template check vouches for that method on a
+  // receiver that is no longer a bare name). A method call on it was accepted
+  // on the provisional verdict, so it would read as `undefined.m()`: withdraw
+  // the receiver and classify again
   // until no accepted receiver is refused. Each round removes at least one
   // name, so this stops within `localConstants.length` rounds.
   const refused = new Set<string>()
