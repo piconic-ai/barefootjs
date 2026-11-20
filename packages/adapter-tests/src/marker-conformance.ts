@@ -43,7 +43,10 @@ import {
   jsxToIR,
   buildMetadata,
   decideClientOnlyElision,
+  planComponentProps,
+  resolveComponentPropKeys,
   type ComponentIR,
+  type IRProp,
   type IRNode,
   type IRElement,
   type IRConditional,
@@ -87,28 +90,66 @@ function emptySets(): MarkerIdSets {
  * them would inflate the IR-side marker set with ids the adapter
  * intentionally omits, producing false-positive drift.
  */
-function walkIRNode(node: IRNode, visit: (n: IRNode) => void): void {
+/**
+ * The JSX-valued props of `comp` that a later writer of the same key always
+ * replaces, per the shared props plan (`<Head header={<i>{x}</i>} {...props} />`
+ * with `header` required): never the child's value, so an adapter that
+ * resolves the writers at compile time emits none of their markers, while
+ * one that spells the call as written (Hono) keeps them. A prop a spread
+ * key replaces only when the caller passed it is still the value otherwise,
+ * so it is not counted here.
+ */
+function replacedJsxProps(comp: IRComponent, ir: ComponentIR): Set<IRProp> {
+  const out = new Set<IRProp>()
+  if (!comp.props.some((p) => p.value.kind === 'jsx-children')) return out
+  const plan = planComponentProps(
+    { props: comp.props, children: comp.children, slotId: null },
+    { propsObjectName: ir.metadata.propsObjectName, propsParams: ir.metadata.propsParams },
+  )
+  const resolved = resolveComponentPropKeys(plan)
+  if (resolved === null) return out
+  const keys = new Map(resolved.map((r) => [r.key, r]))
+  for (const prop of comp.props) {
+    if (prop.value.kind !== 'jsx-children') continue
+    const base = keys.get(prop.name)?.base
+    if (!base || base.kind === 'children') continue
+    if (base.kind === 'named-slot' && base.children === prop.value.children) continue
+    out.add(prop)
+  }
+  return out
+}
+
+/**
+ * Walk `node`, skipping the JSX of a prop in `skip(comp)` (a component's
+ * props that a later writer always replaces, or none).
+ */
+function walkIRNode(
+  node: IRNode,
+  visit: (n: IRNode) => void,
+  skip: (comp: IRComponent) => ReadonlySet<IRProp> = () => new Set(),
+): void {
   visit(node)
+  const walk = (n: IRNode) => walkIRNode(n, visit, skip)
   switch (node.type) {
     case 'element':
-      for (const c of (node as IRElement).children) walkIRNode(c, visit)
+      for (const c of (node as IRElement).children) walk(c)
       break
     case 'conditional': {
       const cond = node as IRConditional
       if (cond.clientOnly) break
-      walkIRNode(cond.whenTrue, visit)
-      walkIRNode(cond.whenFalse, visit)
+      walk(cond.whenTrue)
+      walk(cond.whenFalse)
       break
     }
     case 'loop': {
       const loop = node as IRLoop
       if (loop.clientOnly) break
-      for (const c of loop.children) walkIRNode(c, visit)
+      for (const c of loop.children) walk(c)
       break
     }
     case 'component': {
       const comp = node as IRComponent
-      for (const c of comp.children) walkIRNode(c, visit)
+      for (const c of comp.children) walk(c)
       // #2702: a prop value's own `jsx-children` payload (an element,
       // fragment, or conditional passed at a NAMED prop position —
       // `header={<>{cond ? <a/> : <b/>}</>}`) can carry its own slot ids
@@ -121,29 +162,30 @@ function walkIRNode(node: IRNode, visit: (n: IRNode) => void): void {
       // (`jsx-element-prop-fragment-conditional`, the first fixture to
       // exercise this combination). Walk every prop's jsx-children
       // payload the same way.
+      const replaced = skip(comp)
       for (const prop of comp.props) {
-        if (prop.value.kind === 'jsx-children') {
-          for (const c of prop.value.children) walkIRNode(c, visit)
+        if (prop.value.kind === 'jsx-children' && !replaced.has(prop)) {
+          for (const c of prop.value.children) walk(c)
         }
       }
       break
     }
     case 'fragment':
-      for (const c of (node as IRFragment).children) walkIRNode(c, visit)
+      for (const c of (node as IRFragment).children) walk(c)
       break
     case 'if-statement': {
       const stmt = node as IRIfStatement
-      walkIRNode(stmt.consequent, visit)
-      if (stmt.alternate) walkIRNode(stmt.alternate, visit)
+      walk(stmt.consequent)
+      if (stmt.alternate) walk(stmt.alternate)
       break
     }
     case 'provider':
-      for (const c of (node as IRProvider).children) walkIRNode(c, visit)
+      for (const c of (node as IRProvider).children) walk(c)
       break
     case 'async': {
       const a = node as IRAsync
-      walkIRNode(a.fallback, visit)
-      for (const c of a.children) walkIRNode(c, visit)
+      walk(a.fallback)
+      for (const c of a.children) walk(c)
       break
     }
     // text, expression, slot are leaves
@@ -171,9 +213,14 @@ function walkIRNode(node: IRNode, visit: (n: IRNode) => void): void {
  *   - The dynamic scope id (`bf-s={__scopeId}`) is generated at
  *     render time, not at compile time; there is no IR-level id to
  *     compare against.
+ *   - with `skipReplacedJsxProps`, the markers inside a JSX prop that a
+ *     later writer of its key always replaces (`replacedJsxProps`): they
+ *     may or may not reach a template, so the suite neither requires nor
+ *     forbids them.
  */
-export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
+export function extractIRMarkerIds(ir: ComponentIR, options: { skipReplacedJsxProps?: boolean } = {}): MarkerIdSets {
   const out = emptySets()
+  const skip = options.skipReplacedJsxProps ? (comp: IRComponent) => replacedJsxProps(comp, ir) : undefined
   walkIRNode(ir.root, (n) => {
     if (n.type === 'conditional') {
       const id = (n as IRConditional).slotId
@@ -200,8 +247,16 @@ export function extractIRMarkerIds(ir: ComponentIR): MarkerIdSets {
       if (el.slotId) out.slots.add(el.slotId)
       return
     }
-  })
+  }, skip)
   return out
+}
+
+/**
+ * `actual` without the ids only a replaced JSX prop declares (in `all` but
+ * not `required`), so a template may carry them or not.
+ */
+function withoutOptional(actual: Set<string>, required: Set<string>, all: Set<string>): string[] {
+  return [...actual].filter((id) => required.has(id) || !all.has(id)).sort()
 }
 
 /**
@@ -312,7 +367,8 @@ export function runMarkerConformance(opts: RunMarkerConformanceOptions): void {
           // undefined for such inputs.
           return
         }
-        const expected = extractIRMarkerIds(ir)
+        const expected = extractIRMarkerIds(ir, { skipReplacedJsxProps: true })
+        const all = extractIRMarkerIds(ir)
         let output: { template: string } | null = null
         try {
           // `siblingTemplatesRegistered: true` suppresses the BF103
@@ -328,13 +384,13 @@ export function runMarkerConformance(opts: RunMarkerConformanceOptions): void {
           return
         }
         const actual = extractTemplateMarkerIds(output.template)
-        expect([...actual.slots].sort()).toEqual([...expected.slots].sort())
-        expect([...actual.conds].sort()).toEqual([...expected.conds].sort())
-        expect([...actual.loops].sort()).toEqual([...expected.loops].sort())
+        expect(withoutOptional(actual.slots, expected.slots, all.slots)).toEqual([...expected.slots].sort())
+        expect(withoutOptional(actual.conds, expected.conds, all.conds)).toEqual([...expected.conds].sort())
+        expect(withoutOptional(actual.loops, expected.loops, all.loops)).toEqual([...expected.loops].sort())
         // Boundary-pair contract: every loop id must ALSO close with its
         // `/loop:<id>` end marker. The IR carries one loop-id set; the
         // template's start and end sets must both match it (#2066).
-        expect([...actual.loopEnds].sort()).toEqual([...expected.loops].sort())
+        expect(withoutOptional(actual.loopEnds, expected.loops, all.loops)).toEqual([...expected.loops].sort())
       })
     }
   })

@@ -202,7 +202,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
+import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWriters } from "./props/props-spread.ts"
 import { passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -7178,10 +7178,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * a loop row that no static bake turns into a constant: the constructor
    * omits it (`lowerJsxChildProp`) and no per-row delivery sets it, unlike
    * the static call site's `queueDynamicPropDefine` (#3961 review). Once
-   * per prop, however often the row is rendered.
+   * per prop, however often the row is rendered. A JSX prop a later writer
+   * always replaces (`header={<i/>} {...props}` with `header` required) is
+   * never the child's value and is skipped; one a spread key replaces only
+   * when passed is still refused.
    */
   private refuseUndeliveredLoopRowJsxProps(comp: IRComponent): void {
-    for (const prop of comp.props) {
+    for (const prop of survivingPropWriters(this.emitCtx, comp.props, comp.children)) {
       if (prop.value.kind !== 'jsx-children' || this.state.refusedLoopRowJsxProps.has(prop)) continue
       if (this.hasBakedStaticChildren(prop.value.children)) continue
       if (refuseUndeliveredLoopRowJsxProp(this.state, comp, prop)) this.state.refusedLoopRowJsxProps.add(prop)

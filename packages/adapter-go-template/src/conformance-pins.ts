@@ -465,4 +465,8 @@ export const conformancePins: ConformancePins = {
   // component in that row, in either loop position.
   'jsx-prop-loop-row-element-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
   'jsx-prop-loop-row-component-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  // The same, when a later `{...props}` carries the key only if the caller
+  // passed it: the row's JSX is the value when the key is absent.
+  'jsx-prop-loop-row-element-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  'jsx-prop-loop-row-component-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
 }

@@ -124,6 +124,8 @@ runAdapterConformanceTests({
     // declares inside it. Graduates with the refusal.
     'jsx-prop-loop-row-element-dynamic',
     'jsx-prop-loop-row-component-dynamic',
+    'jsx-prop-loop-row-element-spread-optional',
+    'jsx-prop-loop-row-component-spread-optional',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
     // `jsx-element-prop-fragment-conditional` (#2703) and
