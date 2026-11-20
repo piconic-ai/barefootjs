@@ -55,6 +55,22 @@ describe('refuseUnloweredArrayElements', () => {
     expect(refused(`const api = { label: 'x', add: (xs: string[]) => [...xs, 'z'] }; return <p>{api.label}</p>`)).toEqual([])
   })
 
+  test('a module-scope declaration is out of scope', () => {
+    const errors: CompilerError[] = []
+    const ctx = analyzeComponent(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      const BASE = ['y']
+      const ALL = [...BASE, 'z']
+      export function C() {
+        const n = createMemo(() => ALL.length)
+        return <p>{n()}</p>
+      }
+    `, 'C.tsx', 'C')
+    refuseUnloweredArrayElements({ version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }, { errors, componentName: 'C' })
+    expect(errors).toEqual([])
+  })
+
   test('an array literal without a spread is not refused', () => {
     expect(refused(`const local = [b.length, 'z']; const n = createMemo(() => local.length); return <p>{n()}</p>`)).toEqual([])
   })

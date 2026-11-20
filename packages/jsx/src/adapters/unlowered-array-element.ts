@@ -29,6 +29,9 @@ import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
 /** Record BF101 for each declaration the server render reads that holds an array literal with an unlowered element. */
 export function refuseUnloweredArrayElements(ir: ComponentIR, sink: UninlinableSeedCallSink): void {
   walkServerReads(ir, (read) => {
+    // A module-scope declaration (`const ALL = [...BASE, 'z']` at the top of
+    // the file) is out of this refusal's scope: its reads are left as they are.
+    if (read.scope === 'module') return
     if (read.expr && holdsUnloweredArrayElement(read.expr, 'value')) record(read.kind, read.name, read.loc, sink)
   })
 }
