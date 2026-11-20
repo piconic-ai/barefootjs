@@ -1111,6 +1111,13 @@ import { fixture as memoOverArrayConstShapes } from './memo-over-array-const-sha
 import { fixture as memoOverArrayConstIndex } from './memo-over-array-const-index'
 import { fixture as computedArrayConstRead } from './computed-array-const-read'
 import { fixture as destructureDefaultSpreadConstLengthClient } from './destructure-default-spread-const-length-client'
+import { fixture as destructureDefaultSpreadConstMemo } from './destructure-default-spread-const-memo'
+import { fixture as destructureDefaultSpreadConstMemoClient } from './destructure-default-spread-const-memo-client'
+import { fixture as destructureDefaultSpreadMemoBody } from './destructure-default-spread-memo-body'
+import { fixture as destructureDefaultSpreadMemoBodyClient } from './destructure-default-spread-memo-body-client'
+import { fixture as destructureDefaultSpreadConstSignalSeed } from './destructure-default-spread-const-signal-seed'
+import { fixture as destructureDefaultSpreadConstSignalSeedClient } from './destructure-default-spread-const-signal-seed-client'
+import { fixture as destructureDefaultSpreadConstChildProp } from './destructure-default-spread-const-child-prop'
 import { fixture as memoLengthPropSeededSignalShapes } from './memo-length-prop-seeded-signal-shapes'
 import { fixture as emptyArrayCondition } from './empty-array-condition'
 import { fixture as emptyArrayConditionShapes } from './empty-array-condition-shapes'
@@ -2526,6 +2533,13 @@ export const jsxFixtures: JSXFixture[] = [
   memoOverArrayConstIndex,
   computedArrayConstRead,
   destructureDefaultSpreadConstLengthClient,
+  destructureDefaultSpreadConstMemo,
+  destructureDefaultSpreadConstMemoClient,
+  destructureDefaultSpreadMemoBody,
+  destructureDefaultSpreadMemoBodyClient,
+  destructureDefaultSpreadConstSignalSeed,
+  destructureDefaultSpreadConstSignalSeedClient,
+  destructureDefaultSpreadConstChildProp,
   memoLengthPropSeededSignalShapes,
   emptyArrayCondition,
   emptyArrayConditionShapes,
