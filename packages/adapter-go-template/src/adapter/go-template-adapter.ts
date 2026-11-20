@@ -203,7 +203,7 @@ import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemo
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
-import { refuseTemplateTimeDeliveryToDerivedField } from "./props/derived-field-delivery.ts"
+import { passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -977,6 +977,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.templateVarCounter = 0
     this.state.pendingChildrenDefines = []
     this.state.refusedLoopArrayConsts = new Set()
+    this.state.refusedLoopRowJsxProps = new Set()
     this.scope = BindingScope.EMPTY
     // Read before `primeCompileState` inlines the memo bodies, which turns
     // such a call into an unsupported node.
@@ -1293,6 +1294,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childDerivedFieldDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
+   * component name -> its constructor-derived fields named like one of its
+   * props whose initializer transforms what it reads
+   * (`const [children] = createSignal(props.children + '!')`), and the
+   * fields each reads. Kept out of `childDerivedFieldDeps`: such a field
+   * shares the prop's Props field, which is what that map's loop-row
+   * override reader relies on. Read only for a value delivered after
+   * construction (`lateDeliveryDerivedDeps`, #3961).
+   */
+  private childShadowTransformDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
+
+  /**
    * component name -> (JSX-attribute name -> that component's own Props
    * field, LOCAL binding). `bf.WithProps` treats an unknown field as a
    * silent passthrough, so `bf_with_props`/`bf_reprops` call sites cannot
@@ -1406,18 +1418,41 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ...(ir.metadata.memos ?? []).map(m => ({ field: m.name, init: m.parsed })),
       ...(ir.metadata.signals ?? []).map(s => ({ field: s.getter, init: s.parsed })),
     ]
+    const shadowDeps = new Map<string, ReadonlySet<string>>()
     for (const { field, init } of ctorInits) {
-      if (propFieldNames.has(capitalizeFieldName(field))) continue
       if (!init) continue
+      const shadowsProp = propFieldNames.has(capitalizeFieldName(field))
       const read = collectPropsReadByCtorInit(
         init,
         ir.metadata.propsObjectName ?? null,
         paramNames,
       )
       if (read.size === 0) continue
-      deps.set(field, new Set([...read].map(canonical)))
+      if (!shadowsProp) {
+        deps.set(field, new Set([...read].map(canonical)))
+        continue
+      }
+      // A field named like a prop shares that prop's Props field: fine for
+      // a passthrough, lost for a transformation once a late delivery sets
+      // the field (#3961 review).
+      const passthrough = passthroughReadField(init, ir.metadata.propsObjectName ?? null, canonical)
+      if (passthrough !== capitalizeFieldName(field)) shadowDeps.set(field, new Set([...read].map(canonical)))
     }
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
+    if (shadowDeps.size > 0) this.childShadowTransformDeps.set(name, shadowDeps)
+  }
+
+  /**
+   * The constructor-derived fields of `declaredName` a value delivered after
+   * construction (`bf_with_children` / `bf_with_props`) leaves wrong: every
+   * derived field, plus a field named like a prop that transforms it
+   * (`childShadowTransformDeps`).
+   */
+  private lateDeliveryDerivedDeps(declaredName: string): ReadonlyMap<string, ReadonlySet<string>> | undefined {
+    const derived = this.childDerivedFieldDeps.get(declaredName)
+    const shadow = this.childShadowTransformDeps.get(declaredName)
+    if (!shadow) return derived
+    return new Map([...(derived ?? []), ...shadow])
   }
 
   /**
@@ -7091,7 +7126,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.extractScopedHtmlChildren(children) !== null) continue
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
-        refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.childDerivedFieldDeps.get(declaredName), prop.name, prop.loc)
+        refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), prop.name, prop.loc)
         this.state.pendingChildrenDefines.push({
           name,
           content: this.renderWrapperRowDefine(children),
@@ -7135,7 +7170,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private refuseTemplateTimeChildren(comp: IRComponent): void {
     const declaredName = this.resolveChildName(comp.name)
-    refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.childDerivedFieldDeps.get(declaredName), 'children', comp.loc)
+    refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), 'children', comp.loc)
+  }
+
+  /**
+   * BF101 for each JSX-valued prop (other than `children`) of a component in
+   * a loop row that no static bake turns into a constant: the constructor
+   * omits it (`lowerJsxChildProp`) and no per-row delivery sets it, unlike
+   * the static call site's `queueDynamicPropDefine` (#3961 review). Once
+   * per prop, however often the row is rendered.
+   */
+  private refuseUndeliveredLoopRowJsxProps(comp: IRComponent): void {
+    for (const prop of comp.props) {
+      if (prop.value.kind !== 'jsx-children' || this.state.refusedLoopRowJsxProps.has(prop)) continue
+      if (this.hasBakedStaticChildren(prop.value.children)) continue
+      if (refuseUndeliveredLoopRowJsxProp(this.state, comp, prop)) this.state.refusedLoopRowJsxProps.add(prop)
+    }
   }
 
   /** Whether one of the static bake paths turns `children` into a `Children` value. */
@@ -7508,6 +7558,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Only a row with forwarded children has the wrapper (and its
       // embedded `<Name>Props`); a bare child row is its own `<Name>Props`,
       // built per row from its full Input (`loopRowChildInputFields`).
+      this.refuseUndeliveredLoopRowJsxProps(comp)
       const base = this.wrapperRowChildProps(comp, declaredName)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, true)
       if (loopBodyDefine) {
@@ -7530,6 +7581,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (`loopRowChildPropOverrides`). The shared BASE instance (built once)
       // still carries identical child scope IDs across rows — the same
       // contract the wrapper machinery's `bodyChildInstances` already uses.
+      this.refuseUndeliveredLoopRowJsxProps(comp)
       const suffix = slotIdToFieldSuffix(comp.slotId)
       const overrides = loopRowChildPropOverrides(this.loopRenderHost, comp)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, false)

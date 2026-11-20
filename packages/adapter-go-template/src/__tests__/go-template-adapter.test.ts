@@ -119,6 +119,11 @@ runAdapterConformanceTests({
     // the IR still declares (s6). See hono-adapter.test for the
     // contract.
     'todo-app',
+    // Refused (BF101, `loop-row-dynamic-jsx-prop`): the loop row's JSX prop
+    // has no delivery, so the template carries none of the markers the IR
+    // declares inside it. Graduates with the refusal.
+    'jsx-prop-loop-row-element-dynamic',
+    'jsx-prop-loop-row-component-dynamic',
     // (#1897) data-table no longer skipped — loop body children + wrapper
     // struct + block-body memo baking render correctly on Go.
     // `jsx-element-prop-fragment-conditional` (#2703) and

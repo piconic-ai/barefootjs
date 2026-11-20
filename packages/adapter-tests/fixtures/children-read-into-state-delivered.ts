@@ -5,16 +5,17 @@ import { createFixture } from '../src/types'
  * `props.children ?? 'missing'` whose children reach that signal on every
  * adapter: static text children, no children, and static text children of
  * a call nested in a loop row's element. A signal named like the prop
- * (`const [children] = createSignal(props.children ?? 'missing')`) holds
- * the prop's own value, so children that read the caller's data reach it
- * too. The sibling of `children-dynamic-read-into-state` (#3961).
+ * that passes it through (`const [children] = createSignal(props.children)`,
+ * with or without a `??` fallback) holds the prop's own value, so children
+ * that read the caller's data reach it too; the transforming twin is
+ * `children-read-into-state-shadow-transform`. The sibling of `children-dynamic-read-into-state` (#3961).
  */
 export const fixture = createFixture({
   id: 'children-read-into-state-delivered',
   description: 'JSX children a component seeds a signal from reach that signal',
   source: `
 'use client'
-import { Note, Shadow } from './note'
+import { Note, Shadow, ShadowBare } from './note'
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -23,6 +24,7 @@ export function Host(props: { label: string; items: string[] }) {
       <ul>{props.items.map((x) => <li key={x}><Note>own</Note></li>)}</ul>
       <Shadow>{props.label}</Shadow>
       <Shadow />
+      <ShadowBare>{props.label}</ShadowBare>
     </div>
   )
 }
@@ -39,6 +41,10 @@ export function Shadow(props: { children?: unknown }) {
   const [children] = createSignal(props.children ?? 'missing')
   return <i>{children() === 'missing' ? 'fallback' : 'children'}</i>
 }
+export function ShadowBare(props: { children?: unknown }) {
+  const [children] = createSignal(props.children)
+  return <s>{children() ? 'children' : 'fallback'}</s>
+}
 `,
   },
   props: { label: 'hi', items: ['a', 'b'] },
@@ -52,6 +58,8 @@ export function Shadow(props: { children?: unknown }) {
       </ul>
       <i bf-s="test_s5" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></i>
       <i bf-s="test_s6" bf="s1"><!--bf-cond-start:s0-->fallback<!--bf-cond-end:s0--></i>
+      <s bf-s="test_s8" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></s>
     </div>
+  
   `,
 })

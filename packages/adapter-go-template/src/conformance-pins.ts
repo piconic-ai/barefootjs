@@ -458,4 +458,11 @@ export const conformancePins: ConformancePins = {
   // refused for its children before the dropped spread can render (the
   // spread is `open-rest-spread-onto-child-component`).
   'open-rest-spread-child-children': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // A same-named signal / memo shares the prop's field, so a late delivery
+  // overwrites what it computed from the prop.
+  'children-read-into-state-shadow-transform': [{ code: 'BF101', severity: 'error', limitation: 'template-time-children-read-into-state', unescapable: true }],
+  // A JSX prop that reads the loop row has no per-row delivery to a
+  // component in that row, in either loop position.
+  'jsx-prop-loop-row-element-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  'jsx-prop-loop-row-component-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
 }
