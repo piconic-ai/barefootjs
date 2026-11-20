@@ -3924,6 +3924,38 @@
           ]
         }
       },
+      "date-intersection-member": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-inline-intersection-member"
+          ]
+        }
+      },
+      "date-intersection-member-destructured": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-inline-intersection-member"
+          ]
+        }
+      },
+      "date-intersection-member-interface": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-inline-intersection-member"
+          ]
+        }
+      },
+      "date-intersection-member-literal-arm": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-inline-intersection-member"
+          ]
+        }
+      },
       "date-intersection-nested-narrowing": {
         "go-template": {
           "kind": "render",
@@ -15038,6 +15070,22 @@
         "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-prop-identity-hydrate.ts"
       },
+      "date-intersection-member": {
+        "description": "Date reached through a props member typed as an inline intersection renders via the date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member.ts"
+      },
+      "date-intersection-member-destructured": {
+        "description": "Date reached through a destructured prop typed as an inline intersection renders via the date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-destructured.ts"
+      },
+      "date-intersection-member-interface": {
+        "description": "Date reached through an interface member typed as an inline intersection renders via the date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-interface.ts"
+      },
+      "date-intersection-member-literal-arm": {
+        "description": "Date declared on the object literal arm of a member intersection renders via the date helper",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-literal-arm.ts"
+      },
       "date-intersection-nested-narrowing": {
         "description": "Nested Date member declared as Date & Date | null across intersection arms renders via the date…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-nested-narrowing.ts"
@@ -16689,6 +16737,22 @@
       ],
       "diagnostics": [
         "BF029"
+      ]
+    },
+    "go-inline-intersection-member": {
+      "title": "A props member typed as an inline intersection",
+      "kind": "silent",
+      "given": "a prop or props-interface member whose type is an inline intersection (`data: A & B`), read through its members (`props.data.label`, `props.data.at.getUTCFullYear()`)",
+      "expected": "the member values (`y:2024`)",
+      "actual": "renders `:0`, since the member is generated as an `interface{}` field holding the source-keyed map, so a capitalised member read finds nothing and the Date accessor reads a zero time",
+      "fixtures": [
+        "date-intersection-member",
+        "date-intersection-member-destructured",
+        "date-intersection-member-interface",
+        "date-intersection-member-literal-arm"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "go-nested-inherited-date-member": {

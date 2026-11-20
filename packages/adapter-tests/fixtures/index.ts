@@ -1088,6 +1088,10 @@ import { fixture as dateInheritedPropInlineIntersectionLiteral } from './date-in
 import { fixture as dateInheritedPropInlineIntersectionDestructured } from './date-inherited-prop-inline-intersection-destructured'
 import { fixture as dateInheritedPropInlineIntersectionNested } from './date-inherited-prop-inline-intersection-nested'
 import { fixture as dateInheritedPropInlineIntersectionExtends } from './date-inherited-prop-inline-intersection-extends'
+import { fixture as dateIntersectionMember } from './date-intersection-member'
+import { fixture as dateIntersectionMemberInterface } from './date-intersection-member-interface'
+import { fixture as dateIntersectionMemberDestructured } from './date-intersection-member-destructured'
+import { fixture as dateIntersectionMemberLiteralArm } from './date-intersection-member-literal-arm'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2493,6 +2497,10 @@ export const jsxFixtures: JSXFixture[] = [
   dateInheritedPropInlineIntersectionDestructured,
   dateInheritedPropInlineIntersectionNested,
   dateInheritedPropInlineIntersectionExtends,
+  dateIntersectionMember,
+  dateIntersectionMemberInterface,
+  dateIntersectionMemberDestructured,
+  dateIntersectionMemberLiteralArm,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,

@@ -125,6 +125,13 @@ export const renderDivergences: RenderDivergences = {
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },
+  // A props member typed as an inline intersection (`data: A & B`): the Go
+  // field is `interface{}` holding the source-keyed map, so a member read
+  // finds nothing.
+  'date-intersection-member': { limitation: 'go-inline-intersection-member' },
+  'date-intersection-member-interface': { limitation: 'go-inline-intersection-member' },
+  'date-intersection-member-destructured': { limitation: 'go-inline-intersection-member' },
+  'date-intersection-member-literal-arm': { limitation: 'go-inline-intersection-member' },
   // A memo reading an element of an array literal by a literal index: the
   // runtime evaluator does not read an array element by a computed key.
   'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },

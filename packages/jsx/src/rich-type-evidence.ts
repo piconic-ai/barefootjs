@@ -159,9 +159,10 @@ export function stripUnion(type: TypeInfo | null): TypeInfo | null {
  * `{ kind: 'interface', raw }` with no member walk of its own.
  */
 export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo {
-  if (type.kind === 'object' && type.inherits) {
-    // An inline intersection (the props type of `props: Base & {...}`): its
-    // constituents are carried on the type itself, no declaration to look up.
+  if (type.inherits) {
+    // An inline intersection (the props type of `props: Base & {...}`, or a
+    // member typed `A & B`): its constituents are carried on the type itself,
+    // no declaration to look up.
     return { ...type, properties: collectDefinitionMembers(type, meta, new Set()).members }
   }
   if (type.kind !== 'interface') return type
@@ -183,7 +184,7 @@ type InheritingType = Pick<TypeDefinition, 'properties' | 'inherits' | 'inherita
  */
 function inheritingTypeOf(type: TypeInfo | null, meta: EvidenceMetadata): { def: InheritingType; visiting: Set<string> } | null {
   if (!type) return null
-  if (type.kind === 'object' && type.inherits) return { def: type, visiting: new Set() }
+  if (type.inherits) return { def: type, visiting: new Set() }
   if (type.kind !== 'interface') return null
   const name = baseTypeName(type.raw)
   const def = meta.typeDefinitions.find((d) => d.name === name)
