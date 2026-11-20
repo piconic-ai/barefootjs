@@ -3706,12 +3706,40 @@
           ]
         }
       },
+      "children-dynamic-read-into-state": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "children-element-read-into-state": {
         "erb": {
           "kind": "render",
           "limitations": [
             "children-element-read-into-state"
           ]
+        }
+      },
+      "children-read-into-state-forms": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "computed-const-loop-source-parenthesized": {
@@ -12858,10 +12886,16 @@
       },
       "open-rest-spread-child-children": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "open-rest-spread-onto-child-component"
-          ]
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "open-rest-spread-child-omits-keys": {
@@ -16529,9 +16563,17 @@
         "description": "Undeclared props reach a child that spreads its whole props object",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-undeclared-prop-whole-props-spread.ts"
       },
+      "children-dynamic-read-into-state": {
+        "description": "Dynamic JSX children a component seeds a signal from reach that signal",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-dynamic-read-into-state.ts"
+      },
       "children-element-read-into-state": {
         "description": "An element child a component reads into state renders as that element",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-element-read-into-state.ts"
+      },
+      "children-read-into-state-forms": {
+        "description": "Every way of computing state from dynamic JSX children sees those children",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-forms.ts"
       },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
@@ -18861,7 +18903,6 @@
       "actual": "drops the spread: the child receives only the call's explicit props",
       "fixtures": [
         "open-rest-spread-child",
-        "open-rest-spread-child-children",
         "open-rest-spread-child-omits-keys"
       ],
       "adapters": [
@@ -19146,6 +19187,24 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "template-time-children-read-into-state": {
+      "title": "State computed from JSX children the server renders at template time",
+      "kind": "refusal",
+      "given": "a component whose signal seed or memo reads its children or another JSX-valued prop (`createSignal(props.children ?? 'missing')`), called with JSX children or a JSX prop that read the caller's data (`<Note>{props.label}!</Note>`, `header={<i>{props.label}</i>}`) or as the element a loop row returns, whatever its children (`items.map((x) => <Note key={x}>own</Note>)`)",
+      "expected": "the state holds the children the call passes (`hi!` for `<Note>{props.label}!</Note>`), not the fallback (`'missing'`)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "children-dynamic-read-into-state",
+        "children-read-into-state-forms",
+        "open-rest-spread-child-children"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "uninlinable-local-function-call": {

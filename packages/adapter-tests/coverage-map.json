@@ -2349,6 +2349,27 @@
         "text"
       ]
     },
+    "children-dynamic-read-into-state": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "children-element-read-into-state": {
       "kinds": [
         "call",
@@ -2521,6 +2542,46 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "children-read-into-state-delivered": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "children-read-into-state-forms": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },

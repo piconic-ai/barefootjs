@@ -5970,6 +5970,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -8437,6 +8449,18 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8937,7 +8961,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -15069,6 +15093,18 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -15737,7 +15773,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -22340,6 +22376,18 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -22864,7 +22912,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -27099,6 +27147,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -27221,7 +27281,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -29241,6 +29301,18 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -29807,7 +29879,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -41191,6 +41263,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -45747,6 +45831,18 @@
               ]
             },
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -46199,7 +46295,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -50018,6 +50114,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -50134,7 +50242,7 @@
             {
               "fixture": "open-rest-spread-child-children",
               "limitations": [
-                "open-rest-spread-onto-child-component"
+                "template-time-children-read-into-state"
               ]
             },
             {

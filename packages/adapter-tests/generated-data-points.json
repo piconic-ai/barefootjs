@@ -2522,6 +2522,65 @@
       }
     }
   ],
+  "children-read-into-state-delivered": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "hi",
+        "items": []
+      }
+    }
+  ],
+  "children-read-into-state-forms": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "client-handler-keyword-prop": [
     {
       "name": "gen:default:zero",
