@@ -5,15 +5,26 @@
  * element. Rendered and parsed here; the cross-adapter twin is the
  * `raw-text-split-boundary` conformance fixture.
  */
-import { beforeAll, describe, expect, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 import { compileJSX } from '@barefootjs/jsx'
 import { HonoAdapter } from '../adapter'
 import { renderHonoComponent } from '../test-render'
 import { bfRawText } from '../utils'
 
+// Bun runs every test file of the package in one process, and the client
+// runtime reads `typeof window === 'undefined'` as "server render": leaving
+// the happy-dom globals behind would make later files (request-env) render
+// as if on the client. Remove what this file registered.
+let registered = false
 beforeAll(() => {
-  if (typeof window === 'undefined') GlobalRegistrator.register()
+  if (typeof window === 'undefined') {
+    GlobalRegistrator.register()
+    registered = true
+  }
+})
+afterAll(() => {
+  if (registered) GlobalRegistrator.unregister()
 })
 
 const source = `
