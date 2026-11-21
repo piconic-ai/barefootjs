@@ -8,7 +8,7 @@ import { createFixture } from '../src/types'
  *
  * The template adapters render the rest's value twice, ahead of the bag's
  * (`title="last" title="last" title="middle"`; a browser reads `last`):
- * limitation `closed-rest-repeated-around-open-bag`.
+ * limitation `closed-rest-repeated`.
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated-both',

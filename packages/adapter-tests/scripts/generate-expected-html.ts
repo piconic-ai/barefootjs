@@ -68,8 +68,9 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   'spread-open-bag-literal-renamed-elsewhere',
   // A closed rest spread repeated around an open bag: hand-authored to the
   // last write JS makes; the reference writes the later rest's omitted key
-  // as `undefined` (limitation `closed-rest-repeated-around-open-bag`).
+  // as `undefined` (limitation `closed-rest-repeated`).
   'spread-closed-rest-repeated-around-bag',
+  'spread-closed-rest-repeated-after-bag',
 ])
 
 async function main() {

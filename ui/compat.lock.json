@@ -14912,11 +14912,129 @@
           }
         }
       },
+      "spread-closed-rest-repeated": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-after-bag": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
       "spread-closed-rest-repeated-around-bag": {
         "hono": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         }
       },
@@ -14924,55 +15042,111 @@
         "blade": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "closed-rest-repeated-around-open-bag"
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-last": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
           ]
         }
       },
@@ -17493,6 +17667,14 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-closed-rest-repeated": {
+        "description": "A literal before a closed rest spread twice renders once when the rest omits its key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated.ts"
+      },
+      "spread-closed-rest-repeated-after-bag": {
+        "description": "A literal before a closed rest, an open bag and two more repeats of the rest renders once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-after-bag.ts"
+      },
       "spread-closed-rest-repeated-around-bag": {
         "description": "A literal before a closed rest spread repeated around an open bag renders the last write that…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-around-bag.ts"
@@ -17500,6 +17682,10 @@
       "spread-closed-rest-repeated-both": {
         "description": "A closed rest spread repeated around an open bag carrying the same key renders the rest value once",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-both.ts"
+      },
+      "spread-closed-rest-repeated-last": {
+        "description": "A closed rest spread repeated after a literal renders the rest value once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-last.ts"
       },
       "spread-closed-rest-then-bag-renamed-key": {
         "description": "An open bag after a closed rest spread displaces the folded literal only where it writes the same…",
@@ -18335,15 +18521,18 @@
         "BF101"
       ]
     },
-    "closed-rest-repeated-around-open-bag": {
-      "title": "A closed rest spread repeated around an open spread",
+    "closed-rest-repeated": {
+      "title": "The same closed rest spread repeated on one element",
       "kind": "silent",
-      "given": "an earlier write of a key (a literal), then the same closed rest spread before and after an open spread (`{...rest} {...bag} {...rest}`)",
-      "expected": "the key renders once, with the last write JS makes: the rest's value, else the bag's, else the earlier write",
-      "actual": "Renders the rest's value twice ahead of the bag's when both carry the key, or drops the earlier write because the later expansion writes the omitted key as `undefined`",
+      "given": "an earlier write of a key (a literal), then the same closed rest spread more than once (`{...rest} {...rest}`), adjacent or around an open spread (`{...rest} {...bag} {...rest}`)",
+      "expected": "the key renders once, with the last write JS makes: the rest's value, else an intervening bag's, else the earlier write",
+      "actual": "Renders the key once per expansion (`title=\"fallback\" title=\"fallback\"`), the rest's value ahead of the bag's, or drops the earlier write because a later expansion writes the omitted key as `undefined`",
       "fixtures": [
+        "spread-closed-rest-repeated",
+        "spread-closed-rest-repeated-after-bag",
         "spread-closed-rest-repeated-around-bag",
-        "spread-closed-rest-repeated-both"
+        "spread-closed-rest-repeated-both",
+        "spread-closed-rest-repeated-last"
       ],
       "adapters": [
         "hono",

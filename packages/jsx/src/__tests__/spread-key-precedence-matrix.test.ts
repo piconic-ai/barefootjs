@@ -75,12 +75,21 @@ export function C({ ...rest }: P) { return <x-el {...rest} ${key}={/* @client */
 
 describe('literal, closed rest, (open bag,) closed rest', () => {
   const type = `type P = { title?: string; bag: Record<string, string> }`
-  test('with no open bag between, the last rest carries the chain and the first drops the key', () => {
+  test('with no open bag between, every expansion stays, as on main (limitation closed-rest-repeated)', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...rest}>x</x-el> }`, new TestAdapter())
-    expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
+    expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? ("f")', 'rest.title ?? (rest.title ?? ("f"))'])
+    expect(attrNamed(el, 'title').map(a => a.spreadOverridable)).toEqual([undefined, undefined])
   })
-  test('across an open bag both expansions stay (limitation closed-rest-repeated-around-open-bag); the first is guarded by the bag', () => {
+  test('a closed rest, an open bag and two adjacent repeats: every expansion stays; only the first is guarded by the bag', () => {
+    const el = elementOf(`${type}
+export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest} {...rest}>x</x-el> }`, new TestAdapter())
+    const titles = attrNamed(el, 'title')
+    expect(titles.map(textOf)).toEqual(['rest.title ?? ("f")', 'rest.title', 'rest.title ?? (rest.title)'])
+    expect(titles[0].spreadOverridable?.expr).toBe('rest.title != null || bag?.title == null ? (rest.title ?? ("f")) : undefined')
+    expect(titles.slice(1).map(a => a.spreadOverridable)).toEqual([undefined, undefined])
+  })
+  test('across an open bag both expansions stay (limitation closed-rest-repeated); the first is guarded by the bag', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest}>x</x-el> }`, new TestAdapter())
     const titles = attrNamed(el, 'title')

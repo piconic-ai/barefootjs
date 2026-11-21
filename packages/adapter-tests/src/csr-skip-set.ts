@@ -173,7 +173,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-hono-renamed-keys',
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
+  // The CSR template renders every expansion of a repeated closed rest, as
+  // the template adapters do (limitation `closed-rest-repeated`).
+  'spread-closed-rest-repeated',
+  'spread-closed-rest-repeated-last',
   'spread-closed-rest-repeated-around-bag',
+  'spread-closed-rest-repeated-after-bag',
   'spread-closed-rest-repeated-attr-spelled-bag-key',
   'spread-closed-rest-then-bag-renamed-key',
   // Open bags reach their elements only through `applyRestAttrs`; these

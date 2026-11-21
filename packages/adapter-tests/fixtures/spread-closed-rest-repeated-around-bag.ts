@@ -9,7 +9,7 @@ import { createFixture } from '../src/types'
  * `expectedHtml` is hand-authored (`SKIP_AUTO_UPDATE`): the Hono reference
  * writes the later rest's omitted key as an explicit `undefined`, which
  * replaces the earlier write, so it renders no `title` (limitation
- * `closed-rest-repeated-around-open-bag`).
+ * `closed-rest-repeated`).
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated-around-bag',

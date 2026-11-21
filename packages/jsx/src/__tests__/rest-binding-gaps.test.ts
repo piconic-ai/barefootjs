@@ -91,7 +91,7 @@ export function P({ label, ...rest }: { label: string; htmlFor?: string }) {
     expect(label.attrs.map(a => a.name)).toEqual(['htmlFor', 'for'])
   })
 
-  test('a later closed rest replaces an earlier one only where it carries its value as fallback', () => {
+  test('a repeated closed rest keeps every expansion', () => {
     const ir = irOf(`
 export function P({ label, bag, ...rest }: { label: string; bag: Record<string, string>; title?: string }) {
   return <div><p title="f" {...rest} {...bag} {...rest}>{label}</p><i title="f" {...rest} {...rest}>{label}</i></div>
@@ -99,10 +99,11 @@ export function P({ label, bag, ...rest }: { label: string; bag: Record<string, 
 `)
     const [p] = elements(ir.root, 'p')
     // Across the open bag both expansions stay (limitation
-    // `closed-rest-repeated-around-open-bag`).
+    // `closed-rest-repeated`).
     expect(attrExpr(p, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title'])
     const [i] = elements(ir.root, 'i')
-    expect(attrExpr(i, 'title')).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
+    // Every expansion of a repeated rest stays (limitation `closed-rest-repeated`).
+    expect(attrExpr(i, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title ?? (rest.title ?? ("f"))'])
   })
 
   test('a member read before the spread is a fallback', () => {

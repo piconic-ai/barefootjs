@@ -3,11 +3,11 @@ import { createFixture } from '../src/types'
 /**
  * A literal `title` followed by the same closed rest spread twice, with
  * nothing between them. The caller omits the optional `title`, so the rest
- * never writes it and the literal renders, once: the last expansion carries
- * the earlier ones as its fallback and the first one drops the key. Sibling:
- * `-last` (the caller passes `title`); the shapes with an open spread between
- * the two rests are `-around-bag`, `-both`, `-renamed-bag-key`,
- * `-attr-spelled-bag-key` and `-child-prop`.
+ * never writes it and the literal renders, once. Every expansion of the
+ * repeated rest is kept as on main (limitation `closed-rest-repeated`), so
+ * the template adapters render it once per expansion. Sibling: `-last` (the
+ * caller passes `title`); with an open spread between the rests:
+ * `-around-bag`, `-both`, `-after-bag`, `-attr-spelled-bag-key`.
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated',

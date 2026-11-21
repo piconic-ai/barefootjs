@@ -611,6 +611,7 @@ import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-re
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
 import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
 import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
+import { fixture as spreadClosedRestRepeatedAfterBag } from './spread-closed-rest-repeated-after-bag'
 import { fixture as spreadClosedRestRepeatedLast } from './spread-closed-rest-repeated-last'
 import { fixture as spreadClosedRestRepeatedBoth } from './spread-closed-rest-repeated-both'
 import { fixture as spreadClosedRestThenBagRenamedKey } from './spread-closed-rest-then-bag-renamed-key'
@@ -2209,6 +2210,7 @@ export const jsxFixtures: JSXFixture[] = [
   spreadOpenBagLiteralRenamedElsewhere,
   spreadClosedRestClientLiteralAfter,
   spreadClosedRestRepeated,
+  spreadClosedRestRepeatedAfterBag,
   spreadClosedRestRepeatedLast,
   spreadClosedRestRepeatedBoth,
   spreadClosedRestThenBagRenamedKey,

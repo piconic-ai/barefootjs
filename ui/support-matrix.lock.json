@@ -7345,9 +7345,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -7847,9 +7853,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -8397,9 +8409,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -9157,9 +9175,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -9725,9 +9749,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -10287,9 +10317,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -10837,9 +10873,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -11393,9 +11435,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -11943,9 +11991,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -12499,9 +12553,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -13677,9 +13737,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -14365,9 +14431,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -15113,9 +15197,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -16197,9 +16299,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -17005,9 +17125,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -17777,9 +17915,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -18531,9 +18687,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -19309,9 +19483,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -20057,9 +20249,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -20817,9 +21027,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -21470,9 +21698,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -22026,9 +22260,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -22654,9 +22906,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -23510,9 +23780,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -24162,9 +24450,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -24796,9 +25102,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -25436,9 +25760,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -26076,9 +26418,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -26692,9 +27052,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -27326,9 +27704,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -27447,9 +27843,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -27547,9 +27949,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -27671,9 +28091,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -27861,9 +28299,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -27985,9 +28441,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28109,9 +28583,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28239,9 +28731,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28363,9 +28873,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28481,9 +29009,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28611,9 +29157,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -28743,9 +29307,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -29287,9 +29857,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -29855,9 +30443,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -30663,9 +31269,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -31273,9 +31897,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -31865,9 +32507,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -32439,9 +33099,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -33043,9 +33721,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -33629,9 +34325,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -34209,9 +34923,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -34336,9 +35068,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -34604,9 +35342,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -34914,9 +35658,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -35254,9 +36004,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -35576,9 +36332,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -35886,9 +36648,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -36202,9 +36970,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -36524,9 +37298,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -36822,9 +37602,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -37132,9 +37918,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             },
             {
@@ -45627,9 +46419,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -46099,9 +46897,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -46631,9 +47447,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -47373,9 +48207,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -47923,9 +48775,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -48461,9 +49331,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -49005,9 +49893,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -49549,9 +50455,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -50075,9 +50999,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -50613,9 +51555,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -50936,9 +51896,15 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-around-bag",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -51030,9 +51996,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51148,9 +52132,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51332,9 +52334,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51450,9 +52470,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51568,9 +52606,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51686,9 +52742,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51804,9 +52878,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -51916,9 +53008,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -52034,9 +53144,27 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-both",
               "limitations": [
-                "closed-rest-repeated-around-open-bag"
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {

@@ -20173,6 +20173,23 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-repeated-after-bag": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-repeated-around-bag": {
       "kinds": [
         "call",

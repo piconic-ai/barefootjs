@@ -7529,17 +7529,14 @@ function closedRestFallbacks(
  *
  * What counts as a later write: an explicit attribute the server renders
  * (not a client-only one, {@link isClientOnlyAttr}, which the server skips),
- * a static const spread's entry, and a later repeat of the rest only where
- * that expansion carries the earlier value as its fallback (`restFallbacks`,
- * so with no open spread between them): a rest may omit an optional key, so
- * without the fallback the earlier write is still the value when it does.
- * An open spread writes keys nothing knows statically and replaces nothing
- * here.
+ * and a static const spread's entry. A later repeat of the same rest is
+ * not one (it may omit an optional key; limitation `closed-rest-repeated`),
+ * and an open spread writes keys nothing knows statically: neither replaces
+ * anything here.
  */
 function closedRestKeysWrittenLater(
   properties: readonly ts.JsxAttributeLike[],
   entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
-  restFallbacks: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyMap<string, RestKeyFallback>>,
   ctx: TransformContext,
 ): Map<ts.JsxSpreadAttribute, Set<string>> {
   const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
@@ -7563,7 +7560,6 @@ function closedRestKeysWrittenLater(
     if (closedRestSpreadSource(attr, ctx) === null) continue
     const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(toSpreadAttrName(key)))
     if (written.length > 0) result.set(attr, new Set(written))
-    for (const key of restFallbacks.get(attr)?.keys() ?? []) noteWrite(key)
   }
   return result
 }
@@ -7942,7 +7938,7 @@ function processAttributes(
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
   const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
-  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, restPlan.fallbacks, ctx)
+  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, ctx)
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
