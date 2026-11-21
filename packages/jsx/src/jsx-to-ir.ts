@@ -7494,8 +7494,13 @@ function closedRestFallbacks(
   properties: readonly ts.JsxAttributeLike[],
   entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
   ctx: TransformContext,
-): { properties: ts.JsxAttributeLike[]; fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>> } {
+): {
+  properties: ts.JsxAttributeLike[]
+  fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>
+  anchors: Map<ts.JsxSpreadAttribute, Map<string, ts.JsxSpreadAttribute>>
+} {
   const fallbacks = new Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>()
+  const anchors = new Map<ts.JsxSpreadAttribute, Map<string, ts.JsxSpreadAttribute>>()
   const dropped = new Set<ts.JsxAttributeLike>()
   const lastWrite = new Map<string, KeyWrite>()
   for (const attr of properties) {
@@ -7512,11 +7517,12 @@ function closedRestFallbacks(
     } else if (source === null) {
       carryRestWritesAcrossOpenSpread(attr, lastWrite, ctx)
     } else {
-      const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
+      const { keyFallbacks, keyAnchors } = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
       if (keyFallbacks.size > 0) fallbacks.set(attr, keyFallbacks)
+      if (keyAnchors.size > 0) anchors.set(attr, keyAnchors)
     }
   }
-  return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks }
+  return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks, anchors }
 }
 
 /**
@@ -7528,17 +7534,15 @@ function closedRestFallbacks(
  * key renders as (`toSpreadAttrName`: a later `for` replaces `htmlFor`).
  *
  * What counts as a later write: an explicit attribute the server renders
- * (not a client-only one, {@link isClientOnlyAttr}, which the server skips),
- * a static const spread's entry, and a later closed rest's key only where
- * that expansion carries the earlier value as its fallback
- * (`restFallbacks`): a rest may omit an optional key, so without the
- * fallback the earlier write is still the value when it does. An open
- * spread writes keys nothing knows statically and replaces nothing here.
+ * (not a client-only one, {@link isClientOnlyAttr}, which the server skips)
+ * and a static const spread's entry. A later repeat of the rest is not one:
+ * it may omit an optional key, and its chain back to this expansion is
+ * resolved by {@link elementRestKeyPlan}. An open spread writes keys nothing
+ * knows statically and replaces nothing here.
  */
 function closedRestKeysWrittenLater(
   properties: readonly ts.JsxAttributeLike[],
   entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
-  restFallbacks: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyMap<string, RestKeyFallback>>,
   ctx: TransformContext,
 ): Map<ts.JsxSpreadAttribute, Set<string>> {
   const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
@@ -7562,9 +7566,42 @@ function closedRestKeysWrittenLater(
     if (closedRestSpreadSource(attr, ctx) === null) continue
     const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(toSpreadAttrName(key)))
     if (written.length > 0) result.set(attr, new Set(written))
-    for (const key of restFallbacks.get(attr)?.keys() ?? []) noteWrite(key)
   }
   return result
+}
+
+/**
+ * Where an element renders each closed rest key when the same rest is
+ * spread more than once (`<p title="f" {...rest} {...bag} {...rest}>`). The
+ * last repeat's value is the whole chain (`rest.title ?? (bag?.title == null
+ * ? (rest.title ?? ("f")) : undefined)`); it renders at the FIRST expansion
+ * of the chain (its anchor, `closedRestFallbacks`' `anchors`) and every later
+ * repeat drops the key. A browser keeps the first of two equal attribute
+ * names, so this puts the rest's own value ahead of an intervening open
+ * bag's: the rest wins when it carries the key, the bag when only it does,
+ * and the earlier write when neither does. Both read the same object, so
+ * the move does not change the value. (A component's props are merged last
+ * write wins instead, so `processComponentProps` keeps the chain at the
+ * last repeat.)
+ */
+function elementRestKeyPlan(
+  restPlan: ReturnType<typeof closedRestFallbacks>,
+  writtenLater: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlySet<string>>,
+): { fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>; dropped: Map<ts.JsxSpreadAttribute, Set<string>> } {
+  const fallbacks = new Map([...restPlan.fallbacks].map(([spread, keys]) => [spread, new Map(keys)]))
+  const dropped = new Map([...writtenLater].map(([spread, keys]) => [spread, new Set(keys)]))
+  for (const spread of restPlan.properties) {
+    if (!ts.isJsxSpreadAttribute(spread)) continue
+    for (const [key, anchor] of restPlan.anchors.get(spread) ?? []) {
+      const chain = restPlan.fallbacks.get(spread)?.get(key)
+      if (chain === undefined) continue
+      if (!fallbacks.has(anchor)) fallbacks.set(anchor, new Map())
+      fallbacks.get(anchor)!.set(key, chain)
+      if (!dropped.has(spread)) dropped.set(spread, new Set())
+      dropped.get(spread)!.add(key)
+    }
+  }
+  return { fallbacks, dropped }
 }
 
 /**
@@ -7598,20 +7635,29 @@ function carryRestWritesAcrossOpenSpread(
 ): void {
   const value = AttrValueOf.spread(ctx.getJS(attr.expression), ctx.getTemplateJS(attr.expression))
   const bag = spreadBagReader(value, ctx)
-  const templateBag = bag === null || value.templateExpr === undefined ? bag : spreadBagReader({ ...value, expr: value.templateExpr }, ctx)
+  // The client template reads the bag as its own text spells it (`_p.bag`
+  // for a destructured prop), with the same nullish-safety.
+  const templateBag = bag === null || value.templateExpr === undefined
+    ? bag
+    : spreadBagReader({ ...value, expr: value.templateExpr }, ctx) ?? bagKeyReader(value.templateExpr.trim(), !isNeverNullishBag(parseExpression(value.expr.trim()), ctx))
   const bagIds = extractFreeIdentifiersFromNode(attr.expression)
   for (const [key, write] of [...lastWrite]) {
     if (bag === null || !write.fromRest || write.value === null) {
       lastWrite.delete(key)
       continue
     }
-    if (bagLacksKeys(value.expr, [key], ctx)) continue
-    const guarded = (read: string, earlier: string): string => `${read} == null ? (${earlier}) : undefined`
+    // The bag keys this adapter's spread helper renders as the attribute the
+    // expansion renders (`htmlFor` -> `for`: `for` and `htmlFor`), the same
+    // set the literal guard reads ({@link bagKeysWritingAttr}).
+    const keys = bagKeysWritingAttr(toSpreadAttrName(key), ctx)
+    if (bagLacksKeys(value.expr, keys, ctx)) continue
+    const lacks = (reader: (k: string) => string): string => keys.map(k => `${reader(k)} == null`).join(' && ')
+    const guarded = (reader: (k: string) => string, earlier: string): string => `${lacks(reader)} ? (${earlier}) : undefined`
     lastWrite.set(key, {
-      fromRest: true,
+      fromRest: write.fromRest,
       value: {
-        text: guarded(bag(key), write.value.text),
-        templateText: guarded((templateBag ?? bag)(key), write.value.templateText),
+        text: guarded(bag, write.value.text),
+        templateText: guarded(templateBag ?? bag, write.value.templateText),
         freeIdentifiers: new Set([...write.value.freeIdentifiers, ...bagIds]),
       },
     })
@@ -7625,12 +7671,13 @@ function closedRestKeyFallbacks(
   lastWrite: Map<string, KeyWrite>,
   dropped: Set<ts.JsxAttributeLike>,
   ctx: TransformContext,
-): Map<string, RestKeyFallback> {
+): { keyFallbacks: Map<string, RestKeyFallback>; keyAnchors: Map<string, ts.JsxSpreadAttribute> } {
   const keyFallbacks = new Map<string, RestKeyFallback>()
+  const keyAnchors = new Map<string, ts.JsxSpreadAttribute>()
   for (const key of ctx.analyzer.restPropsExpandedKeys) {
     const read = `${source}.${key}`
     const earlier = lastWrite.get(key)
-    lastWrite.set(key, { fromRest: true, value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
+    lastWrite.set(key, { fromRest: attr, value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
     if (!earlier) continue
     if (earlier.value === null || (earlier.attr && !isReadOnlyAttrValue(earlier.attr.initializer))) {
       const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
@@ -7641,8 +7688,12 @@ function closedRestKeyFallbacks(
       continue
     }
     keyFallbacks.set(key, earlier.value)
+    // A chain back to an earlier expansion of the same rest: that one is
+    // where an element renders the key ({@link elementRestKeyPlan}).
+    const anchor = earlier.fromRest ?? attr
+    if (earlier.fromRest) keyAnchors.set(key, earlier.fromRest)
     lastWrite.set(key, {
-      fromRest: true,
+      fromRest: anchor,
       value: {
         text: restKeyWithFallback(read, earlier.value.text),
         templateText: restKeyWithFallback(read, earlier.value.templateText),
@@ -7651,7 +7702,7 @@ function closedRestKeyFallbacks(
     })
     if (earlier.attr) dropped.add(earlier.attr)
   }
-  return keyFallbacks
+  return { keyFallbacks, keyAnchors }
 }
 
 /** A value a closed rest spread's key falls back to ({@link closedRestFallbacks}): its source text and free names. */
@@ -7666,8 +7717,12 @@ interface RestKeyFallback {
 interface KeyWrite {
   attr?: ts.JsxAttribute
   value: RestKeyFallback | null
-  /** The write is a closed rest spread's expanded key ({@link carryRestWritesAcrossOpenSpread}). */
-  fromRest?: true
+  /**
+   * The write is a closed rest spread's expanded key: the spread whose
+   * expansion an element renders it at, the first of a chain of the same
+   * rest ({@link carryRestWritesAcrossOpenSpread}, {@link elementRestKeyPlan}).
+   */
+  fromRest?: ts.JsxSpreadAttribute
 }
 
 /**
@@ -7984,12 +8039,12 @@ function processAttributes(
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
   const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
-  const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, restPlan.fallbacks, ctx)
+  const elementPlan = elementRestKeyPlan(restPlan, closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, ctx))
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       hasSpread = true
-      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr), writtenLater.get(attr)))
+      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), elementPlan.fallbacks.get(attr), elementPlan.dropped.get(attr)))
       continue
     }
 
@@ -8127,8 +8182,7 @@ function markAttrsOverridableBySpread(
     // Pebble only). Where the helper writes the key as another attribute
     // (`cross-origin`) the literal stays. `class` is read only as
     // `className`, the key the reference writes it under.
-    const aliases = spreadKeysRenamedTo(attr.name, ctx.analyzer.spreadKeyRenames)
-    const keys = attr.name === 'class' ? aliases : [attr.name, ...aliases]
+    const keys = bagKeysWritingAttr(attr.name, ctx)
     const missing: string[] = []
     const templateMissing: string[] = []
     for (const later of attrs.slice(index + 1)) {
@@ -8166,8 +8220,44 @@ function markAttrsOverridableBySpread(
  */
 function spreadBagReader(value: SpreadAttr, ctx: TransformContext): ((key: string) => string) | null {
   const text = value.expr.trim()
-  if (!isReadableBag(parseExpression(text), value, ctx)) return null
-  return (key) => (/^[A-Za-z_$][\w$]*$/.test(key) ? `${text}.${key}` : `${text}[${codeSafeStringLiteral(key)}]`)
+  const parsed = parseExpression(text)
+  if (!isReadableBag(parsed, value, ctx)) return null
+  // JSX spreads a nullish bag as nothing, so a read of a bag that may be
+  // `undefined` (an optional prop, a signal) must not throw: `bag?.k`. A
+  // rest binding and the props object always hold an object.
+  return bagKeyReader(text, !isNeverNullishBag(parsed, ctx))
+}
+
+/** A read of key `key` off the bag spelled `text`; `?.` when the bag may be nullish. */
+function bagKeyReader(text: string, nullable: boolean): (key: string) => string {
+  return (key) => /^[A-Za-z_$][\w$]*$/.test(key)
+    ? `${text}${nullable ? '?.' : '.'}${key}`
+    : `${text}${nullable ? '?.' : ''}[${codeSafeStringLiteral(key)}]`
+}
+
+/** A spread bag that is always an object: the rest binding (or an alias of it) or the props object. */
+function isNeverNullishBag(parsed: ParsedExpr | null, ctx: TransformContext): boolean {
+  if (parsed?.kind !== 'identifier' || ctx.scope.isBound(parsed.name)) return false
+  const restName = ctx.analyzer.restPropsName
+  return (restName !== null && isRestBinding(parsed.name, restName, ctx)) || parsed.name === ctx.analyzer.propsObjectName
+}
+
+/**
+ * The spread bag keys the target adapter's spread helper renders as the
+ * attribute `attrName`: the name itself (`for`; not `class`, see below) and each key it
+ * renames to it (`spreadKeysRenamedTo` over `TemplateAdapter.spreadKeyRenames`:
+ * `htmlFor` for `for` everywhere, `crossOrigin` for `crossorigin` only where
+ * the helper renames it). The one answer to "does this bag write that
+ * attribute?" for the literal guard ({@link markAttrsOverridableBySpread})
+ * and for a closed rest write carried across an open spread
+ * ({@link carryRestWritesAcrossOpenSpread}).
+ */
+function bagKeysWritingAttr(attrName: string, ctx: TransformContext): string[] {
+  const renamed = spreadKeysRenamedTo(attrName, ctx.analyzer.spreadKeyRenames)
+  // `class` is read only as `className`: the reference writes the
+  // attribute as the JSX key `className`, so a bag's `class` is another key
+  // there and renders beside it, not over it.
+  return attrName === 'class' ? renamed : [attrName, ...renamed]
 }
 
 function isReadableBag(parsed: ParsedExpr | null, value: SpreadAttr, ctx: TransformContext): boolean {

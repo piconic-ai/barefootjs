@@ -20173,7 +20173,118 @@
         "binary:==",
         "literal:null",
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-attr-spelled-bag-key": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:==",
+        "literal:null",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-both": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:==",
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-last": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:==",
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-optional-bag": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:==",
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-renamed-bag-key": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:==",
+        "literal:null",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "member:optional"
       ],
       "contexts": [
         "attribute"

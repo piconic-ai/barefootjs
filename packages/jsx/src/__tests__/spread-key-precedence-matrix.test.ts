@@ -83,11 +83,47 @@ export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...re
   test('across an open bag, the chain is guarded by the bag lacking the key', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest}>x</x-el> }`, new TestAdapter())
-    expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? (bag.title == null ? (rest.title ?? ("f")) : undefined)'])
+    expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? (bag?.title == null ? (rest.title ?? ("f")) : undefined)'])
   })
   test('a literal before an open bag alone is not carried (it is guarded instead)', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...bag} {...rest}>x</x-el> }`, new TestAdapter())
     expect(attrNamed(el, 'title').map(textOf)).toEqual(['literal:f', 'rest.title'])
+  })
+})
+
+describe('literal, closed rest, open bag, closed rest: per key and adapter', () => {
+  const type = `type P = { ${keys.map(([k]) => `${k}?: string`).join('; ')}; bag?: Record<string, string> }`
+  const renamesAll = new Set(keys.map(([k]) => k))
+  for (const [key, attr] of keys) {
+    for (const [label, adapter, renames] of [
+      ['default', new TestAdapter(), everywhere],
+      ['renames all', new RenamesAllAdapter(), renamesAll],
+    ] as const) {
+      test(`${key} (${label}): one write, ahead of the bag, guarded by the bag keys that render as ${attr}`, () => {
+        const el = elementOf(`${type}
+export function C({ bag, ...rest }: P) { return <x-el ${key}="lit" {...rest} {...bag} {...rest}>x</x-el> }`, adapter)
+        const writes = el.attrs.map((a, i) => ({ a, i })).filter(({ a }) => a.name === key || a.name === attr)
+        expect(writes.length).toBe(1)
+        const bagIndex = el.attrs.findIndex(a => a.name === '...')
+        expect(writes[0].i).toBeLessThan(bagIndex)
+        const bagKeys = [...(attr === 'class' ? [] : [attr]), ...(renames.has(key) ? [key] : [])]
+        const read = (k: string): string => (/^[A-Za-z_$][\w$]*$/.test(k) ? `bag?.${k}` : `bag?.[${JSON.stringify(k)}]`)
+        const lacks = bagKeys.map(k => `${read(k)} == null`).join(' && ')
+        expect(textOf(writes[0].a)).toBe(`rest.${key} ?? (${lacks} ? (rest.${key} ?? ("lit")) : undefined)`)
+      })
+    }
+  }
+})
+
+describe('the bag read is nullish-safe only where the bag may be nullish', () => {
+  test('an optional prop bag and a signal bag read with `?.`; the rest bag with `.`', () => {
+    const el = elementOf(`import { createSignal } from '@barefootjs/client'
+type P = { bag?: Record<string, string>; [key: string]: unknown }
+export function C({ bag, ...rest }: P) {
+  const [sig] = createSignal<Record<string, string> | undefined>(undefined)
+  return <x-el title="t" {...bag} {...sig()} {...rest}>x</x-el>
+}`, new TestAdapter())
+    expect(attrNamed(el, 'title')[0].spreadOverridable?.expr).toBe('bag?.title == null && sig()?.title == null && rest.title == null ? "t" : undefined')
   })
 })

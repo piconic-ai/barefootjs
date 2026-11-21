@@ -1,0 +1,30 @@
+import { createFixture } from '../src/types'
+
+/**
+ * Sibling of `spread-closed-rest-repeated` where both the caller and the
+ * open bag between the two closed rest spreads carry `title`. The last rest
+ * is the last write, so `title` renders once, with the rest's value.
+ *
+ * `expectedHtml` is hand-authored (`SKIP_AUTO_UPDATE`): the Hono reference
+ * writes the rest's key as a JSX attribute the later bag spread replaces,
+ * so it renders `middle`; the template adapters render the rest's value
+ * ahead of the bag's (`title="last" title="middle"`), which a browser reads
+ * as `last` (limitation `closed-rest-repeated-around-bag-with-key`).
+ */
+export const fixture = createFixture({
+  id: 'spread-closed-rest-repeated-both',
+  description: 'A closed rest spread repeated around an open bag carrying the same key renders the rest value once',
+  source: `
+'use client'
+import { createSignal } from '@barefootjs/client'
+type P = { title?: string }
+export function SpreadClosedRestRepeatedBoth({ ...rest }: P) {
+  const [mid] = createSignal<Record<string, string>>({ title: 'middle' })
+  return <p title="fallback" {...rest} {...mid()} {...rest}>a</p>
+}
+`,
+  props: { title: 'last' },
+  expectedHtml: `
+    <p bf-s="test" bf="s0" title="last">a</p>
+  `,
+})

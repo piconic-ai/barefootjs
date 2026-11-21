@@ -17,8 +17,8 @@ export const renderDivergences: RenderDivergences = {
   // does not replace it and Hono renders `for` twice.
   'spread-open-bag-literal-alias-before': { limitation: 'spread-key-alias-literal-duplicate' },
   'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
-  // A closed rest spread after an open spread: its expansion writes a key
-  // the caller omitted as an explicit `undefined`, which replaces the value
-  // the open bag set, so Hono renders no `title` where JS keeps the bag's.
-  'spread-closed-rest-repeated': { limitation: 'closed-rest-after-open-spread-omitted-key' },
+  // The same closed rest spread before and after an open bag that carries
+  // its key: the rest's JSX attribute comes before the bag spread, which
+  // replaces it, so Hono renders the bag's value where JS keeps the rest's.
+  'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated-around-bag-with-key' },
 }

@@ -50,7 +50,7 @@ type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, escapeHtml, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, SPREAD_KEY_ATTR_NAMES, escapeHtml, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
 
 /**
  * True when an author attribute on a `.map()` row root has the same name as
@@ -224,6 +224,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   name = 'hono'
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
+
+  /**
+   * Hono's JSX renderer renames every `SPREAD_KEY_ATTR_NAMES` key of a spread
+   * bag (`normalizeIntrinsicElementKey`).
+   */
+  spreadKeyRenames: ReadonlySet<string> = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
 
   // The Hono SSR runtime is JavaScript (Node / Bun / CF Workers), so any
   // synchronous JS call the user writes can be rendered as-is at template

@@ -66,10 +66,9 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   'spread-open-bag-literal-alias-before',
   // Same limitation, through `crossOrigin` (`crossorigin` twice).
   'spread-open-bag-literal-renamed-elsewhere',
-  // Hand-authored to the middle bag's `title` on the third element: the
-  // reference writes the later rest's omitted key as an explicit
-  // `undefined` over it (limitation `closed-rest-after-open-spread-omitted-key`).
-  'spread-closed-rest-repeated',
+  // Hand-authored to the rest's `title`, the last write: the reference
+  // renders the middle bag's (limitation `closed-rest-repeated-around-bag-with-key`).
+  'spread-closed-rest-repeated-both',
 ])
 
 async function main() {

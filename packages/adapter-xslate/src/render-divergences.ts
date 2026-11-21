@@ -40,6 +40,10 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // The rest's value renders ahead of the open bag's (`title="last" title="middle"`).
+  'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated-around-bag-with-key' },
+  // The bag's `crossOrigin` renders as `cross-origin` beside the literal `crossorigin`.
+  'spread-closed-rest-repeated-renamed-bag-key': { limitation: 'spread-bag-camel-key-name' },
   // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
   // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
   // writes it as it is or renames only its own few keys (`crossorigin`).

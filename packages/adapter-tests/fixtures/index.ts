@@ -611,6 +611,11 @@ import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-re
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
 import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
 import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
+import { fixture as spreadClosedRestRepeatedLast } from './spread-closed-rest-repeated-last'
+import { fixture as spreadClosedRestRepeatedBoth } from './spread-closed-rest-repeated-both'
+import { fixture as spreadClosedRestRepeatedRenamedBagKey } from './spread-closed-rest-repeated-renamed-bag-key'
+import { fixture as spreadClosedRestRepeatedAttrSpelledBagKey } from './spread-closed-rest-repeated-attr-spelled-bag-key'
+import { fixture as spreadClosedRestRepeatedOptionalBag } from './spread-closed-rest-repeated-optional-bag'
 import { fixture as restSpreadRootHydrationProps } from './rest-spread-root-hydration-props'
 import { fixture as propsObjectSpreadChildHydrationProps } from './props-object-spread-child-hydration-props'
 import { fixture as restSpreadChildOverrideHydrationProps } from './rest-spread-child-override-hydration-props'
@@ -2203,6 +2208,11 @@ export const jsxFixtures: JSXFixture[] = [
   spreadOpenBagLiteralRenamedElsewhere,
   spreadClosedRestClientLiteralAfter,
   spreadClosedRestRepeated,
+  spreadClosedRestRepeatedLast,
+  spreadClosedRestRepeatedBoth,
+  spreadClosedRestRepeatedRenamedBagKey,
+  spreadClosedRestRepeatedAttrSpelledBagKey,
+  spreadClosedRestRepeatedOptionalBag,
   restSpreadRootHydrationProps,
   propsObjectSpreadChildHydrationProps,
   restSpreadChildOverrideHydrationProps,

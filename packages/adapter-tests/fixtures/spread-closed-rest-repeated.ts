@@ -5,13 +5,9 @@ import { createFixture } from '../src/types'
  * empty open bag between them, with none, and with an open bag that carries
  * `title`. The caller omits the optional `title`, so the rest never writes
  * it: the literal is the last write in the first two elements, and the
- * middle bag's value in the third. Each renders `title` once.
- *
- * `expectedHtml` is hand-authored (`SKIP_AUTO_UPDATE`) for the third
- * element: the Hono reference writes the second rest's expansion as an
- * explicit attribute that evaluates to `undefined`, which replaces the bag's
- * `title`, so it renders none (limitation
- * `closed-rest-after-open-spread-omitted-key`).
+ * middle bag's value in the third. Each renders `title` once. Siblings:
+ * `-last` (the caller passes `title`), `-both` (the caller and the bag),
+ * `-optional-bag` (the bag is an omitted prop).
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated',

@@ -135,14 +135,14 @@ export function C({ size, ...props }: P) { return <p title="a" {...props}>{size}
     expect(attrOf(elementOf(ir, 'p'), 'title').spreadOverridable).toBeUndefined()
   })
 
-  test('a signal getter bag is read twice, and every later spread must lack the key', () => {
+  test('a signal getter bag is read twice, nullish-safe, and every later spread must lack the key', () => {
     const ir = irOf(`import { createSignal } from '@barefootjs/client'
 export function C() {
   const [a] = createSignal<Record<string, string>>({})
   const [b] = createSignal<Record<string, string>>({})
   return <p title="x" {...a()} {...b()}>x</p>
 }`)
-    expect(attrOf(elementOf(ir, 'p'), 'title').spreadOverridable?.expr).toBe('a().title == null && b().title == null ? "x" : undefined')
+    expect(attrOf(elementOf(ir, 'p'), 'title').spreadOverridable?.expr).toBe('a()?.title == null && b()?.title == null ? "x" : undefined')
   })
 
   test('a spread this cannot read twice leaves the literal as it is', () => {

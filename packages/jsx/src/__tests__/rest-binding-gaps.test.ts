@@ -100,7 +100,7 @@ export function P({ label, bag, ...rest }: { label: string; bag: Record<string, 
     const [p] = elements(ir.root, 'p')
     // Across the open bag the earlier write is kept, guarded by the bag
     // lacking the key, so the bag's own value is not masked.
-    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? (bag.title == null ? (rest.title ?? ("f")) : undefined)'])
+    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? (bag?.title == null ? (rest.title ?? ("f")) : undefined)'])
     const [i] = elements(ir.root, 'i')
     expect(attrExpr(i, 'title')).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
   })
