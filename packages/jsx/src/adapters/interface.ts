@@ -312,6 +312,16 @@ export interface TemplateAdapter {
    */
   acceptsCallbackBody?: CallbackBodyAcceptor
 
+  /**
+   * The `SPREAD_KEY_ATTR_NAMES` keys (`@barefootjs/shared`) this adapter's
+   * native spread helper renames to the attribute the reference renders, so
+   * an open bag carrying one writes the same attribute as a literal spelled
+   * with it (`crossOrigin` -> `crossorigin`). Phase 1 guards such a literal
+   * against the key (`IRAttribute.spreadOverridable`). Undefined: the keys
+   * every template helper renames (`SPREAD_KEYS_RENAMED_EVERYWHERE`).
+   */
+  spreadKeyRenames?: ReadonlySet<string>
+
   // Main entry point - generates complete template from IR
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput
 

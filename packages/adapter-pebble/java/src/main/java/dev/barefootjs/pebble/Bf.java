@@ -1802,6 +1802,27 @@ public final class Bf {
     return new SafeString(String.join(";", parts));
   }
 
+  /**
+   * The bag keys a spread renames, as the reference adapter renders them:
+   * a port of `packages/shared/src/dom-prop.ts`'s `SPREAD_KEY_ATTR_NAMES`
+   * (Hono's `normalizeIntrinsicElementKey`). Every other key is written as
+   * it is. The shared fixtures `spread-open-bag-attr-names` and
+   * `spread-open-bag-hono-renamed-keys` pin this table to the reference.
+   */
+  private static final Map<String, String> SPREAD_KEY_ATTR_NAMES = Map.of(
+      "className", "class",
+      "htmlFor", "for",
+      "crossOrigin", "crossorigin",
+      "httpEquiv", "http-equiv",
+      "itemProp", "itemprop",
+      "fetchPriority", "fetchpriority",
+      "noModule", "nomodule",
+      "formAction", "formaction");
+
+  private static String spreadAttrName(String key) {
+    return SPREAD_KEY_ATTR_NAMES.getOrDefault(key, key);
+  }
+
   /** `{...attrs}` spread onto an intrinsic element — one `key="value"` per entry, boolean-shorthand aware. */
   @SuppressWarnings("unchecked")
   public SafeString spread_attrs(Object attrsObj) {
@@ -1815,10 +1836,11 @@ public final class Bf {
         if (out.length() > 0) {
           out.append(' ');
         }
+        String name = htmlEscape(spreadAttrName(e.getKey()));
         if (Boolean.TRUE.equals(v)) {
-          out.append(htmlEscape(e.getKey()));
+          out.append(name);
         } else {
-          out.append(htmlEscape(e.getKey())).append("=\"").append(htmlEscape(JsValue.jsString(v))).append('"');
+          out.append(name).append("=\"").append(htmlEscape(JsValue.jsString(v))).append('"');
         }
       }
     }

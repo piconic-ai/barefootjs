@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -238,4 +238,50 @@ describe('BOOLEAN_ATTRS', () => {
     expect(BOOLEAN_ATTRS.has('disabled')).toBe(true)
     expect(BOOLEAN_ATTRS.has('formnovalidate')).toBe(true)
   })
+})
+
+describe('toSpreadAttrName', () => {
+  test('renames the eight keys the reference renames in a spread bag', () => {
+    expect(SPREAD_KEY_ATTR_NAMES).toEqual({
+      className: 'class',
+      htmlFor: 'for',
+      crossOrigin: 'crossorigin',
+      httpEquiv: 'http-equiv',
+      itemProp: 'itemprop',
+      fetchPriority: 'fetchpriority',
+      noModule: 'nomodule',
+      formAction: 'formaction',
+    })
+    for (const [key, name] of Object.entries(SPREAD_KEY_ATTR_NAMES)) expect(toSpreadAttrName(key)).toBe(name)
+  })
+
+  test('writes every other key as it is', () => {
+    for (const key of ['class', 'for', 'tabIndex', 'ariaLabel', 'dataTestId', 'strokeWidth', 'viewBox', 'data-x', 'toString', '__proto__']) {
+      expect(toSpreadAttrName(key)).toBe(key)
+    }
+  })
+})
+
+describe('spreadKeysRenamedTo', () => {
+  const all = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
+  // [attribute, keys by default (every helper), keys for a helper renaming all eight]
+  const matrix: Array<[string, string[], string[]]> = [
+    ['class', ['className'], ['className']],
+    ['for', ['htmlFor'], ['htmlFor']],
+    ['http-equiv', ['httpEquiv'], ['httpEquiv']],
+    ['crossorigin', [], ['crossOrigin']],
+    ['itemprop', [], ['itemProp']],
+    ['fetchpriority', [], ['fetchPriority']],
+    ['nomodule', [], ['noModule']],
+    ['formaction', [], ['formAction']],
+    ['id', [], []],
+    ['tabindex', [], []],
+    ['htmlFor', [], []],
+  ]
+  for (const [attr, byDefault, byAll] of matrix) {
+    test(`${attr}`, () => {
+      expect(spreadKeysRenamedTo(attr)).toEqual(byDefault)
+      expect(spreadKeysRenamedTo(attr, all)).toEqual(byAll)
+    })
+  }
 })

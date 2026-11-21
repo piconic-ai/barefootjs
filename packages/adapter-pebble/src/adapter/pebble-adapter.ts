@@ -266,7 +266,7 @@ import {
 } from '@barefootjs/jsx'
 import type { ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
-import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
+import { BF_SLOT, BF_COND, escapeHtml, SPREAD_KEY_ATTR_NAMES } from '@barefootjs/shared'
 
 import type { PebbleRenderCtx } from './lib/types.ts'
 import { PEBBLE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
@@ -327,6 +327,13 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    * registered `bf.NAME(...)` helper invocation.
    */
   templatePrimitives: TemplatePrimitiveRegistry = PEBBLE_PRIMITIVE_EMIT_MAP
+
+  /**
+   * `Bf.spread_attrs` renames every `SPREAD_KEY_ATTR_NAMES` key as the
+   * reference does (`crossOrigin` -> `crossorigin`), so a literal before a
+   * spread is guarded against all of them.
+   */
+  spreadKeyRenames: ReadonlySet<string> = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
 
   private options: Required<PebbleAdapterOptions>
   /** Names bound at template level (signals, memos, props, local constants):
