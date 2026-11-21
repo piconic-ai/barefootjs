@@ -3,8 +3,9 @@ import { createFixture } from '../src/types'
 /**
  * A literal `htmlFor`, a closed rest spread that omits it, an open bag
  * carrying the key spelled as the attribute (`for`), and the rest again.
- * The bag writes the same attribute, so it displaces the literal: one
- * `for="bag"`.
+ * The bag writes the same attribute after the literal, so the element
+ * renders one `for="bag"`: the literal folded into the first rest's
+ * expansion is guarded by the bag lacking `for` / `htmlFor`.
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated-attr-spelled-bag-key',

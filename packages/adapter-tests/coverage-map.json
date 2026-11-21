@@ -20160,9 +20160,22 @@
     },
     "spread-closed-rest-repeated": {
       "kinds": [
-        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-around-bag": {
+      "kinds": [
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -20170,11 +20183,8 @@
         "object-literal"
       ],
       "axes": [
-        "binary:==",
-        "literal:null",
         "literal:string",
-        "logical:??",
-        "member:optional"
+        "logical:??"
       ],
       "contexts": [
         "attribute"
@@ -20182,9 +20192,7 @@
     },
     "spread-closed-rest-repeated-attr-spelled-bag-key": {
       "kinds": [
-        "binary",
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -20192,12 +20200,8 @@
         "object-literal"
       ],
       "axes": [
-        "binary:==",
-        "literal:null",
         "literal:string",
-        "logical:&&",
-        "logical:??",
-        "member:optional"
+        "logical:??"
       ],
       "contexts": [
         "attribute"
@@ -20205,9 +20209,7 @@
     },
     "spread-closed-rest-repeated-both": {
       "kinds": [
-        "binary",
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -20215,11 +20217,8 @@
         "object-literal"
       ],
       "axes": [
-        "binary:==",
-        "literal:null",
         "literal:string",
-        "logical:??",
-        "member:optional"
+        "logical:??"
       ],
       "contexts": [
         "attribute"
@@ -20227,51 +20226,22 @@
     },
     "spread-closed-rest-repeated-last": {
       "kinds": [
-        "binary",
-        "call",
-        "conditional",
-        "identifier",
-        "literal",
-        "logical",
-        "member",
-        "object-literal"
-      ],
-      "axes": [
-        "binary:==",
-        "literal:null",
-        "literal:string",
-        "logical:??",
-        "member:optional"
-      ],
-      "contexts": [
-        "attribute"
-      ]
-    },
-    "spread-closed-rest-repeated-optional-bag": {
-      "kinds": [
-        "binary",
-        "conditional",
         "identifier",
         "literal",
         "logical",
         "member"
       ],
       "axes": [
-        "binary:==",
-        "literal:null",
         "literal:string",
-        "logical:??",
-        "member:optional"
+        "logical:??"
       ],
       "contexts": [
         "attribute"
       ]
     },
-    "spread-closed-rest-repeated-renamed-bag-key": {
+    "spread-closed-rest-then-bag-renamed-key": {
       "kinds": [
-        "binary",
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -20279,12 +20249,8 @@
         "object-literal"
       ],
       "axes": [
-        "binary:==",
-        "literal:null",
         "literal:string",
-        "logical:&&",
-        "logical:??",
-        "member:optional"
+        "logical:??"
       ],
       "contexts": [
         "attribute"
@@ -20324,6 +20290,15 @@
       ]
     },
     "spread-open-bag-literal-renamed-elsewhere": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-optional-bag-literal-before": {
       "kinds": [
         "identifier"
       ],

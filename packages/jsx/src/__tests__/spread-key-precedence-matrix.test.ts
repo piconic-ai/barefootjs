@@ -75,24 +75,27 @@ export function C({ ...rest }: P) { return <x-el {...rest} ${key}={/* @client */
 
 describe('literal, closed rest, (open bag,) closed rest', () => {
   const type = `type P = { title?: string; bag: Record<string, string> }`
-  test('with no open bag between, the last rest carries the chain', () => {
+  test('with no open bag between, the last rest carries the chain and the first drops the key', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...rest}>x</x-el> }`, new TestAdapter())
     expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
   })
-  test('across an open bag, the chain is guarded by the bag lacking the key', () => {
+  test('across an open bag both expansions stay (limitation closed-rest-repeated-around-open-bag); the first is guarded by the bag', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest}>x</x-el> }`, new TestAdapter())
-    expect(attrNamed(el, 'title').map(textOf)).toEqual(['rest.title ?? (bag?.title == null ? (rest.title ?? ("f")) : undefined)'])
+    const titles = attrNamed(el, 'title')
+    expect(titles.map(textOf)).toEqual(['rest.title ?? ("f")', 'rest.title'])
+    expect(titles[0].spreadOverridable?.expr).toBe('rest.title != null || bag?.title == null ? (rest.title ?? ("f")) : undefined')
+    expect(titles[1].spreadOverridable).toBeUndefined()
   })
-  test('a literal before an open bag alone is not carried (it is guarded instead)', () => {
+  test('a literal before an open bag alone is guarded, not folded', () => {
     const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...bag} {...rest}>x</x-el> }`, new TestAdapter())
     expect(attrNamed(el, 'title').map(textOf)).toEqual(['literal:f', 'rest.title'])
   })
 })
 
-describe('literal, closed rest, open bag, closed rest: per key and adapter', () => {
+describe('literal folded into a closed rest, then an open bag: per key and adapter', () => {
   const type = `type P = { ${keys.map(([k]) => `${k}?: string`).join('; ')}; bag?: Record<string, string> }`
   const renamesAll = new Set(keys.map(([k]) => k))
   for (const [key, attr] of keys) {
@@ -100,20 +103,30 @@ describe('literal, closed rest, open bag, closed rest: per key and adapter', () 
       ['default', new TestAdapter(), everywhere],
       ['renames all', new RenamesAllAdapter(), renamesAll],
     ] as const) {
-      test(`${key} (${label}): one write, ahead of the bag, guarded by the bag keys that render as ${attr}`, () => {
+      test(`${key} (${label}): the fallback yields to the bag keys that render as ${attr}`, () => {
         const el = elementOf(`${type}
-export function C({ bag, ...rest }: P) { return <x-el ${key}="lit" {...rest} {...bag} {...rest}>x</x-el> }`, adapter)
-        const writes = el.attrs.map((a, i) => ({ a, i })).filter(({ a }) => a.name === key || a.name === attr)
-        expect(writes.length).toBe(1)
-        const bagIndex = el.attrs.findIndex(a => a.name === '...')
-        expect(writes[0].i).toBeLessThan(bagIndex)
+export function C({ bag, ...rest }: P) { return <x-el ${key}="lit" {...rest} {...bag}>x</x-el> }`, adapter)
+        const [write] = el.attrs.filter(a => a.name === key)
+        expect(textOf(write)).toBe(`rest.${key} ?? ("lit")`)
         const bagKeys = [...(attr === 'class' ? [] : [attr]), ...(renames.has(key) ? [key] : [])]
         const read = (k: string): string => (/^[A-Za-z_$][\w$]*$/.test(k) ? `bag?.${k}` : `bag?.[${JSON.stringify(k)}]`)
         const lacks = bagKeys.map(k => `${read(k)} == null`).join(' && ')
-        expect(textOf(writes[0].a)).toBe(`rest.${key} ?? (${lacks} ? (rest.${key} ?? ("lit")) : undefined)`)
+        expect(write.spreadOverridable?.expr).toBe(`rest.${key} != null || ${lacks} ? (rest.${key} ?? ("lit")) : undefined`)
       })
     }
   }
+})
+
+describe('component calls keep their exact prop keys', () => {
+  test('a literal htmlFor and two closed rests around a bag carrying for: no alias reading, as before', () => {
+    const file = compileJSX(`type P = { htmlFor?: string; bag: Record<string, string> }
+function Child(_: { htmlFor?: string; for?: string }) { return <span /> }
+export function C({ bag, ...rest }: P) { return <Child htmlFor="fallback" {...rest} {...bag} {...rest} /> }`, 'Component.tsx', { adapter: new TestAdapter(), outputIR: true }).files.filter(f => f.type === 'ir')
+    const text = file.map(f => f.content).join('\n')
+    expect(text).not.toContain('bag.for')
+    expect(text).not.toContain('bag?.for')
+    expect(text).toContain('rest.htmlFor ?? (\\"fallback\\")')
+  })
 })
 
 describe('the bag read is nullish-safe only where the bag may be nullish', () => {

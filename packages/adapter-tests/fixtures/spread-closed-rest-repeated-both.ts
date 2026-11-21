@@ -1,15 +1,14 @@
 import { createFixture } from '../src/types'
 
 /**
- * Sibling of `spread-closed-rest-repeated` where both the caller and the
- * open bag between the two closed rest spreads carry `title`. The last rest
- * is the last write, so `title` renders once, with the rest's value.
+ * Sibling of `spread-closed-rest-repeated-around-bag` where both the caller
+ * and the open bag between the two closed rest spreads carry `title`. The
+ * last rest is the last write, so `title` renders once, with the rest's
+ * value.
  *
- * `expectedHtml` is hand-authored (`SKIP_AUTO_UPDATE`): the Hono reference
- * writes the rest's key as a JSX attribute the later bag spread replaces,
- * so it renders `middle`; the template adapters render the rest's value
- * ahead of the bag's (`title="last" title="middle"`), which a browser reads
- * as `last` (limitation `closed-rest-repeated-around-bag-with-key`).
+ * The template adapters render the rest's value twice, ahead of the bag's
+ * (`title="last" title="last" title="middle"`; a browser reads `last`):
+ * limitation `closed-rest-repeated-around-open-bag`.
  */
 export const fixture = createFixture({
   id: 'spread-closed-rest-repeated-both',

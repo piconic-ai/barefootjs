@@ -91,16 +91,16 @@ export function P({ label, ...rest }: { label: string; htmlFor?: string }) {
     expect(label.attrs.map(a => a.name)).toEqual(['htmlFor', 'for'])
   })
 
-  test('a later closed rest replaces an earlier one, carrying its value as fallback across an open bag', () => {
+  test('a later closed rest replaces an earlier one only where it carries its value as fallback', () => {
     const ir = irOf(`
 export function P({ label, bag, ...rest }: { label: string; bag: Record<string, string>; title?: string }) {
   return <div><p title="f" {...rest} {...bag} {...rest}>{label}</p><i title="f" {...rest} {...rest}>{label}</i></div>
 }
 `)
     const [p] = elements(ir.root, 'p')
-    // Across the open bag the earlier write is kept, guarded by the bag
-    // lacking the key, so the bag's own value is not masked.
-    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? (bag?.title == null ? (rest.title ?? ("f")) : undefined)'])
+    // Across the open bag both expansions stay (limitation
+    // `closed-rest-repeated-around-open-bag`).
+    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title'])
     const [i] = elements(ir.root, 'i')
     expect(attrExpr(i, 'title')).toEqual(['rest.title ?? (rest.title ?? ("f"))'])
   })

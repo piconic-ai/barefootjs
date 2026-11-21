@@ -173,10 +173,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-hono-renamed-keys',
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
+  'spread-closed-rest-repeated-around-bag',
+  'spread-closed-rest-repeated-attr-spelled-bag-key',
+  'spread-closed-rest-then-bag-renamed-key',
   // Open bags reach their elements only through `applyRestAttrs`; these
   // fixtures pin the SSR contract.
-  'spread-closed-rest-repeated-both',
-  'spread-closed-rest-repeated-renamed-bag-key',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

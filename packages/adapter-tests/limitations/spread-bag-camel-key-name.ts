@@ -8,5 +8,5 @@ export default defineLimitation({
   expected:
     'the five renamed keys render lowercased (`crossorigin`, `itemprop`, `fetchpriority`, `nomodule`, `formaction`) and every other key renders with the bag\'s spelling (`tabIndex`, `ariaLabel`, `dataTestId`, `strokeWidth`)',
   actual: 'Renders every camelCase key kebab-cased (`cross-origin`, `tab-index`, `aria-label`, `data-test-id`, `stroke-width`)',
-  fixtures: ['spread-open-bag-hono-renamed-keys', 'spread-closed-rest-repeated-renamed-bag-key'],
+  fixtures: ['spread-open-bag-hono-renamed-keys', 'spread-closed-rest-then-bag-renamed-key'],
 })
