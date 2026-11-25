@@ -154,6 +154,14 @@ export function T() {
 `)).toEqual(['BF101'])
   })
 
+  test('a computed type is refused: html/template reads an empty type differently across Go releases', () => {
+    expect(scriptErrors(`
+export function T({ kind }: { kind: string }) {
+  return <div><script type={kind}>${brace}</script></div>
+}
+`)).toEqual(['BF101'])
+  })
+
   test('the same text without the brace is not refused', () => {
     expect(scriptErrors(`
 export function T({ ...rest }: { [key: string]: any }) {

@@ -30,6 +30,11 @@ export const conformancePins: ConformancePins = {
   'raw-text-split-boundary-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-style-script-escape': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-style-escape-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  // html/template reads a `<script>` body as JS or as text by the type
+  // written in the template, and reads an empty one (`type="{{.Kind}}"`)
+  // differently from Go 1.26 on, so a literal brace in the text has no typed
+  // print that is right on every Go release (#3967).
+  'raw-text-brace-delimiter-script-type-expression': [{ code: 'BF101', severity: 'error', limitation: 'brace-in-script-text-with-computed-type', unescapable: true }],
   // html/template reads `<title>` / `<textarea>` as RCDATA whatever the
   // namespace and escapes every `<` there, so the slot markers of a reactive
   // child (and any element child) in foreign content can't be emitted (#3937).

@@ -23,8 +23,10 @@ export type GoRawTextContext = 'css' | 'js' | 'html'
 
 /**
  * The MIME types html/template reads as JavaScript in a `<script type>`
- * (`isJSType`, `html/template/js.go`, Go 1.25). Any other literal type makes
- * it read the body as HTML text.
+ * (`isJSType`, `html/template/js.go`), in every Go release from 1.25 on. Any
+ * other non-empty type makes it read the body as HTML text. The empty type
+ * is read as HTML text up to Go 1.25 and as JavaScript from Go 1.26, so it
+ * is not in either set (see `goMimeType`).
  */
 const GO_JS_MIME_TYPES: ReadonlySet<string> = new Set([
   'application/ecmascript',
@@ -48,11 +50,15 @@ const GO_JS_MIME_TYPES: ReadonlySet<string> = new Set([
   'text/x-javascript',
 ])
 
-/** html/template's `isJSType`: parameters dropped, then lower-cased and trimmed. */
-export function isGoJsMimeType(attrText: string): boolean {
+/** The MIME type html/template's `isJSType` compares: parameters dropped, then lower-cased and trimmed. */
+function goMimeType(attrText: string): string {
   const semicolon = attrText.indexOf(';')
-  const mime = (semicolon === -1 ? attrText : attrText.slice(0, semicolon)).toLowerCase().trim()
-  return GO_JS_MIME_TYPES.has(mime)
+  return (semicolon === -1 ? attrText : attrText.slice(0, semicolon)).toLowerCase().trim()
+}
+
+/** Whether html/template reads this `type` text as JavaScript (never asked of an empty type). */
+export function isGoJsMimeType(attrText: string): boolean {
+  return GO_JS_MIME_TYPES.has(goMimeType(attrText))
 }
 
 /**
@@ -84,7 +90,8 @@ function scriptTypeContext(attr: IRElement['attrs'][number]): GoRawTextContext |
   // the static text after the last one.
   if (value.kind === 'template') return typeTextContext(trailingStaticText(value.parts))
   if (value.kind !== 'expression' || !value.parsed) return null
-  // Any other expression prints as one action, with no text after it.
+  // Any other expression prints as one action, with no text after it
+  // (an empty type, which `typeTextContext` leaves unsettled).
   return typeTextContext(value.parsed.kind === 'template-literal' ? trailingStaticText(value.parsed.parts) : '')
 }
 
@@ -104,6 +111,9 @@ function trailingStaticText(parts: readonly ({ type: 'string'; value: string } |
 function typeTextContext(text: string): GoRawTextContext | null {
   const written = escapeHtml(text)
   if (needsRawTextLiteralAction(written)) return null
+  // An empty type (`type="{{.Kind}}"`, whose action leaves no text before
+  // the quote) is read differently by the Go release the template runs on.
+  if (goMimeType(written) === '') return null
   return isGoJsMimeType(written) ? 'js' : 'html'
 }
 

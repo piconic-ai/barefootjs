@@ -4605,10 +4605,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.errors.push({
       code: 'BF101',
       severity: 'error',
-      message: `A \`{\` that would open a Go action, in the text of a <script> whose \`type\` html/template may read either way (a value a spread can replace, a /* @client */ value, or a value with such a \`{\`), can't render on the Go template adapter: html/template escapes the text as JS or as HTML depending on how it reads that attribute.`,
+      message: `A \`{\` that would open a Go action, in the text of a <script> whose \`type\` html/template may read either way (a value computed at render time, a value a spread can replace, a /* @client */ value, or a value with such a \`{\`), can't render on the Go template adapter: html/template escapes the text as JS or as HTML depending on how it reads that attribute, and reads an empty type differently from Go 1.26 on.`,
       loc: element.loc,
       suggestion: {
-        message: 'Write the script `type` as a value no spread replaces, such as a string literal or a plain expression (`type={kind}`).',
+        message: 'Write the script `type` as a string literal, or as a template literal ending in static text.',
       },
     })
     return ''
