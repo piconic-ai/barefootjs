@@ -28,14 +28,17 @@
  * hidden by a prop) reads that same variable, so the replica never declares
  * it; it only evaluates the initializer, where the module's own names are
  * visible, and hands the value to the module-level declaration
- * (`ModuleScopeReplica.shared`, #3932). For the same reason, a shared `let`
- * whose initializer reads another module const or function is evaluated in
- * the replica even when the component hides no name: at client-module level
- * the consts it reads are not declared, since the script copies them into the
- * init body (#3968).
+ * (`ModuleScopeReplica.shared`, #3932). For the same reason, a module `let`
+ * a top-level statement of the component reassigns, whose initializer reads
+ * another module const or function, is evaluated in the replica even when the
+ * component hides no name: its storage is at client-module level, where the
+ * consts it reads are not declared, since the script copies them into the init
+ * body (#3968). One only a handler or a module function writes stays a
+ * per-instance copy in the init body, so two inlined files' bindings of the
+ * same name do not meet.
  */
 
-import type { ConstantInfo, FunctionInfo, IRMetadata } from './types.ts'
+import type { ConstantInfo, FunctionInfo, InitStatementInfo, IRMetadata } from './types.ts'
 import { componentScopeNames } from './adapters/computed-const.ts'
 import { extractFreeIdentifiersFromText } from './ir-to-client-js/csr-substitute.ts'
 
@@ -64,8 +67,8 @@ export interface ModuleScopeReplica {
   exported: string[]
   /**
    * Module consts the component reassigns that the replica's members read, or
-   * whose initializer reads a name the component binds or another module
-   * declaration. The replica evaluates
+   * whose initializer reads a name the component binds (or, for one a
+   * top-level statement reassigns, another module declaration). The replica evaluates
    * their initializers and returns each value under its own name; the client
    * script declares the variable at module level and the replica assigns it
    * in source order, among the consts (`emitModuleScopeReplica`).
@@ -94,15 +97,19 @@ export interface ModuleScopeView {
 type ViewMetadata = Pick<
   IRMetadata,
   'propsObjectName' | 'propsParams' | 'restPropsName' | 'localConstants' | 'localFunctions' | 'signals' | 'memos'
->
+> & Partial<Pick<IRMetadata, 'initStatements'>>
 
 /**
  * What `replicaRole` reads besides the const: the names the component binds,
  * and the module consts a module function assigns (`FunctionInfo.assignedIdentifiers`).
+ * `writtenByStatement` holds the names a top-level statement of the component
+ * body reassigns (`InitStatementInfo.assignedIdentifiers`): the client script
+ * gives such a module `let` its storage at client-module level in any case.
  */
 interface RoleEnv {
   componentNames: ReadonlySet<string>
   writtenByFunction: ReadonlySet<string>
+  writtenByStatement: ReadonlySet<string>
 }
 
 /** How the replica treats a module const that a replica member reads. */
@@ -149,10 +156,10 @@ function replicaCanDeclareFunction(f: FunctionInfo): boolean {
 /**
  * Must the module const `c` (one the component does not hide) be evaluated in
  * the replica? When it reads a name the component binds, or when it is a
- * shared binding whose initializer reads another module const or function: a
- * shared binding's storage is a client-module variable, so its initializer
- * would run at client-module level, where a module declaration copied into the
- * init body is not declared (#3968).
+ * shared binding a top-level statement reassigns whose initializer reads
+ * another module const or function: that binding's storage is a client-module
+ * variable, so its initializer would run at client-module level, where a
+ * module declaration copied into the init body is not declared (#3968).
  */
 function seedsClosure(
   c: ConstantInfo,
@@ -164,7 +171,10 @@ function seedsClosure(
   if (role === 'blocked') return false
   const reads = freeIdentifiersOfConstant(c)
   if (intersects(reads, env.componentNames)) return true
-  if (role !== 'shared') return false
+  // Only a binding the client script already declares at client-module level:
+  // one a handler or a module function alone writes stays a per-instance copy
+  // in the init body, where the consts it reads are declared too.
+  if (role !== 'shared' || !env.writtenByStatement.has(c.name)) return false
   for (const read of reads) {
     if (read !== c.name && (moduleConstants.has(read) || moduleFunctions.has(read))) return true
   }
@@ -207,7 +217,7 @@ function scopeSensitiveClosure(
       if (!closure.has(read) && (moduleConstants.has(read) || moduleFunctions.has(read))) pending.push(read)
     }
   }
-  addReadersOfSharedStorage(closure, moduleConstants, env)
+  addReadersOfSharedStorage(closure, moduleConstants, moduleFunctions, freeOf, env)
   return dropUndeclarableMembers(closure, moduleConstants, freeOf, env)
 }
 
@@ -221,6 +231,8 @@ function scopeSensitiveClosure(
 function addReadersOfSharedStorage(
   closure: Set<string>,
   moduleConstants: ReadonlyMap<string, ConstantInfo>,
+  moduleFunctions: ReadonlyMap<string, FunctionInfo>,
+  freeOf: (name: string) => ReadonlySet<string>,
   env: RoleEnv,
 ): void {
   const tainted = new Set([...closure].filter(n => {
@@ -239,16 +251,14 @@ function addReadersOfSharedStorage(
       changed = true
     }
   }
-  // What the added consts read joins the closure too.
+  // What the added consts read joins the closure too: the module consts and
+  // the module functions, and what those read in turn, as for the seeds.
   const pending = [...closure]
   while (pending.length > 0) {
-    const c = moduleConstants.get(pending.pop()!)
-    if (!c) continue
-    for (const read of freeIdentifiersOfConstant(c)) {
-      if (moduleConstants.has(read) && !closure.has(read)) {
-        closure.add(read)
-        pending.push(read)
-      }
+    for (const read of freeOf(pending.pop()!)) {
+      if (closure.has(read) || !(moduleConstants.has(read) || moduleFunctions.has(read))) continue
+      closure.add(read)
+      pending.push(read)
     }
   }
 }
@@ -322,7 +332,11 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
   const unchanged = { localConstants: visibleConstants, localFunctions: visibleFunctions, replica: null }
   if (moduleConstants.size === 0 && moduleFunctions.size === 0) return unchanged
 
-  const env: RoleEnv = { componentNames, writtenByFunction: namesWrittenByModuleFunctions(metadata.localFunctions) }
+  const env: RoleEnv = {
+    componentNames,
+    writtenByFunction: namesWrittenByModuleFunctions(metadata.localFunctions),
+    writtenByStatement: namesWrittenByStatements(metadata.initStatements ?? []),
+  }
   const closure = scopeSensitiveClosure(moduleConstants, moduleFunctions, env)
   const inClosure = [...moduleConstants.values()].filter(c => closure.has(c.name))
   const constants = inClosure.filter(c => replicaRole(c, env) === 'declared')
@@ -347,6 +361,13 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
     localFunctions: visibleFunctions.filter(f => !(isModuleLexicalFunction(f) && exportedNames.has(f.name))),
     replica: { name, constants, functions, exported, shared, sourceOrder: inClosure.map(c => c.name) },
   }
+}
+
+/** The names the component body's top-level statements reassign. */
+function namesWrittenByStatements(statements: readonly InitStatementInfo[]): Set<string> {
+  const written = new Set<string>()
+  for (const stmt of statements) for (const id of stmt.assignedIdentifiers ?? []) written.add(id)
+  return written
 }
 
 /** The names the module-level functions assign. */

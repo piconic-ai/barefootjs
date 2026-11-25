@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { analyzeComponent, buildMetadata, compileJSX, collectModuleStringConsts, lookupLiteralConst, type ComponentIR } from '../index'
 import { TestAdapter } from '../adapters/test-adapter'
 import { moduleScopeView } from '../module-scope'
+import { combineParentChildClientJs } from '../combine-client-js'
 
 function compile(src: string) {
   const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter(), outputIR: true })
@@ -481,5 +482,122 @@ export function C() {
 `)
     expect(lines(clientJs, 'var counter')).toEqual(['var counter = counter ?? String(1)'])
     expect(clientJs).not.toContain('__bf_module_C')
+  })
+})
+
+/**
+ * Load a client script with stand-in runtime helpers and return each
+ * component's init, by component name. The handlers report through `__log`,
+ * which pushes onto `log`.
+ */
+function loadClientScript(clientJs: string, log: unknown[]): Map<string, (scope: unknown) => void> {
+  const body = clientJs
+    .split('\n')
+    .filter(line => !line.startsWith('import '))
+    .join('\n')
+    .replace(/^export /gm, '')
+  const inits = new Map<string, (scope: unknown) => void>()
+  new Function(
+    '__log', '__inits',
+    `
+    const hydrate = (name, def) => { __inits.set(name, def.init) }
+    const createComponent = () => null
+    const renderChild = () => ''
+    const initChild = () => {}
+    const $ = (scope, ...ids) => ids.map(id => scope.el(id))
+    const $c = $
+    const createEffect = (fn) => fn()
+    const lazySlots = () => () => {}
+    const createSignal = (v) => { let x = v; return [() => x, (n) => { x = typeof n === 'function' ? n(x) : n }] }
+    const escapeText = (v) => String(v)
+    const escapeTextOrMarkup = (v) => String(v)
+    const escapeTextOrNode = (v) => String(v)
+    ${body}
+    `,
+  )(((v: unknown) => log.push(v)), inits)
+  return inits
+}
+
+/** A stand-in scope whose elements record their click handlers. */
+function fakeScope() {
+  const handlers = new Map<string, () => void>()
+  return {
+    getAttribute: () => 'test',
+    el: (id: string) => ({ addEventListener: (_ev: string, fn: () => void) => handlers.set(id, fn) }),
+    click: (id: string) => handlers.get(id)!(),
+  }
+}
+
+describe('module let storage after #3968 (review follow-up)', () => {
+  const clientJsOf = (src: string, file: string) =>
+    compileJSX(src.trimStart(), file, { adapter: new TestAdapter() }).files.find(f => f.type === 'clientJs')?.content ?? ''
+
+  test('a handler-written let of one name in a parent and an inlined child keeps one binding per source module', () => {
+    const child = clientJsOf(`
+'use client'
+const seed = 1
+let count = seed
+export function Child() {
+  return <button onClick={() => { count = count + 1; __log(count) }}>c</button>
+}
+`, 'Child.tsx')
+    const parent = clientJsOf(`
+'use client'
+import { Child } from './Child'
+const seed = 10
+let count = seed
+export function Parent() {
+  return <div><button onClick={() => { count = count + 1; __log(count) }}>p</button><Child /></div>
+}
+`, 'Parent.tsx')
+    const combined = combineParentChildClientJs(new Map([['Parent', parent], ['Child', child]])).get('Parent')!
+    const log: unknown[] = []
+    const inits = loadClientScript(combined, log)
+    const parentScope = fakeScope()
+    const childScope = fakeScope()
+    inits.get('Parent')!(parentScope)
+    inits.get('Child')!(childScope)
+    parentScope.click('s0')
+    childScope.click('s0')
+    expect(log).toEqual([11, 2])
+  })
+
+  test('a module const reading a shared let and a module function is evaluated with the function in scope', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 1
+let count = seed
+function offset() { return seed + 10 }
+const initial = count + offset()
+export function C() {
+  count = count + 1
+  return <button onClick={() => __log([initial, count])}>x</button>
+}
+`)
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scope = fakeScope()
+    inits.get('C')!(scope)
+    scope.click('s0')
+    expect(log).toEqual([[12, 2]])
+  })
+
+  test('the reviewer repro: a handler-written let read by a module const that calls a module function loads', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 1
+let count = seed
+function offset() { return seed + 10 }
+const initial = count + offset()
+export function C() {
+  return <button onClick={() => { count = count + 1; __log([initial, count]) }}>x</button>
+}
+`)
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scope = fakeScope()
+    inits.get('C')!(scope)
+    scope.click('s0')
+    expect(log).toEqual([[12, 2]])
   })
 })

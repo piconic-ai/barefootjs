@@ -1714,6 +1714,7 @@ import { fixture as moduleLetInitializerReadsModuleConst } from './module-let-in
 import { fixture as moduleLetInitializerReadsModuleChain } from './module-let-initializer-reads-module-chain'
 import { fixture as moduleLetInitializerReadsComponentConst } from './module-let-initializer-reads-component-const'
 import { fixture as moduleLetHandlerWriteInitializerReadsModuleConst } from './module-let-handler-write-initializer-reads-module-const'
+import { fixture as moduleLetConstReaderCallsModuleFunction } from './module-let-const-reader-calls-module-function'
 import { fixture as moduleConstShadowedBySignal } from './module-const-shadowed-by-signal'
 import { fixture as moduleConstDeclaredAfterComponent } from './module-const-declared-after-component'
 import { fixture as moduleConstDestructureDefaultComponentConst } from './module-const-destructure-default-component-const'
@@ -3070,6 +3071,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleLetInitializerReadsModuleChain,
   moduleLetInitializerReadsComponentConst,
   moduleLetHandlerWriteInitializerReadsModuleConst,
+  moduleLetConstReaderCallsModuleFunction,
   moduleConstShadowedBySignal,
   moduleConstDeclaredAfterComponent,
   moduleConstDestructureDefaultComponentConst,

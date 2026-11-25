@@ -13813,6 +13813,22 @@
         "text"
       ]
     },
+    "module-let-const-reader-calls-module-function": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-const-reads-shared-hidden-read": {
       "kinds": [
         "binary",
