@@ -1541,6 +1541,8 @@ import { fixture as loopRowChildBodylessPropNamedRowPlural } from './loop-row-ch
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as absentOptionalPropClassAttr } from './absent-optional-prop-class-attr'
+import { fixture as memberReadOnLowPrecedenceConst } from './member-read-on-low-precedence-const'
+import { fixture as signalSeedLocalCallMemberOnConditional } from './signal-seed-local-call-member-on-conditional'
 import { fixture as loopRowChildAbsentOptionalFieldAttr } from './loop-row-child-absent-optional-field-attr'
 import { fixture as loopRowAbsentOptionalMemberAttr } from './loop-row-absent-optional-member-attr'
 import { fixture as loopRowAbsentOptionalMemberAttrSources } from './loop-row-absent-optional-member-attr-sources'
@@ -3122,4 +3124,6 @@ export const jsxFixtures: JSXFixture[] = [
   csrConstLiteralMethodCall,
   csrConstLiteralMethodCallShadow,
   searchParamsDerivedConst,
+  memberReadOnLowPrecedenceConst,
+  signalSeedLocalCallMemberOnConditional,
 ]
