@@ -66,15 +66,20 @@ export function isGoJsMimeType(attrText: string): boolean {
  * `null` when this adapter does not settle it at compile time. A `<style>`
  * is CSS. A `<script>` is JavaScript unless html/template reads a `type`
  * attribute in the template text that is not a JavaScript type (`isJSType`
- * on the text after the last action in the value). An attribute spread is
- * one action, so html/template reads no `type` in it.
+ * on the text after the last action in the value). It reads the attribute
+ * name case-insensitively, leaves script context at the first `type` that is
+ * not a JavaScript type, and reads no later one, so a body is JavaScript
+ * only when every `type` is. An attribute spread is one action, so
+ * html/template reads no `type` in it.
  */
 export function goRawTextContext(tag: RawTextTag, attrs: IRElement['attrs']): GoRawTextContext | null {
   if (tag === 'style') return 'css'
-  let context: GoRawTextContext | null = 'js'
+  let context: GoRawTextContext = 'js'
   for (const attr of attrs) {
     if (attr.value.kind === 'spread' || attr.name.toLowerCase() !== 'type') continue
-    context = scriptTypeContext(attr)
+    const read = scriptTypeContext(attr)
+    if (read === null) return null
+    if (read === 'html') context = 'html'
   }
   return context
 }
@@ -95,6 +100,11 @@ function scriptTypeContext(attr: IRElement['attrs'][number]): GoRawTextContext |
   return typeTextContext(value.parsed.kind === 'template-literal' ? trailingStaticText(value.parsed.parts) : '')
 }
 
+function isAscii(text: string): boolean {
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) > 0x7e) return false
+  return true
+}
+
 /** The static text after the last part that is not a `string` part. */
 function trailingStaticText(parts: readonly ({ type: 'string'; value: string } | { type: string })[]): string {
   let text = ''
@@ -111,6 +121,11 @@ function trailingStaticText(parts: readonly ({ type: 'string'; value: string } |
 function typeTextContext(text: string): GoRawTextContext | null {
   const written = escapeHtml(text)
   if (needsRawTextLiteralAction(written)) return null
+  // html/template trims with Go's `strings.TrimSpace` and lower-cases with
+  // `strings.ToLower`, which differ from JS `trim` / `toLowerCase` outside
+  // ASCII (a BOM, U+0085, a dotted capital I), so only ASCII text is read
+  // here. Over ASCII both trim the same six spaces and lower-case the same.
+  if (!isAscii(written)) return null
   // An empty type (`type="{{.Kind}}"`, whose action leaves no text before
   // the quote) is read differently by the Go release the template runs on.
   if (goMimeType(written) === '') return null

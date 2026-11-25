@@ -3791,3 +3791,34 @@ func TestRawTextLiteral_PrintsAsWritten(t *testing.T) {
 		t.Errorf("an unknown context must be an error")
 	}
 }
+
+// TestRawTextLiteral_ScriptTypeOutsideASCII pins why the compiler refuses a
+// literal brace under a <script type> with text outside ASCII (#3967):
+// html/template reads such a type with Go's strings.TrimSpace / ToLower,
+// which disagree with JS trim / toLowerCase there. A BOM is not trimmed (a
+// text type), U+0085 is trimmed and a dotted capital I lower-cases to `i`
+// (both JavaScript). Checked through the JS-typed print: unchanged in a
+// JavaScript body, HTML-escaped in a text one.
+func TestRawTextLiteral_ScriptTypeOutsideASCII(t *testing.T) {
+	cases := []struct {
+		name, typ string
+		js        bool
+	}{
+		{"BOM", "module\ufeff", false},
+		{"NEL", "module\u0085", true},
+		{"dotted capital I", "application/javascr\u0130pt", true},
+		{"no-break space", "module\u00a0", true},
+	}
+	for _, c := range cases {
+		src := `<script type="` + c.typ + `">{{bf_raw_text_literal "js" "\"q\""}}</script>`
+		tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(src))
+		var buf strings.Builder
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			t.Fatalf("%s: Execute: %v", c.name, err)
+		}
+		gotJS := strings.Contains(buf.String(), `>"q"<`)
+		if gotJS != c.js {
+			t.Errorf("%s: read as JavaScript = %v, want %v (%q)", c.name, gotJS, c.js, buf.String())
+		}
+	}
+}

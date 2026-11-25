@@ -992,6 +992,7 @@ import { fixture as rawTextBraceDelimiterScript } from './raw-text-brace-delimit
 import { fixture as rawTextBraceDelimiterStyle } from './raw-text-brace-delimiter-style'
 import { fixture as rawTextBraceDelimiterScriptType } from './raw-text-brace-delimiter-script-type'
 import { fixture as rawTextBraceDelimiterScriptTypeExpression } from './raw-text-brace-delimiter-script-type-expression'
+import { fixture as rawTextBraceDelimiterScriptTypeNonAscii } from './raw-text-brace-delimiter-script-type-non-ascii'
 import { fixture as rawTextBraceDelimiterScriptSpread } from './raw-text-brace-delimiter-script-spread'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
@@ -2499,6 +2500,7 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextBraceDelimiterStyle,
   rawTextBraceDelimiterScriptType,
   rawTextBraceDelimiterScriptTypeExpression,
+  rawTextBraceDelimiterScriptTypeNonAscii,
   rawTextBraceDelimiterScriptSpread,
   rawTextHostAnnotationXml,
   rawTextHostAnnotationXmlSvg,
