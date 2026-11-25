@@ -18411,7 +18411,7 @@
     "brace-in-script-text-with-computed-type": {
       "title": "A tag-opening brace in the text of a `<script>` whose type is computed at render time",
       "kind": "refusal",
-      "given": "a `{` that would open a template tag, in the literal text of a `<script>` whose `type` ends in a value computed at render time (`<script type={kind}>if (a) &#123;&#123; b() &#125;&#125;</script>`)",
+      "given": "a `{` that would open a template tag, in the literal text of a `<script>` whose `type` ends in a value computed at render time (`<script type={kind}>`, the text holding `{{`)",
       "expected": "the text as written inside the element",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
