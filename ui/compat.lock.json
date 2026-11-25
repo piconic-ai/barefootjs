@@ -14912,6 +14912,14 @@
           }
         }
       },
+      "spread-closed-rest-non-ascii-key": {
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-non-ascii-key"
+          ]
+        }
+      },
       "spread-closed-rest-repeated": {
         "blade": {
           "kind": "render",
@@ -17703,6 +17711,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-closed-rest-non-ascii-key": {
+        "description": "A closed rest key Ä and a later attribute ä render as two attributes",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-non-ascii-key.ts"
+      },
       "spread-closed-rest-repeated": {
         "description": "A literal before a closed rest spread twice renders once when the rest omits its key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated.ts"
@@ -18555,6 +18567,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "closed-rest-non-ascii-key": {
+      "title": "A closed rest key that is not an ASCII identifier",
+      "kind": "silent",
+      "given": "a closed rest spread (`{...rest}` whose props type declares `Ä?: number`) on an element, so the template reads the key as `rest.Ä`",
+      "expected": "the key renders as its own attribute (`Ä=\"2\"`)",
+      "actual": "Emits a template that does not parse (`rest.Ä` is not an identifier there), so the component fails to render",
+      "fixtures": [
+        "spread-closed-rest-non-ascii-key"
+      ],
+      "adapters": [
+        "minijinja"
       ]
     },
     "closed-rest-repeated": {

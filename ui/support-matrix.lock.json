@@ -18023,6 +18023,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-non-ascii-key",
+              "limitations": [
+                "closed-rest-non-ascii-key"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -25255,6 +25261,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-non-ascii-key",
+              "limitations": [
+                "closed-rest-non-ascii-key"
               ]
             },
             {
@@ -32756,6 +32768,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-non-ascii-key",
+              "limitations": [
+                "closed-rest-non-ascii-key"
               ]
             },
             {
@@ -45985,6 +46003,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-non-ascii-key",
+              "limitations": [
+                "closed-rest-non-ascii-key"
               ]
             },
             {

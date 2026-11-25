@@ -20174,6 +20174,19 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-non-ascii-key": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-repeated": {
       "kinds": [
         "identifier",

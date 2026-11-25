@@ -305,14 +305,17 @@ export function spreadKeysRenamedTo(attrName: string, renamed: ReadonlySet<strin
 
 /**
  * The name an HTML parser stores the attribute `name` under, for comparing
- * two attribute names: it lowercases every attribute name on an HTML
- * element, and on an SVG or MathML one before it restores the case of its
- * fixed table (`viewBox`). So `tabIndex` and `tabindex` are one attribute,
- * and an element that writes both renders it twice, where a browser keeps
- * the first.
+ * two attribute names: its tokenizer lowercases the ASCII letters `A`-`Z`
+ * of every attribute name (and on an SVG or MathML element then restores
+ * the case of its fixed table, `viewBox`). So `tabIndex` and `tabindex` are
+ * one attribute, and an element that writes both renders it twice, where a
+ * browser keeps the first. Any other letter keeps its case: `Ä` and `ä` are
+ * two attributes.
  */
 export function foldAttrName(name: string): string {
-  return name.toLowerCase()
+  let folded = ''
+  for (const ch of name) folded += ch >= 'A' && ch <= 'Z' ? String.fromCharCode(ch.charCodeAt(0) + 32) : ch
+  return folded
 }
 
 /**

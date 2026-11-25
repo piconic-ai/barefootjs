@@ -323,3 +323,14 @@ describe('jsxAttrKey', () => {
     expect(jsxAttrKey('tabindex')).toBe('tabindex')
   })
 })
+
+describe('foldAttrName', () => {
+  test('folds the ASCII letters only, as the HTML tokenizer does', () => {
+    expect(foldAttrName('tabIndex')).toBe('tabindex')
+    expect(foldAttrName('VIEWBOX')).toBe('viewbox')
+    expect(foldAttrName('Ä')).toBe('Ä')
+    expect(foldAttrName('data-Ä')).toBe('data-Ä')
+    // U+212A KELVIN SIGN lowercases to `k` in JS, but is not ASCII.
+    expect(foldAttrName('\u212A')).toBe('\u212A')
+  })
+})

@@ -7544,9 +7544,12 @@ function closedRestKeysWrittenLater(
   const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
   const laterJsxNames = new Set<string>()
   const laterAttrNames = new Set<string>()
+  // Each later write's attribute, folded (`foldAttrName`) and, `=`-prefixed,
+  // as written (for a key that matches its exact attribute only).
   const noteWrite = (jsxName: string): void => {
     laterJsxNames.add(jsxName)
     laterAttrNames.add(foldAttrName(toHTMLAttrName(jsxName)))
+    laterAttrNames.add(`=${toHTMLAttrName(jsxName)}`)
   }
   for (const attr of [...properties].reverse()) {
     if (ts.isJsxAttribute(attr)) {
@@ -7560,7 +7563,11 @@ function closedRestKeysWrittenLater(
       continue
     }
     if (closedRestSpreadSource(attr, ctx) === null) continue
-    const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(foldAttrName(toSpreadAttrName(key))))
+    // A key that shares its attribute with another key of the rest is
+    // replaced only by a write of its exact name ({@link restKeysSharingAttr}).
+    const sameAttr = restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys)
+    const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key)
+      || (sameAttr.has(key) ? laterAttrNames.has(`=${toSpreadAttrName(key)}`) : laterAttrNames.has(foldAttrName(toSpreadAttrName(key)))))
     if (written.length > 0) result.set(attr, new Set(written))
   }
   return result
@@ -7586,10 +7593,15 @@ function closedRestKeyFallbacks(
   ctx: TransformContext,
 ): Map<string, RestKeyFallback> {
   const keyFallbacks = new Map<string, RestKeyFallback>()
+  // Two keys of this rest that are one attribute to a browser (`tabIndex`,
+  // `tabindex`) are both emitted, so neither may be the other's earlier
+  // write: they keep matching by their exact name only.
+  const sameAttr = restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys)
   for (const key of ctx.analyzer.restPropsExpandedKeys) {
     const read = `${source}.${key}`
-    const earlier = lastWrite.get(key, 'bag')
-    lastWrite.set(key, 'bag', { value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
+    const kind = sameAttr.has(key) ? 'exact' : 'bag'
+    const earlier = lastWrite.get(key, kind)
+    lastWrite.set(key, kind, { value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
     if (!earlier) continue
     if (earlier.value === null || (earlier.attr && !isReadOnlyAttrValue(earlier.attr.initializer))) {
       const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
@@ -7600,7 +7612,7 @@ function closedRestKeyFallbacks(
       continue
     }
     keyFallbacks.set(key, earlier.value)
-    lastWrite.set(key, 'bag', {
+    lastWrite.set(key, kind, {
       value: {
         text: restKeyWithFallback(read, earlier.value.text),
         templateText: restKeyWithFallback(read, earlier.value.templateText),
@@ -7627,11 +7639,17 @@ interface KeyWrite {
 }
 
 /**
- * The names a write of `name` counts as, for {@link closedRestFallbacks}: an
- * explicit attribute (`attr`) or a spread bag's key (`bag`). Two writes of
- * one name replace each other.
+ * What wrote a key, for {@link KeyWriteTokens}: an explicit attribute
+ * (`attr`), a spread bag's key (`bag`), or a bag key that matches its exact
+ * name only (`exact`, {@link restKeysSharingAttr}).
  */
-type KeyWriteTokens = (name: string, kind: 'attr' | 'bag') => readonly string[]
+type KeyWriteKind = 'attr' | 'bag' | 'exact'
+
+/**
+ * The names a write of `name` counts as, for {@link closedRestFallbacks}.
+ * Two writes of one name replace each other.
+ */
+type KeyWriteTokens = (name: string, kind: KeyWriteKind) => readonly string[]
 
 /** A component prop: its name, as written. */
 const propWriteTokens: KeyWriteTokens = name => [name]
@@ -7643,7 +7661,22 @@ const propWriteTokens: KeyWriteTokens = name => [name]
  * attribute name is `\0`-prefixed, so it never equals a written name.
  */
 const elementWriteTokens: KeyWriteTokens = (name, kind) =>
-  [name, `\0${foldAttrName(kind === 'attr' ? toHTMLAttrName(name) : toSpreadAttrName(name))}`]
+  kind === 'exact' ? [name] : [name, `\0${foldAttrName(kind === 'attr' ? toHTMLAttrName(name) : toSpreadAttrName(name))}`]
+
+/**
+ * The keys of a closed rest that render as the same attribute as another
+ * of its keys (`tabIndex` and `tabindex`, `foldAttrName`). The rest emits
+ * each of them, so matching them to an earlier or later write by the
+ * attribute would merge two keys the caller writes separately.
+ */
+function restKeysSharingAttr(keys: readonly string[]): ReadonlySet<string> {
+  const byAttr = new Map<string, string[]>()
+  for (const key of keys) {
+    const attr = foldAttrName(toSpreadAttrName(key))
+    byAttr.set(attr, [...(byAttr.get(attr) ?? []), key])
+  }
+  return new Set([...byAttr.values()].filter(group => group.length > 1).flat())
+}
 
 /** The last {@link KeyWrite} of each name, as {@link KeyWriteTokens} groups them. */
 class LastKeyWrites {
@@ -7652,13 +7685,13 @@ class LastKeyWrites {
 
   constructor(private readonly tokens: KeyWriteTokens) {}
 
-  set(name: string, kind: 'attr' | 'bag', write: KeyWrite): void {
+  set(name: string, kind: KeyWriteKind, write: KeyWrite): void {
     const entry = { order: this.count++, write }
     for (const token of this.tokens(name, kind)) this.byToken.set(token, entry)
   }
 
   /** The latest write any of the name's tokens records. */
-  get(name: string, kind: 'attr' | 'bag'): KeyWrite | undefined {
+  get(name: string, kind: KeyWriteKind): KeyWrite | undefined {
     let latest: { order: number; write: KeyWrite } | undefined
     for (const token of this.tokens(name, kind)) {
       const entry = this.byToken.get(token)
@@ -8123,8 +8156,8 @@ function markAttrsOverridableBySpread(
     const value = attr.value
     // A closed rest key carrying an earlier write as its fallback
     // (`rest.title ?? ("a")`, {@link closedRestFallbacks}) is guarded the
-    // same way, so the earlier write does not hide a later bag's value when
-    // the rest omits the key.
+    // same way, so neither the rest's value nor the earlier write hides a
+    // later bag's value.
     const restRead = value.kind === 'expression' && attr.restExpandedKey ? attr.restRead : undefined
     if (value.kind !== 'literal' && value.kind !== 'boolean-attr' && restRead === undefined) return
     const tests = laterBagKeyTests(attr, attrs.slice(index + 1), ctx)
@@ -8132,9 +8165,9 @@ function markAttrsOverridableBySpread(
     let expr: string
     let templateExpr: string
     if (value.kind === 'expression') {
-      // The rest's own value always stands; the fallback only where every
-      // later bag lacks the key.
-      const guardedRest = (missing: string[], own: string): string => `${restRead} != null || ${missing.join(' && ')} ? (${own}) : undefined`
+      // A later bag that writes the attribute replaces the rest's value as
+      // well as its fallback: JSX keeps the last write.
+      const guardedRest = (missing: string[], own: string): string => `${missing.join(' && ')} ? (${own}) : undefined`
       expr = guardedRest(tests.missing, value.expr)
       templateExpr = guardedRest(tests.templateMissing, value.templateExpr ?? value.expr)
     } else {

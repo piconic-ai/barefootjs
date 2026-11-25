@@ -86,7 +86,7 @@ export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...re
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest} {...rest}>x</x-el> }`, new TestAdapter())
     const titles = attrNamed(el, 'title')
     expect(titles.map(textOf)).toEqual(['rest.title ?? ("f")', 'rest.title', 'rest.title ?? (rest.title)'])
-    expect(titles[0].spreadOverridable?.expr).toBe('rest.title != null || bag?.title == null ? (rest.title ?? ("f")) : undefined')
+    expect(titles[0].spreadOverridable?.expr).toBe('bag?.title == null ? (rest.title ?? ("f")) : undefined')
     expect(titles.slice(1).map(a => a.spreadOverridable)).toEqual([undefined, undefined])
   })
   test('across an open bag both expansions stay (limitation closed-rest-repeated); the first is guarded by the bag', () => {
@@ -94,7 +94,7 @@ export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...ba
 export function C({ bag, ...rest }: P) { return <x-el title="f" {...rest} {...bag} {...rest}>x</x-el> }`, new TestAdapter())
     const titles = attrNamed(el, 'title')
     expect(titles.map(textOf)).toEqual(['rest.title ?? ("f")', 'rest.title'])
-    expect(titles[0].spreadOverridable?.expr).toBe('rest.title != null || bag?.title == null ? (rest.title ?? ("f")) : undefined')
+    expect(titles[0].spreadOverridable?.expr).toBe('bag?.title == null ? (rest.title ?? ("f")) : undefined')
     expect(titles[1].spreadOverridable).toBeUndefined()
   })
   test('a literal before an open bag alone is guarded, not folded', () => {
@@ -112,7 +112,7 @@ describe('literal folded into a closed rest, then an open bag: per key and adapt
       ['default', new TestAdapter(), everywhere],
       ['renames all', new RenamesAllAdapter(), renamesAll],
     ] as const) {
-      test(`${key} (${label}): the fallback yields to the bag keys that render as ${attr}`, () => {
+      test(`${key} (${label}): the rest's value and its fallback yield to the bag keys that render as ${attr}`, () => {
         const el = elementOf(`${type}
 export function C({ bag, ...rest }: P) { return <x-el ${key}="lit" {...rest} {...bag}>x</x-el> }`, adapter)
         const [write] = el.attrs.filter(a => a.name === key)
@@ -120,7 +120,7 @@ export function C({ bag, ...rest }: P) { return <x-el ${key}="lit" {...rest} {..
         const bagKeys = [...(attr === 'class' ? [] : [attr]), ...(renames.has(key) ? [key] : [])]
         const read = (k: string): string => (/^[A-Za-z_$][\w$]*$/.test(k) ? `bag?.${k}` : `bag?.[${JSON.stringify(k)}]`)
         const lacks = bagKeys.map(k => `${read(k)} == null`).join(' && ')
-        expect(write.spreadOverridable?.expr).toBe(`rest.${key} != null || ${lacks} ? (rest.${key} ?? ("lit")) : undefined`)
+        expect(write.spreadOverridable?.expr).toBe(`${lacks} ? (rest.${key} ?? ("lit")) : undefined`)
       })
     }
   }
@@ -147,5 +147,25 @@ export function C({ bag, ...rest }: P) {
   return <x-el title="t" {...bag} {...sig()} {...rest}>x</x-el>
 }`, new TestAdapter())
     expect(attrNamed(el, 'title')[0].spreadOverridable?.expr).toBe('bag?.title == null && sig()?.title == null && rest.title == null ? "t" : undefined')
+  })
+})
+
+describe('a closed rest key and an attribute that differ in letter case', () => {
+  const texts = (el: IRElement): string[] => el.attrs.map(a => `${a.name}=${textOf(a)}`)
+  test('a lowercase literal before the key becomes its fallback', () => {
+    const el = elementOf(`export function C({ ...rest }: { tabIndex?: number }) { return <x-el tabindex="1" {...rest}>x</x-el> }`, new TestAdapter())
+    expect(texts(el)).toEqual(['tabIndex=rest.tabIndex ?? ("1")'])
+  })
+  test('a lowercase literal after the key replaces it', () => {
+    const el = elementOf(`export function C({ ...rest }: { tabIndex?: number }) { return <x-el {...rest} tabindex="1">x</x-el> }`, new TestAdapter())
+    expect(texts(el)).toEqual(['tabindex=literal:1'])
+  })
+  test('two keys of one rest that differ in case stay separate writes', () => {
+    const el = elementOf(`export function C({ ...rest }: { tabIndex?: number; tabindex?: number }) { return <x-el {...rest}>x</x-el> }`, new TestAdapter())
+    expect(texts(el)).toEqual(['tabIndex=rest.tabIndex', 'tabindex=rest.tabindex'])
+  })
+  test('a non-ASCII letter is not folded: Ä and ä are two attributes', () => {
+    const el = elementOf(`export function C({ ...rest }: { Ä?: number }) { return <x-el {...rest} ä="1">x</x-el> }`, new TestAdapter())
+    expect(texts(el)).toEqual(['Ä=rest.Ä', 'ä=literal:1'])
   })
 })

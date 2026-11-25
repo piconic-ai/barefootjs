@@ -11,10 +11,12 @@ import { createFixture } from '../src/types'
  *
  * The bags are an index-signature rest (a number and a string value), the
  * props object whose type declares the key, a signal getter, and a loop
- * row's member (one row carries the key, one lacks it). `RestThenBag` puts
- * the signal bag after a closed rest declaring `tabindex`, which took the
- * literal as its fallback (`rest.tabindex ?? "1"`); the caller omits it, so
- * the bag's `tabIndex` replaces the fallback.
+ * row's member (one row carries the key, one lacks it), also through a row
+ * parameter named `Object`, which a read of the bag must not call.
+ * `RestThenBag` puts the signal bag after a closed rest declaring
+ * `tabindex`, which took the literal as its fallback (`rest.tabindex ??
+ * "1"`): the bag's `tabIndex` replaces the fallback when the caller omits
+ * `tabindex`, and the caller's value when it passes one.
  */
 export const fixture = createFixture({
   id: 'spread-open-bag-literal-case-alias',
@@ -33,7 +35,9 @@ export function SpreadOpenBagLiteralCaseAlias({ rows = [], ...rest }: P) {
       <PropsObject tabIndex={2} />
       <Getter />
       <RestThenBag />
+      <RestThenBag tabindex={3} />
       <ul>{rows.map(r => <li key={r.id} tabIndex="1" {...r.attrs}>{r.id}</li>)}</ul>
+      <ol>{rows.map(Object => <li key={Object.id} tabindex="1" {...Object.attrs}>{Object.id}</li>)}</ol>
     </div>
   )
 }
@@ -70,10 +74,15 @@ export function RestThenBag({ ...rest }: { tabindex?: number }) {
       <p bf-s="test_s3" bf="s0" tabIndex="2">c</p>
       <p bf-s="test_s4" bf="s0" tabIndex="4">d</p>
       <p bf-s="test_s5" bf="s0" tabIndex="5">e</p>
-      <ul bf="s8">
-        <li bf="s7" data-key="1" tabIndex="6"><!--bf:s6-->1<!--/--></li>
-        <li bf="s7" data-key="2" tabindex="1"><!--bf:s6-->2<!--/--></li>
+      <p bf-s="test_s6" bf="s0" tabIndex="5">e</p>
+      <ul bf="s9">
+        <li bf="s8" data-key="1" tabIndex="6"><!--bf:s7-->1<!--/--></li>
+        <li bf="s8" data-key="2" tabindex="1"><!--bf:s7-->2<!--/--></li>
       </ul>
+      <ol bf="s12">
+        <li bf="s11" data-key="1" tabIndex="6"><!--bf:s10-->1<!--/--></li>
+        <li bf="s11" data-key="2" tabindex="1"><!--bf:s10-->2<!--/--></li>
+      </ol>
     </div>
   `,
 })

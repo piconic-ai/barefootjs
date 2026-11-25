@@ -62,6 +62,9 @@ export const renderDivergences: RenderDivergences = {
   // The bag's `tabIndex` renders as `tab-index` beside the literal
   // `tabindex`, which the compiler keeps since it is another attribute here.
   'spread-open-bag-literal-case-alias': { limitation: 'spread-bag-camel-key-name' },
+  // `rest.Ä` is not an identifier in the template language, so the
+  // template fails to parse.
+  'spread-closed-rest-non-ascii-key': { limitation: 'closed-rest-non-ascii-key' },
   // The bag's `crossOrigin` renders as `cross-origin` beside the literal
   // `crossorigin`, which the compiler keeps since it is another attribute here.
   'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },

@@ -1593,21 +1593,25 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * `htmlFor` beside `for`): rendered only when every such bag lacks every
    * such key, so the attribute appears once, with the spread's value. A key
    * spelled as `jsxName` needs no guard: the props object merges it. Each
-   * bag is read through `Object(...)`, which is `any` to TypeScript, so a
-   * bag typed without the key still type-checks. Null when no spread may.
+   * bag is read through a cast to a record, so a bag typed without the key
+   * still type-checks, and nullish-safe, as JSX spreads a nullish bag as
+   * nothing. Null when no spread may.
    */
   private renderAliasGuardedAttr(attr: IRAttribute, jsxName: string): string | null {
     const overriders = attr.spreadAliasOverriders
     if (!overriders || overriders.length === 0) return null
     const value = attr.value
-    const tests = overriders.flatMap(({ bag, keys }) => keys.map(key => `Object(${bag})[${codeSafeStringLiteral(key)}] == null`)).join(' && ')
+    // The cast is TypeScript only: the read adds no name to the author's
+    // scope, where a binding could shadow a global (`rows.map(Object => …)`).
+    const tests = overriders.flatMap(({ bag, keys }) =>
+      keys.map(key => `(${bag} as unknown as Record<string, unknown> | null | undefined)?.[${codeSafeStringLiteral(key)}] == null`)).join(' && ')
     if (value.kind === 'literal' || value.kind === 'boolean-attr') {
       return `${jsxName}={${tests} ? ${this.attrValueToJsExpr(value)} : undefined}`
     }
-    // A closed rest key carrying an earlier write as its fallback: the rest's
-    // own value always stands, the fallback only where every bag lacks the key.
+    // A closed rest key carrying an earlier write as its fallback: a later
+    // bag that writes the attribute replaces the rest's value and the fallback.
     if (value.kind === 'expression' && attr.restRead !== undefined) {
-      return `${jsxName}={${attr.restRead} != null || ${tests} ? (${this.expressionValueToJs(value)}) : undefined}`
+      return `${jsxName}={${tests} ? (${this.expressionValueToJs(value)}) : undefined}`
     }
     return null
   }
