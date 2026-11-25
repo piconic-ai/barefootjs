@@ -425,3 +425,61 @@ export function C() {
     expect(() => renderClientTemplate(clientJs)).not.toThrow()
   })
 })
+
+describe('a module let initializer that reads a module declaration (#3968)', () => {
+  const lines = (code: string, prefix: string) => code.split('\n').map(l => l.trim()).filter(l => l.startsWith(prefix))
+
+  test('a module const only the initializer reads is evaluated before the let', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = ''
+let counter = seed || 'x'
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    // One storage at module level; the replica gives it the value the module
+    // computes, with `seed` declared beside it.
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter'])
+    expect(lines(clientJs, 'counter = counter ??')).toEqual(["counter = counter ?? (seed || 'x')"])
+    expect(lines(clientJs, "const seed = ''")).toEqual(["const seed = ''"])
+    expect(() => renderClientTemplate(clientJs)).not.toThrow()
+  })
+
+  test('a module function the initializer calls is declared before the let', () => {
+    const { clientJs } = compile(`
+'use client'
+function suffix() { return 'q' }
+const head = 'p'
+const start = head + suffix()
+let counter = start
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    const order = clientJs.split('\n').map(l => l.trim())
+      .filter(l => /^(const suffix = |const head = |const start = head|counter = counter \?\?)/.test(l))
+    expect(order).toEqual([
+      "const suffix = function() { return 'q' }",
+      "const head = 'p'",
+      'const start = head + suffix()',
+      'counter = counter ?? start',
+    ])
+    expect(() => renderClientTemplate(clientJs)).not.toThrow()
+  })
+
+  test('a let whose initializer reads only globals stays a plain module-level declaration', () => {
+    const { clientJs } = compile(`
+'use client'
+let counter = String(1)
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter = counter ?? String(1)'])
+    expect(clientJs).not.toContain('__bf_module_C')
+  })
+})

@@ -28,7 +28,11 @@
  * hidden by a prop) reads that same variable, so the replica never declares
  * it; it only evaluates the initializer, where the module's own names are
  * visible, and hands the value to the module-level declaration
- * (`ModuleScopeReplica.shared`, #3932).
+ * (`ModuleScopeReplica.shared`, #3932). For the same reason, a shared `let`
+ * whose initializer reads another module const or function is evaluated in
+ * the replica even when the component hides no name: at client-module level
+ * the consts it reads are not declared, since the script copies them into the
+ * init body (#3968).
  */
 
 import type { ConstantInfo, FunctionInfo, IRMetadata } from './types.ts'
@@ -60,7 +64,8 @@ export interface ModuleScopeReplica {
   exported: string[]
   /**
    * Module consts the component reassigns that the replica's members read, or
-   * whose initializer reads a name the component binds. The replica evaluates
+   * whose initializer reads a name the component binds or another module
+   * declaration. The replica evaluates
    * their initializers and returns each value under its own name; the client
    * script declares the variable at module level and the replica assigns it
    * in source order, among the consts (`emitModuleScopeReplica`).
@@ -142,9 +147,34 @@ function replicaCanDeclareFunction(f: FunctionInfo): boolean {
 }
 
 /**
+ * Must the module const `c` (one the component does not hide) be evaluated in
+ * the replica? When it reads a name the component binds, or when it is a
+ * shared binding whose initializer reads another module const or function: a
+ * shared binding's storage is a client-module variable, so its initializer
+ * would run at client-module level, where a module declaration copied into the
+ * init body is not declared (#3968).
+ */
+function seedsClosure(
+  c: ConstantInfo,
+  moduleConstants: ReadonlyMap<string, ConstantInfo>,
+  moduleFunctions: ReadonlyMap<string, FunctionInfo>,
+  env: RoleEnv,
+): boolean {
+  const role = replicaRole(c, env)
+  if (role === 'blocked') return false
+  const reads = freeIdentifiersOfConstant(c)
+  if (intersects(reads, env.componentNames)) return true
+  if (role !== 'shared') return false
+  for (const read of reads) {
+    if (read !== c.name && (moduleConstants.has(read) || moduleFunctions.has(read))) return true
+  }
+  return false
+}
+
+/**
  * The module declarations whose evaluation depends on a name the component
- * binds, closed over what they read: each member of the result must be
- * evaluated in module scope, together.
+ * binds, or that a shared binding's initializer reads, closed over what they
+ * read: each member of the result must be evaluated in module scope, together.
  */
 function scopeSensitiveClosure(
   moduleConstants: ReadonlyMap<string, ConstantInfo>,
@@ -160,10 +190,10 @@ function scopeSensitiveClosure(
   const closure = new Set<string>()
   const pending: string[] = []
   // Seeds: a module declaration the component can read (its name is not
-  // hidden) that itself reads a name the component binds.
+  // hidden) that itself reads a name the component binds, or a shared binding
+  // whose initializer reads another module declaration.
   for (const [name, c] of moduleConstants) {
-    if (componentNames.has(name)) continue
-    if (replicaRole(c, env) !== 'blocked' && intersects(freeIdentifiersOfConstant(c), componentNames)) pending.push(name)
+    if (!componentNames.has(name) && seedsClosure(c, moduleConstants, moduleFunctions, env)) pending.push(name)
   }
   for (const [name, f] of moduleFunctions) {
     if (componentNames.has(name)) continue

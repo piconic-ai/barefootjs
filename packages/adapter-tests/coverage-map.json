@@ -13861,6 +13861,23 @@
         "text"
       ]
     },
+    "module-let-handler-write-initializer-reads-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:||",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-hidden-read": {
       "kinds": [
         "binary",
@@ -13888,6 +13905,53 @@
       "axes": [
         "binary:+",
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-component-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:||",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-module-chain": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:||"
       ],
       "contexts": [
         "text"
