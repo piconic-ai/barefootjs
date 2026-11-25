@@ -932,6 +932,21 @@ function nodeRaw(node: ts.Node, outerRaw: string, nested: boolean): string {
   return nested ? ownSourceText(node, outerRaw) : outerRaw
 }
 
+/**
+ * The `raw` an object literal keeps: the text it can be printed back as in
+ * any expression position. Written in parentheses in its source
+ * (`({ a: 1 }).a`, `x => ({ a: x })`), it keeps them, so a printer never
+ * wraps an object literal and never doubles a pair: a top-level literal
+ * keeps the caller's string, which carries the parentheses the caller
+ * parsed it in; a nested one, the text of the parentheses around it. A
+ * literal its source writes bare (an argument, an element, a property
+ * value) needs none there, and keeps its own text.
+ */
+function objectLiteralRaw(node: ts.ObjectLiteralExpression, raw: string, nested: boolean): string {
+  const parent = node.parent as ts.Node | undefined
+  return nested && parent && ts.isParenthesizedExpression(parent) ? ownSourceText(parent, raw) : raw
+}
+
 /** `node`'s own source text, or `fallback` for a synthetic node with no source file. */
 function ownSourceText(node: ts.Node, fallback: string): string {
   try {
@@ -1036,7 +1051,7 @@ function convertNode(node: ts.Node, outerRaw: string, nested = false): ParsedExp
         return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
       }
     }
-    return { kind: 'object-literal', properties, raw }
+    return { kind: 'object-literal', properties, raw: objectLiteralRaw(node, raw, nested) }
   }
 
   // Property access: user.name, items().length

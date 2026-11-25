@@ -61,7 +61,9 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
     // as an operand but not as an argument or a branch.
     case 'unsupported':
       return ASSIGNMENT
-    // `object-literal` prints its source text as one unit.
+    // `object-literal` prints its `raw`, which carries the parentheses its
+    // source wrote (`objectLiteralRaw`, `expression-parser.ts`), so it is
+    // never wrapped here.
     default:
       return POSTFIX
   }
@@ -123,11 +125,14 @@ export function assignmentOperandNeedsParens(item: ParsedExpr): boolean {
 }
 
 /**
- * `body` is an arrow's expression body. An object literal needs parentheses
- * there, or it reads as a block body (`x => ({ a: 1 })`).
+ * `body` is an arrow's expression body: any expression at assignment level.
+ * An object literal there (`x => ({ a: 1 })`) is not wrapped here: its
+ * `raw` already carries the parentheses its source wrote
+ * (`objectLiteralRaw`, `expression-parser.ts`), the one place that decides
+ * an object literal's grouping.
  */
 export function arrowBodyNeedsParens(body: ParsedExpr): boolean {
-  return body.kind === 'object-literal' || assignmentOperandNeedsParens(body)
+  return assignmentOperandNeedsParens(body)
 }
 
 /** `text` in parentheses when `wrap` is true. */

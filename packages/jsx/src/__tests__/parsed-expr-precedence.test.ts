@@ -23,6 +23,18 @@ function expectRoundTrip(source: string, printed: string = source): void {
   }
 }
 
+/**
+ * `stringifyParsedExpr` prints `source` back as written and re-parses to the
+ * same tree. (`exprToString` prints an object literal as a placeholder, so
+ * only its text is pinned.)
+ */
+function expectStringifyRoundTrip(source: string): void {
+  const tree = parseExpression(source)
+  const text = stringifyParsedExpr(tree)
+  expect(text).toBe(source)
+  expect(parseExpression(text)).toEqual(tree)
+}
+
 /** One operand of each kind that binds looser than member access. */
 const LOW_PRECEDENCE_OPERANDS = [
   'size ? A : B',
@@ -173,12 +185,12 @@ describe('arrow bodies, arguments and elements', () => {
   })
 
   test('an object-literal arrow body', () => {
-    // A nested object literal keeps its own source text, not the whole
-    // expression's, so printing does not splice the expression back in.
-    expect(stringifyParsedExpr(parseExpression('x => ({ a: x })'))).toBe('x => ({ a: x })')
-    expect(stringifyParsedExpr(parseExpression('xs.map(x => ({ a: x }))'))).toBe('xs.map(x => ({ a: x }))')
-    const tree = parseExpression('xs.map(x => ({ a: x }))')
-    expect(parseExpression(stringifyParsedExpr(tree))).toEqual(tree)
+    // A nested object literal keeps the parentheses its source wrote, not the
+    // whole expression's text, so printing does not splice the expression
+    // back in and adds no second pair.
+    expectStringifyRoundTrip('x => ({ a: x })')
+    expectStringifyRoundTrip('xs.map(x => ({ a: x }))')
+    expect(exprToString(parseExpression('x => ({ a: x })'))).toBe('x => [UNSUPPORTED: ({ a: x })]')
   })
 
   test('low-precedence arguments, elements and template parts need no parentheses', () => {
@@ -202,5 +214,28 @@ describe('a nested node the parser leaves unsupported', () => {
 
   test('a top-level unsupported expression keeps the text it was parsed from', () => {
     expect(stringifyParsedExpr(parseExpression('typeof (a + b)'))).toBe('typeof (a + b)')
+  })
+})
+
+describe('an object literal', () => {
+  test('a receiver keeps the parentheses its source wrote, once', () => {
+    expectStringifyRoundTrip('({ a: 1 }).a')
+    expectStringifyRoundTrip('() => ({ a: 1 }).a')
+    expectStringifyRoundTrip('({ a: 1 })["a"]')
+    expect(stringifyParsedExpr(parseExpression("({ a: 1 })['a']"))).toBe('({ a: 1 })["a"]')
+    expect(stringifyParsedExpr(parseExpression('(({ a: 1 })).a'))).toBe('({ a: 1 }).a')
+    expect(exprToString(parseExpression('({ a: 1 }).a'))).toBe('[UNSUPPORTED: ({ a: 1 })].a')
+    expect(exprToString(parseExpression('() => ({ a: 1 }).a'))).toBe('() => [UNSUPPORTED: ({ a: 1 })].a')
+    expect(exprToString(parseExpression("({ a: 1 })['a']"))).toBe('[UNSUPPORTED: ({ a: 1 })]["a"]')
+  })
+
+  test('a literal its source writes bare stays bare', () => {
+    expectStringifyRoundTrip('f({ a: 1 })')
+    expectStringifyRoundTrip('[{ a: 1 }]')
+    expectStringifyRoundTrip('q(base, { tag })')
+  })
+
+  test('a top-level literal keeps the string it was parsed from', () => {
+    expectStringifyRoundTrip('({ a: { b: 1 } })')
   })
 })
