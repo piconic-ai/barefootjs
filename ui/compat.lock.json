@@ -17930,9 +17930,9 @@
     "brace-delimiter-in-contextual-escape": {
       "title": "A tag-opening brace where the template engine escapes output by context",
       "kind": "silent",
-      "given": "a `{` that would open a template tag, in a template-literal value of a URL, event-handler or style attribute (`href={`/p{${a}}`}`) or in the text of a `<style>` element",
-      "expected": "the brace as written (`href=\"/p{x}\"`, `<style>.b {{color:red}}</style>`)",
-      "actual": "renders the brace escaped for the context, since it is printed through an output action: `%7b` in a URL attribute, `ZgotmplZ` in a `<style>` element",
+      "given": "a `{` that would open a template tag, in a template-literal value of a URL, event-handler or style attribute (`href={`/p{${a}}`}`)",
+      "expected": "the brace as written (`href=\"/p{x}\"`)",
+      "actual": "renders the brace escaped for the context, since it is printed through an output action: `%7b` in a URL attribute",
       "fixtures": [
         "template-delimiter-contextual-escape"
       ],

@@ -17288,6 +17288,64 @@
       }
     }
   ],
+  "raw-text-brace-delimiter-script-type": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "prefix": "text/plain; m=",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "prefix": "text/plain; m=",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "prefix": "text/plain; m=",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:prefix:empty",
+      "props": {
+        "kind": "text/plain",
+        "prefix": "",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:prefix:markup",
+      "props": {
+        "kind": "text/plain",
+        "prefix": "<b>&\"'</b>",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:prefix:multibyte",
+      "props": {
+        "kind": "text/plain",
+        "prefix": "日本語",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "kind": "text/plain",
+        "prefix": "text/plain; m=",
+        "on": false
+      }
+    }
+  ],
   "raw-text-host-dynamic": [
     {
       "name": "gen:label:empty",
