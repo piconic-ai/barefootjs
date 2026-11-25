@@ -61,9 +61,6 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
     // as an operand but not as an argument or a branch.
     case 'unsupported':
       return ASSIGNMENT
-    // `object-literal` prints its `raw`, which carries the parentheses its
-    // source wrote (`objectLiteralRaw`, `expression-parser.ts`), so it is
-    // never wrapped here.
     default:
       return POSTFIX
   }
@@ -77,7 +74,19 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
  */
 export function receiverNeedsParens(object: ParsedExpr, dotted: boolean): boolean {
   if (parsedExprPrecedence(object) < POSTFIX) return true
+  if (startsWithBrace(object)) return true
   return dotted && isNumberLiteral(object)
+}
+
+/**
+ * An object literal, printed from its properties, starts with `{`, which
+ * opens a block wherever a statement or a concise arrow body starts: it is
+ * grouped as a receiver, as an arrow body and at the start of the printed
+ * text (`leadsWithObjectLiteral`). Everywhere else (an argument, an element,
+ * a branch, a property value) it stays bare.
+ */
+function startsWithBrace(expr: ParsedExpr): boolean {
+  return expr.kind === 'object-literal'
 }
 
 /**
@@ -125,14 +134,40 @@ export function assignmentOperandNeedsParens(item: ParsedExpr): boolean {
 }
 
 /**
- * `body` is an arrow's expression body: any expression at assignment level.
- * An object literal there (`x => ({ a: 1 })`) is not wrapped here: its
- * `raw` already carries the parentheses its source wrote
- * (`objectLiteralRaw`, `expression-parser.ts`), the one place that decides
- * an object literal's grouping.
+ * `body` is an arrow's expression body: any expression at assignment level,
+ * except one that starts with `{`, which would read as a block body. That is
+ * an object literal (`x => ({ a: 1 })`, also one collapsed from a block body
+ * `{ return { a: 1 } }`), or an `unsupported` node, whose own source text
+ * may be one (a literal with a computed key, `x => ({ [k]: 1 })`).
  */
 export function arrowBodyNeedsParens(body: ParsedExpr): boolean {
-  return assignmentOperandNeedsParens(body)
+  return startsWithBrace(body) || body.kind === 'unsupported' || assignmentOperandNeedsParens(body)
+}
+
+/**
+ * Whether the printed `expr` would start with an object literal's `{`, so a
+ * consumer that reads it back as a statement (`parseExpression`) would read
+ * a block: the leftmost operand down the tree's left edge, unless a position
+ * on the way groups it.
+ */
+export function leadsWithObjectLiteral(expr: ParsedExpr): boolean {
+  switch (expr.kind) {
+    case 'object-literal':
+      return true
+    case 'binary':
+    case 'logical':
+      return !binaryOperandNeedsParens(expr, expr.left, 'left') && leadsWithObjectLiteral(expr.left)
+    case 'conditional':
+      return !conditionalTestNeedsParens(expr.test) && leadsWithObjectLiteral(expr.test)
+    case 'call':
+      return !receiverNeedsParens(expr.callee, false) && leadsWithObjectLiteral(expr.callee)
+    case 'member':
+    case 'index-access':
+    case 'array-method':
+      return !receiverNeedsParens(expr.object, false) && leadsWithObjectLiteral(expr.object)
+    default:
+      return false
+  }
 }
 
 /** `text` in parentheses when `wrap` is true. */

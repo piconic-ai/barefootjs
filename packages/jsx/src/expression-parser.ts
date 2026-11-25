@@ -13,6 +13,7 @@ import {
   assignmentOperandNeedsParens,
   binaryOperandNeedsParens,
   conditionalTestNeedsParens,
+  leadsWithObjectLiteral,
   parenthesize,
   receiverNeedsParens,
   unaryArgumentNeedsParens,
@@ -825,7 +826,9 @@ export function tsNodeToParsedExpr(node: ts.Node): ParsedExpr {
   } catch {
     /* synthetic node without a source file */
   }
-  return convertNode(node, raw)
+  // A bare object literal has no caller parentheses to keep: it is grouped as
+  // a nested one is (`objectLiteralRaw`).
+  return convertNode(node, raw, ts.isObjectLiteralExpression(node))
 }
 
 /**
@@ -933,18 +936,21 @@ function nodeRaw(node: ts.Node, outerRaw: string, nested: boolean): string {
 }
 
 /**
- * The `raw` an object literal keeps: the text it can be printed back as in
- * any expression position. Written in parentheses in its source
- * (`({ a: 1 }).a`, `x => ({ a: x })`), it keeps them, so a printer never
- * wraps an object literal and never doubles a pair: a top-level literal
- * keeps the caller's string, which carries the parentheses the caller
- * parsed it in; a nested one, the text of the parentheses around it. A
- * literal its source writes bare (an argument, an element, a property
- * value) needs none there, and keeps its own text.
+ * The `raw` an object literal keeps, for a consumer that lowers the literal
+ * from its text: text that reads as the literal in any expression position,
+ * since a leading `{` parses as a block. The printers do not read it: they
+ * print an object literal from its properties (#3965).
+ *
+ *   - Top level (`nested` false): the caller's string, which already holds
+ *     the parentheses the literal was parsed in.
+ *   - Nested and written in parentheses: the text of those parentheses.
+ *   - Nested and written bare (an argument, an element, a property value, a
+ *     returned value): its own text in parentheses.
  */
 function objectLiteralRaw(node: ts.ObjectLiteralExpression, raw: string, nested: boolean): string {
+  if (!nested) return raw
   const parent = node.parent as ts.Node | undefined
-  return nested && parent && ts.isParenthesizedExpression(parent) ? ownSourceText(parent, raw) : raw
+  return parent && ts.isParenthesizedExpression(parent) ? ownSourceText(parent, raw) : `(${raw})`
 }
 
 /** `node`'s own source text, or `fallback` for a synthetic node with no source file. */
@@ -3390,7 +3396,7 @@ function receiverText(object: ParsedExpr, dotted: boolean, print: PrintChild): s
 
 /** Call arguments or array elements, comma-joined. */
 function argsText(items: readonly ParsedExpr[], print: PrintChild): string {
-  return items.map(item => parenthesize(print(item), assignmentOperandNeedsParens(item))).join(', ')
+  return items.map(item => assignmentText(item, print)).join(', ')
 }
 
 /**
@@ -3453,7 +3459,13 @@ function arrayMethodText(expr: Extract<ParsedExpr, { kind: 'array-method' }>, pr
  * {@link ./parsed-expr-precedence.ts} helpers as `exprToString` (#3965).
  */
 export function stringifyParsedExpr(expr: ParsedExpr): string {
-  const s = stringifyParsedExpr
+  // Printed first, an object literal's `{` would open a block statement.
+  return parenthesize(printJs(expr), leadsWithObjectLiteral(expr))
+}
+
+/** {@link stringifyParsedExpr} for a sub-expression, which never starts a statement. */
+function printJs(expr: ParsedExpr): string {
+  const s = printJs
   switch (expr.kind) {
     case 'identifier':
       return expr.name
@@ -3490,11 +3502,32 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
     case 'array-method':
       return arrayMethodText(expr, s)
     case 'unsupported':
-    // `raw` is the original expression string, so re-stringification is
-    // byte-identical to the pre-`object-literal` behaviour (Roadmap A-1).
-    case 'object-literal':
+      // `raw` is the node's own source text (the caller's string at the top
+      // level).
       return expr.raw
+    case 'object-literal':
+      // From its properties, not `raw`: a rewrite (an inlined binding, a
+      // renamed identifier) changes the properties and leaves `raw` as the
+      // source wrote it.
+      return objectLiteralText(expr, s)
   }
+}
+
+/** An object literal, `{ a: 1, b, 'c-d': x, ...rest }`, printed from its properties. */
+function objectLiteralText(expr: Extract<ParsedExpr, { kind: 'object-literal' }>, print: PrintChild): string {
+  const parts = expr.properties.map(p => (p.kind === 'spread' ? `...${assignmentText(p.expr, print)}` : propertyText(p, print)))
+  return parts.length === 0 ? '{}' : `{ ${parts.join(', ')} }`
+}
+
+function propertyText(prop: Extract<ObjectLiteralProperty, { kind: 'prop' }>, print: PrintChild): string {
+  if (prop.shorthand && prop.value.kind === 'identifier' && prop.value.name === prop.key) return prop.key
+  const key = prop.keyKind === 'identifier' || prop.keyKind === 'numeric' ? prop.key : JSON.stringify(prop.key)
+  return `${key}: ${assignmentText(prop.value, print)}`
+}
+
+/** An expression in an assignment-level position: an argument, an element, a property value. */
+function assignmentText(item: ParsedExpr, print: PrintChild): string {
+  return parenthesize(print(item), assignmentOperandNeedsParens(item))
 }
 
 /**
