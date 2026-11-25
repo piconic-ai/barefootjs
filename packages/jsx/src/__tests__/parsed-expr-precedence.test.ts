@@ -11,7 +11,7 @@
  */
 import { describe, test, expect } from 'bun:test'
 import ts from 'typescript'
-import { exprToString, parseExpression, renameFreeIdentifiers, stringifyParsedExpr, tsNodeToParsedExpr, type ParsedExpr } from '../expression-parser'
+import { exprToString, parseExpression, stringifyParsedExpr, tsNodeToParsedExpr, type ParsedExpr } from '../expression-parser'
 
 const PRINTERS = { exprToString, stringifyParsedExpr } as const
 
@@ -191,7 +191,7 @@ describe('arrow bodies, arguments and elements', () => {
     // back in and adds no second pair.
     expectStringifyRoundTrip('x => ({ a: x })')
     expectStringifyRoundTrip('xs.map(x => ({ a: x }))')
-    expect(exprToString(parseExpression('x => ({ a: x })'))).toBe('x => ([UNSUPPORTED: ({ a: x })])')
+    expect(exprToString(parseExpression('x => ({ a: x })'))).toBe('x => [UNSUPPORTED: ({ a: x })]')
   })
 
   test('low-precedence arguments, elements and template parts need no parentheses', () => {
@@ -219,65 +219,65 @@ describe('a nested node the parser leaves unsupported', () => {
 })
 
 describe('an object literal', () => {
-  // Printed from its properties, grouped only where a leading `{` would read
-  // as a block: a receiver, a concise arrow body, the start of the text.
+  // Printed as its `raw`, the source text grouped by the parser; a printed
+  // text that starts with `{` is grouped where that `{` would open a block.
   const print = (source: string) => stringifyParsedExpr(parseExpression(source))
+  const expectPrinted = (source: string, printed: string) => {
+    expect(print(source)).toBe(printed)
+    expect(parseExpression(printed)).toEqual(parseExpression(source))
+  }
 
   test('a receiver, with one pair whether or not the source wrote extra', () => {
     expectStringifyRoundTrip('({ a: 1 }).a')
     expectStringifyRoundTrip('({ a: 1 })["a"]')
-    expect(print("({ a: 1 })['a']")).toBe('({ a: 1 })["a"]')
-    expect(print('(({ a: 1 })).a')).toBe('({ a: 1 }).a')
-    expect(exprToString(parseExpression('({ a: 1 }).a'))).toBe('([UNSUPPORTED: ({ a: 1 })]).a')
-    expect(exprToString(parseExpression("({ a: 1 })['a']"))).toBe('([UNSUPPORTED: ({ a: 1 })])["a"]')
+    expectPrinted("({ a: 1 })['a']", '({ a: 1 })["a"]')
+    expectPrinted('(({ a: 1 })).a', '({ a: 1 }).a')
+    expect(exprToString(parseExpression('({ a: 1 }).a'))).toBe('[UNSUPPORTED: ({ a: 1 })].a')
+    expect(exprToString(parseExpression("({ a: 1 })['a']"))).toBe('[UNSUPPORTED: ({ a: 1 })]["a"]')
   })
 
   test('a concise arrow body', () => {
     expectStringifyRoundTrip('() => ({ a: 1 }).a')
     expectStringifyRoundTrip('x => ({ a: x })')
     expectStringifyRoundTrip('xs.map(x => ({ a: x }))')
-    expect(exprToString(parseExpression('() => ({ a: 1 }).a'))).toBe('() => ([UNSUPPORTED: ({ a: 1 })]).a')
+    expect(exprToString(parseExpression('() => ({ a: 1 }).a'))).toBe('() => [UNSUPPORTED: ({ a: 1 })].a')
+  })
+
+  test('an arrow body whose leftmost operand is the literal', () => {
+    expectPrinted('() => ({ a: 1 } ? 1 : 2)', '() => ({ a: 1 }) ? 1 : 2')
+    expectPrinted('() => ({ a: 1 } === x)', '() => ({ a: 1 }) === x')
+    expect(exprToString(parseExpression('() => ({ a: 1 } ? 1 : 2)'))).toBe('() => [UNSUPPORTED: ({ a: 1 })] ? 1 : 2')
   })
 
   test('a block body collapsed to its returned literal', () => {
     for (const source of ['() => { return { a: 1 } }', '() => { return ({ a: 1 }) }']) {
       expect(print(source)).toBe('() => ({ a: 1 })')
-      expect(exprToString(parseExpression(source))).toBe('() => ([UNSUPPORTED: ({ a: 1 })])')
+      expect(exprToString(parseExpression(source))).toBe('() => [UNSUPPORTED: ({ a: 1 })]')
     }
-    expect(print('f(function () { return { a: 1 } })')).toBe('f(() => ({ a: 1 }))')
     expect(print('() => { return { a: 1, b: 2 } }')).toBe('() => ({ a: 1, b: 2 })')
-    // A folded block substitutes its locals into the literal's properties.
-    expect(print('() => { const t = 1; return { a: t } }')).toBe('() => ({ a: 1 })')
+    expect(print('f(function () { return { a: 1 } })')).toBe('f(() => ({ a: 1 }))')
   })
 
   test('the start of the printed text', () => {
     expectStringifyRoundTrip('({ a: 1 })')
-    // A literal leading a longer expression groups the whole printed text.
-    for (const [source, printed] of [['({ a: 1 }) === x', '({ a: 1 } === x)'], ['({ a: 1 }) ? b : c', '({ a: 1 } ? b : c)']]) {
-      expect(print(source)).toBe(printed)
-      expect(parseExpression(printed)).toEqual(parseExpression(source))
-    }
-    expectStringifyRoundTrip('({ a: 1 }).a + 1')
+    expectStringifyRoundTrip('({ a: 1 }) === x')
+    expectStringifyRoundTrip('({ a: 1 }) ? b : c')
     expectStringifyRoundTrip('({ a: { b: 1 } })')
   })
 
-  test('a position where bare braces read as an expression stays bare', () => {
-    expectStringifyRoundTrip('f({ a: 1 })')
-    expectStringifyRoundTrip('[{ a: 1 }]')
-    expectStringifyRoundTrip('q(base, { tag })')
-    expectStringifyRoundTrip('c ? { a: 1 } : { b: 2 }')
-    expectStringifyRoundTrip('x === { a: 1 }')
+  test('the source text is printed verbatim', () => {
+    expectStringifyRoundTrip('({ value: model?.name })')
+    expectStringifyRoundTrip('({ value: model?.["name"] })')
+    expectStringifyRoundTrip('({ value: `\\${name}${1}` })')
+    expectStringifyRoundTrip("({ 'a-b': 1, 2: x, c, ...o })")
+    expectStringifyRoundTrip('x => ({ v: x?.name })')
   })
 
-  test('keys, shorthand, spread and an empty literal', () => {
-    expect(print("({ 'a-b': 1, 2: x, c, ...o })")).toBe('({ "a-b": 1, 2: x, c, ...o })')
-    expectStringifyRoundTrip('({})')
-    expectStringifyRoundTrip('({ a: (b, c) => b })')
-  })
-
-  test('a rewrite of the properties is printed, not the source text', () => {
-    const renamed = renameFreeIdentifiers(parseExpression('x => ({ a: name, name })'), new Map([['name', 'alias']]))
-    expect(stringifyParsedExpr(renamed)).toBe('x => ({ a: alias, name: alias })')
+  test('a literal its source writes bare keeps the parser\'s one pair', () => {
+    // `raw` is grouped for every position (`objectLiteralRaw`): one pair, never two.
+    expectPrinted('f({ a: 1 })', 'f(({ a: 1 }))')
+    expectPrinted('[{ a: 1 }]', '[({ a: 1 })]')
+    expectPrinted('c ? { a: 1 } : { b: 2 }', 'c ? ({ a: 1 }) : ({ b: 2 })')
   })
 
   test('a bare literal converted from a node at the top level', () => {
@@ -286,8 +286,10 @@ describe('an object literal', () => {
     expect(stringifyParsedExpr(tsNodeToParsedExpr(decl.initializer!))).toBe('({ a: 1 })')
   })
 
-  test('a literal with a computed key, which stays unsupported, is grouped as an arrow body', () => {
+  test('a literal with a computed key, which stays unsupported, is grouped where `{` opens a block', () => {
     expect(print('x => ({ [k]: 1 })')).toBe('x => ({ [k]: 1 })')
+    expect(print('x => ({ [k]: 1 } ? 1 : 2)')).toBe('x => ({ [k]: 1 }) ? 1 : 2')
+    expect(print('({ [k]: 1 }).a')).toBe('({ [k]: 1 }).a')
+    expect(print('f({ [k]: 1 })')).toBe('f({ [k]: 1 })')
   })
 })
-

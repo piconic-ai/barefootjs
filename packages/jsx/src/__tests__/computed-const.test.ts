@@ -230,8 +230,7 @@ describe('a read of an object const reads what the object holds (#3844)', () => 
 
   test('an index whose keys are not all known reads the literal, for the adapter to refuse', () => {
     const inline = inliner(source)
-    // Printed from the literal's properties (#3965), grouped as a receiver.
-    const literal = '({ ok: "Fine", err: "Broken" })'
+    const literal = "({ ok: 'Fine', err: 'Broken' })"
     expect(inline('labels[props.free]')).toBe(`${literal}[props.free]`)
     expect(inline('labels[props.proto]')).toBe(`${literal}[props.proto]`)
     expect(inline('labels[sel()]')).toBe(`${literal}[sel()]`)

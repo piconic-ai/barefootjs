@@ -13,7 +13,7 @@ import {
   assignmentOperandNeedsParens,
   binaryOperandNeedsParens,
   conditionalTestNeedsParens,
-  leadsWithObjectLiteral,
+  groupLeadingBrace,
   parenthesize,
   receiverNeedsParens,
   unaryArgumentNeedsParens,
@@ -936,14 +936,15 @@ function nodeRaw(node: ts.Node, outerRaw: string, nested: boolean): string {
 }
 
 /**
- * The `raw` an object literal keeps, for a consumer that lowers the literal
- * from its text: text that reads as the literal in any expression position,
- * since a leading `{` parses as a block. The printers do not read it: they
- * print an object literal from its properties (#3965).
+ * The `raw` an object literal keeps, which the printers print it back as
+ * (verbatim, so `?.`, template escapes and the rest stay as the source wrote
+ * them) and which a consumer lowering the literal from its text reads. It is
+ * grouped in every case, since a leading `{` parses as a block (#3965):
  *
  *   - Top level (`nested` false): the caller's string, which already holds
  *     the parentheses the literal was parsed in.
- *   - Nested and written in parentheses: the text of those parentheses.
+ *   - Nested and written in parentheses: the text of those parentheses, so a
+ *     pair the source supplied is reused, never doubled.
  *   - Nested and written bare (an argument, an element, a property value, a
  *     returned value): its own text in parentheses.
  */
@@ -3391,7 +3392,7 @@ type PrintChild = (expr: ParsedExpr) => string
 
 /** The receiver of a member / index read or a call, parenthesized when it binds looser (#3965). */
 function receiverText(object: ParsedExpr, dotted: boolean, print: PrintChild): string {
-  return parenthesize(print(object), receiverNeedsParens(object, dotted))
+  return groupLeadingBrace(parenthesize(print(object), receiverNeedsParens(object, dotted)))
 }
 
 /** Call arguments or array elements, comma-joined. */
@@ -3432,7 +3433,7 @@ function arrowText(expr: Extract<ParsedExpr, { kind: 'arrow' }>, print: PrintChi
   // Single-param arrows round-trip without parens (`x => …`); multi-param
   // need them (`(a, b) => …`).
   const params = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
-  return `${params} => ${parenthesize(print(expr.body), arrowBodyNeedsParens(expr.body))}`
+  return `${params} => ${groupLeadingBrace(parenthesize(print(expr.body), arrowBodyNeedsParens(expr.body)))}`
 }
 
 function arrayMethodText(expr: Extract<ParsedExpr, { kind: 'array-method' }>, print: PrintChild): string {
@@ -3459,8 +3460,8 @@ function arrayMethodText(expr: Extract<ParsedExpr, { kind: 'array-method' }>, pr
  * {@link ./parsed-expr-precedence.ts} helpers as `exprToString` (#3965).
  */
 export function stringifyParsedExpr(expr: ParsedExpr): string {
-  // Printed first, an object literal's `{` would open a block statement.
-  return parenthesize(printJs(expr), leadsWithObjectLiteral(expr))
+  // Printed first, a leading `{` would open a block statement.
+  return groupLeadingBrace(printJs(expr))
 }
 
 /** {@link stringifyParsedExpr} for a sub-expression, which never starts a statement. */
@@ -3502,27 +3503,13 @@ function printJs(expr: ParsedExpr): string {
     case 'array-method':
       return arrayMethodText(expr, s)
     case 'unsupported':
-      // `raw` is the node's own source text (the caller's string at the top
-      // level).
-      return expr.raw
+    // `raw` is the node's own source text (the caller's string at the top
+    // level); an object literal's is its source text, grouped
+    // (`objectLiteralRaw`), so `?.`, template escapes and the rest print
+    // as written.
     case 'object-literal':
-      // From its properties, not `raw`: a rewrite (an inlined binding, a
-      // renamed identifier) changes the properties and leaves `raw` as the
-      // source wrote it.
-      return objectLiteralText(expr, s)
+      return expr.raw
   }
-}
-
-/** An object literal, `{ a: 1, b, 'c-d': x, ...rest }`, printed from its properties. */
-function objectLiteralText(expr: Extract<ParsedExpr, { kind: 'object-literal' }>, print: PrintChild): string {
-  const parts = expr.properties.map(p => (p.kind === 'spread' ? `...${assignmentText(p.expr, print)}` : propertyText(p, print)))
-  return parts.length === 0 ? '{}' : `{ ${parts.join(', ')} }`
-}
-
-function propertyText(prop: Extract<ObjectLiteralProperty, { kind: 'prop' }>, print: PrintChild): string {
-  if (prop.shorthand && prop.value.kind === 'identifier' && prop.value.name === prop.key) return prop.key
-  const key = prop.keyKind === 'identifier' || prop.keyKind === 'numeric' ? prop.key : JSON.stringify(prop.key)
-  return `${key}: ${assignmentText(prop.value, print)}`
 }
 
 /** An expression in an assignment-level position: an argument, an element, a property value. */

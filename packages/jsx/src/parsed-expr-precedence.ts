@@ -74,19 +74,7 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
  */
 export function receiverNeedsParens(object: ParsedExpr, dotted: boolean): boolean {
   if (parsedExprPrecedence(object) < POSTFIX) return true
-  if (startsWithBrace(object)) return true
   return dotted && isNumberLiteral(object)
-}
-
-/**
- * An object literal, printed from its properties, starts with `{`, which
- * opens a block wherever a statement or a concise arrow body starts: it is
- * grouped as a receiver, as an arrow body and at the start of the printed
- * text (`leadsWithObjectLiteral`). Everywhere else (an argument, an element,
- * a branch, a property value) it stays bare.
- */
-function startsWithBrace(expr: ParsedExpr): boolean {
-  return expr.kind === 'object-literal'
 }
 
 /**
@@ -133,41 +121,25 @@ export function assignmentOperandNeedsParens(item: ParsedExpr): boolean {
   return parsedExprPrecedence(item) < ASSIGNMENT
 }
 
-/**
- * `body` is an arrow's expression body: any expression at assignment level,
- * except one that starts with `{`, which would read as a block body. That is
- * an object literal (`x => ({ a: 1 })`, also one collapsed from a block body
- * `{ return { a: 1 } }`), or an `unsupported` node, whose own source text
- * may be one (a literal with a computed key, `x => ({ [k]: 1 })`).
- */
+/** `body` is an arrow's expression body: any expression at assignment level (a leading `{` is `groupLeadingBrace`'s). */
 export function arrowBodyNeedsParens(body: ParsedExpr): boolean {
-  return startsWithBrace(body) || body.kind === 'unsupported' || assignmentOperandNeedsParens(body)
+  return assignmentOperandNeedsParens(body)
 }
 
 /**
- * Whether the printed `expr` would start with an object literal's `{`, so a
- * consumer that reads it back as a statement (`parseExpression`) would read
- * a block: the leftmost operand down the tree's left edge, unless a position
- * on the way groups it.
+ * Printed text that starts with `{`, in parentheses. Placed where a leading
+ * `{` opens a block, the one decision for every such position: a receiver
+ * (`({ a: 1 }).a`), a concise arrow body (`() => ({ a: 1 })`, one collapsed
+ * from `{ return { a: 1 } }`, and `() => ({ a: 1 } ? 1 : 2)`, whose leftmost
+ * operand is the literal), and the start of the whole printed text. It reads
+ * the printed text, not the tree, so it covers whatever leads it: an object
+ * literal written bare, or an `unsupported` node whose source is one
+ * (`{ [k]: 1 }`); and text that already starts with a pair the source wrote
+ * (an object literal's `raw`, `objectLiteralRaw`) is never wrapped again.
+ * Elsewhere (an argument, an element, a branch) a bare `{` stays bare.
  */
-export function leadsWithObjectLiteral(expr: ParsedExpr): boolean {
-  switch (expr.kind) {
-    case 'object-literal':
-      return true
-    case 'binary':
-    case 'logical':
-      return !binaryOperandNeedsParens(expr, expr.left, 'left') && leadsWithObjectLiteral(expr.left)
-    case 'conditional':
-      return !conditionalTestNeedsParens(expr.test) && leadsWithObjectLiteral(expr.test)
-    case 'call':
-      return !receiverNeedsParens(expr.callee, false) && leadsWithObjectLiteral(expr.callee)
-    case 'member':
-    case 'index-access':
-    case 'array-method':
-      return !receiverNeedsParens(expr.object, false) && leadsWithObjectLiteral(expr.object)
-    default:
-      return false
-  }
+export function groupLeadingBrace(text: string): string {
+  return text.startsWith('{') ? `(${text})` : text
 }
 
 /** `text` in parentheses when `wrap` is true. */
