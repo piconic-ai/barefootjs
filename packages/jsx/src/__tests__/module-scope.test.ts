@@ -510,6 +510,7 @@ function loadClientScript(clientJs: string, log: unknown[]): Map<string, (scope:
     const lazySlots = () => () => {}
     const createContext = (v) => ({ defaultValue: v })
     const createMemo = (fn) => { const v = fn(); return () => v }
+    const createQuery = (_fn, opts) => { __log({ ttl: opts.ttl }); return [() => opts.initial] }
     const useContext = (c) => c.defaultValue
     const createSignal = (v) => { let x = v; return [() => x, (n) => { x = typeof n === 'function' ? n(x) : n }] }
     const escapeText = (v) => String(v)
@@ -751,20 +752,53 @@ export function C() {
     })
   })
 
-  test('an arrow-bearing const outside the replica that reads a replica const runs after it', () => {
+  test('a client module factory signal whose options read a shared let receives the module value', () => {
     const { clientJs } = compile(`
 'use client'
-const seed = 'a'
-const label = [seed, () => 0][0]
-let counter = seed
+import { createQuery } from '@barefootjs/client'
+let first = 1
+let second = first + 1
+/* @client */
+const [early] = createQuery(() => http.get('/api/items'), { initial: [], ttl: Number(second.toFixed()) })
 export function C() {
-  counter = counter + '!'
-  return <button onClick={() => __log([counter, label])}>x</button>
+  first = 10
+  second = 20
+  return <button onClick={() => __log(early())}>x</button>
 }
 `)
     const { log, scopes } = run(clientJs)
+    expect(log).toEqual([{ ttl: 2 }])
     scopes[0].click('s0')
-    expect(log).toEqual([['a!', 'a']])
+    expect(log).toEqual([{ ttl: 2 }, []])
+  })
+
+  // Presence, not reads: any declaration the client script may evaluate at
+  // module level ahead of the replica keeps the replica as narrow as before
+  // #3968, whatever that declaration reads.
+  describe.each([
+    ['a client module signal', '/* @client */\nconst [early] = createSignal(0)'],
+    ['a client module memo', '/* @client */\nconst early = createMemo(() => 0)'],
+    ['a client module factory signal', "/* @client */\nconst [early] = createQuery(() => 0, { initial: [] })"],
+    ['a context', 'const early = createContext(0)'],
+    ['an arrow-bearing const', 'const early = [() => 0][0]'],
+    ['a shared let outside the closure', 'let early = 0'],
+  ])('with %s in the module', (_label, decl) => {
+    test('the shared let is left as before', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext, createMemo, createQuery, createSignal } from '@barefootjs/client'
+${decl}
+const seed = ''
+let counter = seed || 'x'
+export function C() {
+  counter = counter + '!'
+  early = early
+  return <button onClick={() => __log(counter, early)}>x</button>
+}
+`.replace('  early = early\n', decl.startsWith('let ') ? '  early = 1\n' : ''))
+      expect(clientJs).not.toContain('__bf_module_C')
+      expect(clientJs).toContain("var counter = counter ?? (seed || 'x')")
+    })
   })
 })
 

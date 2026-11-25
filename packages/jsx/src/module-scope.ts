@@ -162,8 +162,10 @@ interface ModuleDeclarations {
   /** Module functions the replica cannot declare (JSX helpers). */
   undeclarableFunctions: ReadonlySet<string>
   freeOf: (name: string) => ReadonlySet<string>
-  /** What each module-level signal's and memo's initializer reads. */
-  reactiveReads: readonly ReadonlySet<string>[]
+  /** Every const of the file, the component's own included. */
+  allConstants: readonly ConstantInfo[]
+  /** Whether the file declares a module-level signal, memo or factory signal. */
+  hasModuleLevelReactive: boolean
 }
 
 /**
@@ -175,16 +177,17 @@ export function isModuleLevelReactive(d: Pick<SignalInfo | MemoInfo, 'isModule'>
   return d.isModule === true
 }
 
-/** The names each module-level signal's and memo's initializer reads. */
-function moduleLevelReactiveReads(metadata: Pick<IRMetadata, 'signals' | 'memos'>): ReadonlySet<string>[] {
-  const reads: ReadonlySet<string>[] = []
-  for (const s of metadata.signals) {
-    if (isModuleLevelReactive(s)) reads.push(s.initialFreeIdentifiers ?? extractFreeIdentifiersFromText(s.initialValue))
-  }
-  for (const m of metadata.memos) {
-    if (isModuleLevelReactive(m)) reads.push(m.computationFreeIdentifiers ?? extractFreeIdentifiersFromText(m.computation))
-  }
-  return reads
+/**
+ * Whether `compute-scope.ts` may place the const `c` at client-module level,
+ * ahead of the replica: a system construct (one identity per module), or a
+ * module const the component reassigns or whose value holds an arrow. It
+ * classifies every other const into the init body without looking further.
+ */
+export function constMayBeEmittedAtModuleLevel(
+  c: Pick<ConstantInfo, 'isModule' | 'systemConstructKind' | 'reassigned' | 'containsArrow'>,
+): boolean {
+  if (c.systemConstructKind) return true
+  return c.isModule === true && (c.reassigned === true || c.containsArrow === true)
 }
 
 /**
@@ -257,7 +260,7 @@ function scopeSensitiveClosure(decls: ModuleDeclarations, env: RoleEnv): Set<str
   closeOverReads(wide, [...seeds, ...moduleReadSeeds(decls, env)], decls)
   addReadersOfSharedStorage(wide, decls, env, true)
   const widened = [...wide].some(n => !narrow.has(n))
-  if (widened && replicaHostsAll(wide, decls, env) && noOutsideInitializerReads(wide, decls, env)) return wide
+  if (widened && replicaHostsAll(wide, decls, env) && noInitializerAheadOfReplica(wide, decls)) return wide
   return dropUndeclarableMembers(narrow, decls.constants, decls.freeOf, env)
 }
 
@@ -276,29 +279,19 @@ function replicaHostsAll(closure: ReadonlySet<string>, decls: ModuleDeclarations
 }
 
 /**
- * Does an initializer the client script evaluates at client-module level,
- * ahead of the replica, read a member of `closure` (directly, or through a
- * module function or const outside it that it calls or reads)? It would read
- * the binding before the replica gave it its value. Those initializers are
- * every module-level signal and memo (`isModuleLevelReactive`, the predicate
- * the emitter routes them by) and every module const outside `closure` that
- * is not a plain value: a shared binding or a system construct. A plain const
- * outside is copied into the init body, which runs after the replica (one that
- * reads a shared member is in `closure` already, `addReadersOfSharedStorage`).
+ * Is there no declaration the client script may evaluate at client-module
+ * level ahead of the replica, other than plain values? Presence decides, not
+ * what such a declaration reads: a module signal, memo or factory signal
+ * (`isModuleLevelReactive`), a system construct, or a module const outside
+ * `closure` that `compute-scope.ts` may place at module level
+ * (`constMayBeEmittedAtModuleLevel`, the gate it classifies by) keeps the
+ * replica as narrow as it was before #3968, whatever it reads.
  */
-function noOutsideInitializerReads(closure: ReadonlySet<string>, decls: ModuleDeclarations, env: RoleEnv): boolean {
-  const roots: ReadonlySet<string>[] = [...decls.reactiveReads]
-  for (const [name, c] of decls.constants) {
-    if (!closure.has(name) && replicaRole(c, env) !== 'declared') roots.push(freeIdentifiersOfConstant(c))
-  }
-  const seen = new Set<string>()
-  const pending = roots.flatMap(r => [...r])
-  while (pending.length > 0) {
-    const name = pending.pop()!
-    if (closure.has(name)) return false
-    if (seen.has(name)) continue
-    seen.add(name)
-    if (decls.constants.has(name) || decls.functions.has(name)) pending.push(...decls.freeOf(name))
+function noInitializerAheadOfReplica(closure: ReadonlySet<string>, decls: ModuleDeclarations): boolean {
+  if (decls.hasModuleLevelReactive) return false
+  for (const c of decls.allConstants) {
+    const outside = !(c.isModule === true && closure.has(c.name) && decls.constants.get(c.name) === c)
+    if (outside && constMayBeEmittedAtModuleLevel(c)) return false
   }
   return true
 }
@@ -443,7 +436,8 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
     functions: moduleFunctions,
     undeclarableFunctions,
     freeOf,
-    reactiveReads: moduleLevelReactiveReads(metadata),
+    allConstants: metadata.localConstants,
+    hasModuleLevelReactive: [...metadata.signals, ...metadata.memos].some(isModuleLevelReactive),
   }
   const closure = scopeSensitiveClosure(decls, env)
   const inClosure = [...moduleConstants.values()].filter(c => closure.has(c.name))
