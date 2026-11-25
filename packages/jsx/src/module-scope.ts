@@ -40,7 +40,7 @@
  * take in, the replica is the one the hidden names alone call for.
  */
 
-import type { ConstantInfo, FunctionInfo, InitStatementInfo, IRMetadata } from './types.ts'
+import type { ConstantInfo, FunctionInfo, InitStatementInfo, IRMetadata, MemoInfo, SignalInfo } from './types.ts'
 import { componentScopeNames } from './adapters/computed-const.ts'
 import { extractFreeIdentifiersFromText } from './ir-to-client-js/csr-substitute.ts'
 
@@ -162,6 +162,29 @@ interface ModuleDeclarations {
   /** Module functions the replica cannot declare (JSX helpers). */
   undeclarableFunctions: ReadonlySet<string>
   freeOf: (name: string) => ReadonlySet<string>
+  /** What each module-level signal's and memo's initializer reads. */
+  reactiveReads: readonly ReadonlySet<string>[]
+}
+
+/**
+ * A signal or memo declared at module scope (`/* @client *​/`). The client
+ * script emits it at client-module level, ahead of the module-scope replica
+ * (`init-declarations.ts` routes by this predicate).
+ */
+export function isModuleLevelReactive(d: Pick<SignalInfo | MemoInfo, 'isModule'>): boolean {
+  return d.isModule === true
+}
+
+/** The names each module-level signal's and memo's initializer reads. */
+function moduleLevelReactiveReads(metadata: Pick<IRMetadata, 'signals' | 'memos'>): ReadonlySet<string>[] {
+  const reads: ReadonlySet<string>[] = []
+  for (const s of metadata.signals) {
+    if (isModuleLevelReactive(s)) reads.push(s.initialFreeIdentifiers ?? extractFreeIdentifiersFromText(s.initialValue))
+  }
+  for (const m of metadata.memos) {
+    if (isModuleLevelReactive(m)) reads.push(m.computationFreeIdentifiers ?? extractFreeIdentifiersFromText(m.computation))
+  }
+  return reads
 }
 
 /**
@@ -253,16 +276,29 @@ function replicaHostsAll(closure: ReadonlySet<string>, decls: ModuleDeclarations
 }
 
 /**
- * Does any module const outside `closure` that the client script evaluates at
- * client-module level (a shared binding, a system construct) read a member of
- * `closure`? It runs before the replica, so it would read the binding before
- * the replica gave it its value. A plain const outside is copied into the init
- * body, which runs after the replica.
+ * Does an initializer the client script evaluates at client-module level,
+ * ahead of the replica, read a member of `closure` (directly, or through a
+ * module function or const outside it that it calls or reads)? It would read
+ * the binding before the replica gave it its value. Those initializers are
+ * every module-level signal and memo (`isModuleLevelReactive`, the predicate
+ * the emitter routes them by) and every module const outside `closure` that
+ * is not a plain value: a shared binding or a system construct. A plain const
+ * outside is copied into the init body, which runs after the replica (one that
+ * reads a shared member is in `closure` already, `addReadersOfSharedStorage`).
  */
 function noOutsideInitializerReads(closure: ReadonlySet<string>, decls: ModuleDeclarations, env: RoleEnv): boolean {
+  const roots: ReadonlySet<string>[] = [...decls.reactiveReads]
   for (const [name, c] of decls.constants) {
-    if (closure.has(name) || replicaRole(c, env) === 'declared') continue
-    if (intersects(freeIdentifiersOfConstant(c), closure)) return false
+    if (!closure.has(name) && replicaRole(c, env) !== 'declared') roots.push(freeIdentifiersOfConstant(c))
+  }
+  const seen = new Set<string>()
+  const pending = roots.flatMap(r => [...r])
+  while (pending.length > 0) {
+    const name = pending.pop()!
+    if (closure.has(name)) return false
+    if (seen.has(name)) continue
+    seen.add(name)
+    if (decls.constants.has(name) || decls.functions.has(name)) pending.push(...decls.freeOf(name))
   }
   return true
 }
@@ -402,7 +438,13 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
     if (c) return freeIdentifiersOfConstant(c)
     return moduleFunctions.get(name)?.freeIdentifiers ?? new Set()
   }
-  const decls: ModuleDeclarations = { constants: moduleConstants, functions: moduleFunctions, undeclarableFunctions, freeOf }
+  const decls: ModuleDeclarations = {
+    constants: moduleConstants,
+    functions: moduleFunctions,
+    undeclarableFunctions,
+    freeOf,
+    reactiveReads: moduleLevelReactiveReads(metadata),
+  }
   const closure = scopeSensitiveClosure(decls, env)
   const inClosure = [...moduleConstants.values()].filter(c => closure.has(c.name))
   const constants = inClosure.filter(c => replicaRole(c, env) === 'declared')

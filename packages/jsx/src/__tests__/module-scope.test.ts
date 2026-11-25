@@ -509,6 +509,7 @@ function loadClientScript(clientJs: string, log: unknown[]): Map<string, (scope:
     const createEffect = (fn) => fn()
     const lazySlots = () => () => {}
     const createContext = (v) => ({ defaultValue: v })
+    const createMemo = (fn) => { const v = fn(); return () => v }
     const useContext = (c) => c.defaultValue
     const createSignal = (v) => { let x = v; return [() => x, (n) => { x = typeof n === 'function' ? n(x) : n }] }
     const escapeText = (v) => String(v)
@@ -717,4 +718,53 @@ export function C() {
     scopes[0].click('s0')
     expect(log).toEqual([['a!', 'a?.']])
   })
+
+  // Every kind of declaration the client script evaluates at client-module
+  // level, ahead of the replica, must see `second` as the module gives it (2)
+  // before the component reassigns it: the replica is not widened when one of
+  // them reads a binding it would assign.
+  describe.each([
+    ['a client module signal', "/* @client */\nconst [early] = createSignal(second)", 'early()'],
+    ['a client module memo', '/* @client */\nconst early = createMemo(() => second)', 'early()'],
+    ['a context', 'const early = createContext(second)', 'useContext(early)'],
+    ['an arrow-bearing const', 'const early = [second, () => 0][0]', 'early'],
+    ['a client module signal through a module function', "/* @client */\nconst [early] = createSignal(read())", 'early()'],
+  ])('%s reading a shared let before the replica', (_label, decl, read) => {
+    test('is initialized from the module value', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext, createMemo, createSignal, useContext } from '@barefootjs/client'
+function pick(v, _f) { return v }
+let first = 1
+let second = first + 1
+function read() { return second }
+${decl}
+export function C() {
+  first = 10
+  second = 20
+  return <button onClick={() => __log(${read})}>x</button>
+}
+`)
+      const { log, scopes } = run(clientJs)
+      scopes[0].click('s0')
+      expect(log).toEqual([2])
+    })
+  })
+
+  test('an arrow-bearing const outside the replica that reads a replica const runs after it', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 'a'
+const label = [seed, () => 0][0]
+let counter = seed
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => __log([counter, label])}>x</button>
+}
+`)
+    const { log, scopes } = run(clientJs)
+    scopes[0].click('s0')
+    expect(log).toEqual([['a!', 'a']])
+  })
 })
+
