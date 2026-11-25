@@ -55,8 +55,13 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
       return PREFIX
     case 'literal':
       return isNegativeNumberLiteral(expr) ? PREFIX : POSTFIX
-    // `unsupported` / `object-literal` print their source text (or a
-    // bracketed placeholder) as one unit.
+    // `unsupported` prints its own source text (`await a`, `typeof x`, `new
+    // C()`), whose level the tree does not record: placed at assignment level,
+    // the loosest a node the parser leaves unsupported can be, so it is wrapped
+    // as an operand but not as an argument or a branch.
+    case 'unsupported':
+      return ASSIGNMENT
+    // `object-literal` prints its source text as one unit.
     default:
       return POSTFIX
   }
@@ -66,10 +71,13 @@ export function parsedExprPrecedence(expr: ParsedExpr): number {
  * `object` is the receiver of a member read, an index read, a method call
  * or a call (`object.k`, `object[i]`, `object.m()`, `object()`). `dotted` is
  * true when a `.` follows it: an integer literal then needs parentheses too,
- * since `1.k` lexes as the number `1.` followed by `k`.
+ * since `1.k` lexes as the number `1.` followed by `k`. An object literal
+ * always does.
  */
 export function receiverNeedsParens(object: ParsedExpr, dotted: boolean): boolean {
   if (parsedExprPrecedence(object) < POSTFIX) return true
+  // `({ a: 1 }).k`: printed first, `{` would open a block statement.
+  if (object.kind === 'object-literal') return true
   return dotted && isNumberLiteral(object)
 }
 

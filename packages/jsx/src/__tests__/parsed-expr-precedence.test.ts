@@ -49,9 +49,11 @@ describe('a member / call / index read on a low-precedence operand', () => {
     })
   }
 
-  test('a computed literal key keeps the grouping', () => {
-    expect(stringifyParsedExpr(parseExpression('(a ? b : c)[0]'))).toBe('(a ? b : c)[0]')
-    expect(stringifyParsedExpr(parseExpression('(a || b)["k"]'))).toBe('(a || b)["k"]')
+  test('a computed literal key keeps its brackets and the grouping', () => {
+    expectRoundTrip('(flag ? a : b)[0]')
+    expectRoundTrip('(a || b)["k"]')
+    expectRoundTrip('x[0]')
+    expectRoundTrip("x['a-b']", 'x["a-b"]')
   })
 
   test('a higher-order call on a logical receiver', () => {
@@ -171,17 +173,34 @@ describe('arrow bodies, arguments and elements', () => {
   })
 
   test('an object-literal arrow body', () => {
-    const tree: ParsedExpr = {
-      kind: 'arrow',
-      params: ['x'],
-      body: { kind: 'object-literal', raw: '{ a: x }', properties: [{ kind: 'prop', key: 'a', keyKind: 'identifier', shorthand: false, value: { kind: 'identifier', name: 'x' } }] },
-    }
-    expect(stringifyParsedExpr(tree)).toBe('x => ({ a: x })')
+    // A nested object literal keeps its own source text, not the whole
+    // expression's, so printing does not splice the expression back in.
+    expect(stringifyParsedExpr(parseExpression('x => ({ a: x })'))).toBe('x => ({ a: x })')
+    expect(stringifyParsedExpr(parseExpression('xs.map(x => ({ a: x }))'))).toBe('xs.map(x => ({ a: x }))')
+    const tree = parseExpression('xs.map(x => ({ a: x }))')
+    expect(parseExpression(stringifyParsedExpr(tree))).toEqual(tree)
   })
 
   test('low-precedence arguments, elements and template parts need no parentheses', () => {
     expectRoundTrip('f(a ? b : c, x => x)')
     expectRoundTrip('[a || b, a + b]')
     expectRoundTrip('`${(a ? b : c).k}`')
+  })
+})
+
+describe('a nested node the parser leaves unsupported', () => {
+  test('keeps its own source text and is grouped as an operand', () => {
+    const tree = parseExpression('(await a).k')
+    expect(stringifyParsedExpr(tree)).toBe('(await a).k')
+    expect(parseExpression(stringifyParsedExpr(tree))).toEqual(tree)
+    expect(exprToString(tree)).toBe('([UNSUPPORTED: await a]).k')
+  })
+
+  test('is not wrapped as an argument', () => {
+    expect(stringifyParsedExpr(parseExpression('f(typeof x, y)'))).toBe('f(typeof x, y)')
+  })
+
+  test('a top-level unsupported expression keeps the text it was parsed from', () => {
+    expect(stringifyParsedExpr(parseExpression('typeof (a + b)'))).toBe('typeof (a + b)')
   })
 })
