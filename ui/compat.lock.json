@@ -15250,11 +15250,53 @@
           ]
         }
       },
-      "spread-open-bag-literal-alias-before": {
-        "hono": {
+      "spread-open-bag-literal-case-alias": {
+        "blade": {
           "kind": "render",
           "limitations": [
-            "spread-key-alias-literal-duplicate"
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
           ]
         }
       },
@@ -15272,12 +15314,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "spread-key-alias-literal-duplicate"
-          ]
-        },
-        "hono": {
           "kind": "render",
           "limitations": [
             "spread-key-alias-literal-duplicate"
@@ -17695,9 +17731,9 @@
         "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
       },
-      "spread-open-bag-literal-alias-before": {
-        "description": "A literal htmlFor before an open bag carrying htmlFor renders the bag value once; literals the bag…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-alias-before.ts"
+      "spread-open-bag-literal-case-alias": {
+        "description": "A literal tabIndex / tabindex before an open bag carrying tabIndex renders the bag value once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-case-alias.ts"
       },
       "spread-open-bag-literal-renamed-elsewhere": {
         "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
@@ -19693,7 +19729,8 @@
       "actual": "Renders every camelCase key kebab-cased (`cross-origin`, `tab-index`, `aria-label`, `data-test-id`, `stroke-width`)",
       "fixtures": [
         "spread-closed-rest-then-bag-renamed-key",
-        "spread-open-bag-hono-renamed-keys"
+        "spread-open-bag-hono-renamed-keys",
+        "spread-open-bag-literal-case-alias"
       ],
       "adapters": [
         "blade",
@@ -19709,15 +19746,13 @@
     "spread-key-alias-literal-duplicate": {
       "title": "A literal attribute and an open spread bag key that renames to it",
       "kind": "silent",
-      "given": "a literal written with a React-style name a spread renames (`htmlFor=\"explicit\"`, `crossOrigin`) before an open spread (`{...rest}`) whose bag carries that key",
-      "expected": "the attribute renders once, with the bag's value (`for=\"spread\"`); a key the bag lacks keeps the literal",
-      "actual": "Renders the attribute twice (`for=\"explicit\" for=\"spread\"`), or the literal beside the bag key kebab-cased (`crossorigin=\"anonymous\" cross-origin=\"use-credentials\"`), so a browser keeps the literal",
+      "given": "a literal written with a React-style name the reference renames in a spread (`crossOrigin=\"anonymous\"`) before an open spread (`{...rest}`) whose bag carries that key",
+      "expected": "the attribute renders once, with the bag's value (`crossorigin=\"use-credentials\"`); a key the bag lacks keeps the literal",
+      "actual": "Renders the literal beside the bag key kebab-cased (`crossorigin=\"anonymous\" cross-origin=\"use-credentials\"`), so a browser keeps the literal",
       "fixtures": [
-        "spread-open-bag-literal-alias-before",
         "spread-open-bag-literal-renamed-elsewhere"
       ],
       "adapters": [
-        "hono",
         "blade",
         "erb",
         "go-template",

@@ -1844,7 +1844,8 @@ export interface IRAttribute extends AttrMeta {
    * (`rest.title == null ? "a" : undefined`), no attribute otherwise, and the
    * spread supplies it. {@link renderElementAttributes} is the one place that
    * reads it. JS-runtime consumers (Hono, the client JS) keep `value`, whose
-   * JSX attribute order already gives the spread the last word.
+   * JSX attribute order already gives the spread the last word for a key
+   * spelled the same; `spreadAliasOverriders` covers the other spellings.
    *
    * A key the bag holds with an explicit `null` / `undefined` reads as absent,
    * as everywhere a template tests whether a spread carries a key
@@ -1852,6 +1853,26 @@ export interface IRAttribute extends AttrMeta {
    * omits it.
    */
   spreadOverridable?: ExpressionAttr
+  /**
+   * The part of the `spreadOverridable` decision a JSX runtime cannot make
+   * by itself: each later open spread whose bag may write this attribute
+   * under a key other than the one the runtime writes it under
+   * (`jsxAttrKey`), with those keys. `tabIndex` and `tabindex` are two keys
+   * of the props object but one attribute to a browser
+   * (`foldAttrName`), as `htmlFor` and `for` are where the reference
+   * renames the bag key, so the runtime renders both and the browser keeps
+   * the literal. A JSX-runtime adapter renders the literal only when every
+   * listed bag lacks every listed key. Absent when no spread may.
+   */
+  spreadAliasOverriders?: SpreadAliasOverrider[]
+}
+
+/** One open spread of {@link IRAttribute.spreadAliasOverriders}. */
+export interface SpreadAliasOverrider {
+  /** The spread's bag, as the spread attribute's `expr` reads it. */
+  bag: JsSourceText
+  /** The bag keys that write the attribute under another key than the JSX runtime's own. */
+  keys: readonly string[]
 }
 
 export interface IREvent {

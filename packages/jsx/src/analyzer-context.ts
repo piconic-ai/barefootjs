@@ -244,6 +244,13 @@ export interface AnalyzerContext {
    * default set. Set by the compiler before Phase 1 builds the IR.
    */
   spreadKeyRenames?: ReadonlySet<string>
+  /**
+   * Whether the target adapter's spread helper writes a bag key outside its
+   * renames with the bag's spelling, as the reference does
+   * (`TemplateAdapter.spreadKeysVerbatim`). Set by the compiler before Phase 1
+   * builds the IR.
+   */
+  spreadKeysVerbatim?: boolean
 
   // Directive
   hasUseClientDirective: boolean

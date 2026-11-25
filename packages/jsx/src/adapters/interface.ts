@@ -322,6 +322,18 @@ export interface TemplateAdapter {
    */
   spreadKeyRenames?: ReadonlySet<string>
 
+  /**
+   * Whether this adapter's native spread helper writes a bag key outside
+   * `spreadKeyRenames` with the bag's spelling, as the reference does
+   * (`tabIndex` stays `tabIndex`). Such a key and a literal that spells the
+   * same attribute in another letter case (`tabindex`) are one attribute to
+   * a browser, so Phase 1 guards the literal against the key too
+   * (`spreadKeysInOtherCase`). Undefined: the helper kebab-cases a camelCase
+   * key (`tab-index`, limitation `spread-bag-camel-key-name`), which writes
+   * another attribute.
+   */
+  spreadKeysVerbatim?: boolean
+
   // Main entry point - generates complete template from IR
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput
 

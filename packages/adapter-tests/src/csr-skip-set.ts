@@ -173,6 +173,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-hono-renamed-keys',
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
+  'spread-open-bag-literal-case-alias',
+  // A DOM serializes an HTML element's attribute names lowercased, so the
+  // client-built element shows the closed rest's `tabIndex` as `tabindex`
+  // where the reference writes the key's spelling; a browser reads both as
+  // one attribute. The per-adapter render conformance pins the SSR contract.
+  'spread-closed-rest-literal-case-alias',
   // The CSR template renders every expansion of a repeated closed rest, as
   // the template adapters do (limitation `closed-rest-repeated`).
   'spread-closed-rest-repeated',

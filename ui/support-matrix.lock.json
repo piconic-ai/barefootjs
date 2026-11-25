@@ -352,6 +352,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
@@ -635,6 +641,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -972,6 +984,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-literal-loop-component-in-row",
               "limitations": [
                 "static-literal-loop-component-row"
@@ -1288,6 +1306,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
@@ -1586,6 +1610,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
@@ -1875,6 +1905,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -2480,6 +2516,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
@@ -2769,6 +2811,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -7871,6 +7919,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -8422,6 +8476,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -9193,6 +9253,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9767,6 +9833,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10335,6 +10407,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10886,6 +10964,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -12009,6 +12093,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12566,6 +12656,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -13747,18 +13843,6 @@
               "limitations": [
                 "closed-rest-repeated"
               ]
-            },
-            {
-              "fixture": "spread-open-bag-literal-alias-before",
-              "limitations": [
-                "spread-key-alias-literal-duplicate"
-              ]
-            },
-            {
-              "fixture": "spread-open-bag-literal-renamed-elsewhere",
-              "limitations": [
-                "spread-key-alias-literal-duplicate"
-              ]
             }
           ]
         },
@@ -14462,6 +14546,12 @@
             },
             {
               "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -15228,6 +15318,12 @@
             },
             {
               "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -16335,6 +16431,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
@@ -17161,6 +17263,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
@@ -17951,6 +18059,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
@@ -18718,6 +18832,12 @@
             },
             {
               "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -20285,6 +20405,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
@@ -21058,6 +21184,12 @@
             },
             {
               "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -22290,6 +22422,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -22931,6 +23069,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -23810,6 +23954,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -24480,6 +24630,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -25127,6 +25283,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -25790,6 +25952,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -27082,6 +27250,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -27729,6 +27903,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -27979,6 +28159,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -28116,6 +28302,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -28329,6 +28521,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -28471,6 +28669,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -28608,6 +28812,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -28756,6 +28966,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -29039,6 +29255,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -29182,6 +29404,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -29887,6 +30115,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -30468,6 +30702,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -31299,6 +31539,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -31927,6 +32173,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -32537,6 +32789,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -33124,6 +33382,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -34355,6 +34619,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -34953,6 +35223,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -35360,6 +35636,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -35671,6 +35953,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -36022,6 +36310,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -36350,6 +36644,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -36661,6 +36961,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -36983,6 +37289,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -37620,6 +37932,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -37931,6 +38249,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -44928,6 +45252,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -45085,6 +45415,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -45308,6 +45644,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -45480,6 +45822,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -45637,6 +45985,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -45803,6 +46157,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -46132,6 +46492,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -46289,6 +46655,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -46927,6 +47299,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -47472,6 +47850,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -48237,6 +48621,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -48805,6 +49195,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -49356,6 +49752,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -49923,6 +50325,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -51024,6 +51432,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -51585,6 +51999,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -52026,6 +52446,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -52157,6 +52583,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -52364,6 +52796,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -52495,6 +52933,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -52636,6 +53080,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -52767,6 +53217,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]
@@ -53038,6 +53494,12 @@
               ]
             },
             {
+              "fixture": "spread-open-bag-literal-case-alias",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -53169,6 +53631,12 @@
             },
             {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
               ]

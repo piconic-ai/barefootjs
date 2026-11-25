@@ -209,6 +209,7 @@ function compileMultipleComponents(
     }
 
     ctx.spreadKeyRenames = adapter.spreadKeyRenames
+    ctx.spreadKeysVerbatim = adapter.spreadKeysVerbatim
     const ir = jsxToIR(ctx)
     errors.push(...ctx.errors)
     if (!ir) continue
@@ -817,6 +818,7 @@ export function compileJSX(
   }
 
   ctx.spreadKeyRenames = options.adapter.spreadKeyRenames
+  ctx.spreadKeysVerbatim = options.adapter.spreadKeysVerbatim
   const ir = jsxToIR(ctx)
   errors.push(...ctx.errors)  // All errors: analyzer + IR phase
 

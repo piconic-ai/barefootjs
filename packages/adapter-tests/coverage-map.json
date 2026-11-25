@@ -20158,6 +20158,22 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-literal-case-alias": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-repeated": {
       "kinds": [
         "identifier",
@@ -20304,6 +20320,27 @@
       "axes": [],
       "contexts": [
         "attribute"
+      ]
+    },
+    "spread-open-bag-literal-case-alias": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "spread-open-bag-literal-renamed-elsewhere": {

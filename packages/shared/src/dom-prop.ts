@@ -304,6 +304,45 @@ export function spreadKeysRenamedTo(attrName: string, renamed: ReadonlySet<strin
 }
 
 /**
+ * The name an HTML parser stores the attribute `name` under, for comparing
+ * two attribute names: it lowercases every attribute name on an HTML
+ * element, and on an SVG or MathML one before it restores the case of its
+ * fixed table (`viewBox`). So `tabIndex` and `tabindex` are one attribute,
+ * and an element that writes both renders it twice, where a browser keeps
+ * the first.
+ */
+export function foldAttrName(name: string): string {
+  return name.toLowerCase()
+}
+
+/**
+ * The React-style keys that spell the attribute `attrName` in another letter
+ * case (`tabIndex` for `tabindex`, `readOnly` for `readonly`, `viewBox` for
+ * `viewbox`). A spread helper that writes a bag key with the bag's spelling,
+ * as the reference does, writes such a key as an attribute the browser takes
+ * for `attrName` ({@link foldAttrName}). A key the reference renames
+ * ({@link SPREAD_KEY_ATTR_NAMES}) is not listed: {@link spreadKeysRenamedTo}
+ * answers for it.
+ */
+export function spreadKeysInOtherCase(attrName: string): string[] {
+  const folded = foldAttrName(attrName)
+  return [...Object.keys(HTML_CAMEL_ALIASES), ...SVG_XML_CAMEL_ATTRS].filter(key =>
+    key !== attrName
+    && foldAttrName(key) === folded
+    && !Object.prototype.hasOwnProperty.call(SPREAD_KEY_ATTR_NAMES, key))
+}
+
+/**
+ * The key a JSX runtime writes the HTML attribute `attrName` under: the
+ * attribute name itself, except `class`, which the JSX vocabulary spells
+ * `className`. A spread key spelled the same merges with it in the props
+ * object, so the runtime itself keeps the last write.
+ */
+export function jsxAttrKey(attrName: string): string {
+  return attrName === 'class' ? 'className' : attrName
+}
+
+/**
  * Runtime variant of attribute name mapping that additionally applies
  * camelCase→kebab conversion for `data-*` and `aria-*` convenience
  * props (e.g. `dataTestId` → `data-test-id`) and preserves SVG XML

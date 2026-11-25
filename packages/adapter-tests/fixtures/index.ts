@@ -609,6 +609,8 @@ import { fixture as spreadClosedRestAttrNamesOverlap } from './spread-closed-res
 import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-literal-alias-before'
 import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
+import { fixture as spreadOpenBagLiteralCaseAlias } from './spread-open-bag-literal-case-alias'
+import { fixture as spreadClosedRestLiteralCaseAlias } from './spread-closed-rest-literal-case-alias'
 import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
 import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
 import { fixture as spreadClosedRestRepeatedAfterBag } from './spread-closed-rest-repeated-after-bag'
@@ -2208,6 +2210,8 @@ export const jsxFixtures: JSXFixture[] = [
   spreadOpenBagLiteralAliasBefore,
   spreadClosedRestLiteralAliasAfter,
   spreadOpenBagLiteralRenamedElsewhere,
+  spreadOpenBagLiteralCaseAlias,
+  spreadClosedRestLiteralCaseAlias,
   spreadClosedRestClientLiteralAfter,
   spreadClosedRestRepeated,
   spreadClosedRestRepeatedAfterBag,

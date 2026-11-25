@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -284,4 +284,42 @@ describe('spreadKeysRenamedTo', () => {
       expect(spreadKeysRenamedTo(attr, all)).toEqual(byAll)
     })
   }
+})
+
+describe('spreadKeysInOtherCase', () => {
+  // [attribute, the keys that spell it in another letter case]
+  const matrix: Array<[string, string[]]> = [
+    ['tabindex', ['tabIndex']],
+    ['readonly', ['readOnly']],
+    ['maxlength', ['maxLength']],
+    ['viewbox', ['viewBox']],
+    // A key the reference renames is `spreadKeysRenamedTo`'s answer.
+    ['crossorigin', []],
+    ['for', []],
+    // Kebab-cased, not another letter case.
+    ['accept-charset', []],
+    ['stroke-width', []],
+    ['id', []],
+    // The attribute's own spelling is not listed.
+    ['viewBox', []],
+  ]
+  for (const [attr, keys] of matrix) {
+    test(`${attr}`, () => {
+      expect(spreadKeysInOtherCase(attr)).toEqual(keys)
+    })
+  }
+
+  test('every listed key folds to the attribute', () => {
+    for (const [attr] of matrix) {
+      for (const key of spreadKeysInOtherCase(attr)) expect(foldAttrName(key)).toBe(foldAttrName(attr))
+    }
+  })
+})
+
+describe('jsxAttrKey', () => {
+  test('spells class as className and every other attribute as it is', () => {
+    expect(jsxAttrKey('class')).toBe('className')
+    expect(jsxAttrKey('for')).toBe('for')
+    expect(jsxAttrKey('tabindex')).toBe('tabindex')
+  })
 })

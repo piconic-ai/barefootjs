@@ -20150,6 +20150,15 @@
       }
     }
   ],
+  "spread-open-bag-literal-case-alias": [
+    {
+      "name": "gen:rows:absent",
+      "props": {
+        "tabIndex": 2,
+        "maxLength": "3"
+      }
+    }
+  ],
   "static-array-from-props-precomputed": [
     {
       "name": "gen:reactions:empty",

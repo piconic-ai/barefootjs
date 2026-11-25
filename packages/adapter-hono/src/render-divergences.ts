@@ -12,11 +12,6 @@ export const renderDivergences: RenderDivergences = {
   // child as a prop: the server render runs no body statement, so the child
   // renders the value before the push.
   'body-statement-write-child-prop': { limitation: 'init-statement-mutation-unrun-on-server' },
-  // A literal `htmlFor` before an open bag that carries `htmlFor`: the JSX
-  // this adapter emits writes the literal as `for`, so the bag's `htmlFor`
-  // does not replace it and Hono renders `for` twice.
-  'spread-open-bag-literal-alias-before': { limitation: 'spread-key-alias-literal-duplicate' },
-  'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
   // The same closed rest spread before and after an open bag: a later
   // expansion writes the omitted key as an explicit `undefined`, which
   // replaces the earlier write, so Hono renders no `title`.
