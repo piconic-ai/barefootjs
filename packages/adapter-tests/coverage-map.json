@@ -17326,6 +17326,11 @@
         "condition"
       ]
     },
+    "raw-text-brace-delimiter-script-type-non-ascii": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "raw-text-brace-delimiter-style": {
       "kinds": [],
       "axes": [],
