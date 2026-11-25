@@ -279,6 +279,11 @@ func FuncMap() template.FuncMap {
 		// classify the value by the name (#3309): see AttrName's docstring.
 		"bf_attr_name": AttrName,
 
+		// The literal text of a <style> / <script> holding a `{` the
+		// template lexer would read as an action (#3967): see
+		// RawTextLiteral's docstring.
+		"bf_raw_text_literal": RawTextLiteral,
+
 		// Reverse the loop-row field-access Go-casing before a whole-item
 		// spread reaches `bf_spread_attrs` (#2490): a row's dot context is
 		// necessarily keyed `ID`/`Title`/`DataKind` (the same casing that
@@ -406,6 +411,27 @@ func Attr(name string, value any) template.HTMLAttr {
 // escaped. `name` is a compiler-emitted constant, never data.
 func AttrName(name string) template.HTMLAttr {
 	return template.HTMLAttr(name)
+}
+
+// RawTextLiteral returns the compiler-emitted literal text of a <style> /
+// <script> element typed for the context html/template reads at the start of
+// the element body: template.CSS ("css") in a <style>, template.JS ("js") in a
+// script html/template reads as JavaScript, template.HTML ("html") in a script
+// whose literal type it reads as another kind of text. html/template passes
+// each through unchanged there, where a `{{"{"}}` action guarding a brace in
+// template text would be escaped as CSS (`ZgotmplZ`) or JS (a quoted string).
+// The text is already encoded for the element (end tags rewritten), and is a
+// compile-time constant, never data.
+func RawTextLiteral(kind string, text string) (any, error) {
+	switch kind {
+	case "css":
+		return template.CSS(text), nil
+	case "js":
+		return template.JS(text), nil
+	case "html":
+		return template.HTML(text), nil
+	}
+	return nil, fmt.Errorf("bf_raw_text_literal: unknown context %q", kind)
 }
 
 // Date implements the `date` helper (spec/template-helpers.md, #2274) — the

@@ -17429,6 +17429,56 @@
       }
     }
   ],
+  "raw-text-brace-delimiter-script-type": [
+    {
+      "name": "gen:prefix:empty",
+      "props": {
+        "prefix": ""
+      }
+    },
+    {
+      "name": "gen:prefix:markup",
+      "props": {
+        "prefix": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:prefix:multibyte",
+      "props": {
+        "prefix": "日本語"
+      }
+    }
+  ],
+  "raw-text-brace-delimiter-script-type-expression": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "kind": "text/plain",
+        "on": false
+      }
+    }
+  ],
   "raw-text-host-dynamic": [
     {
       "name": "gen:label:empty",

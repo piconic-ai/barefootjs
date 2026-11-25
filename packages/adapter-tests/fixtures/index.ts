@@ -988,6 +988,12 @@ import { fixture as rawTextSplitBoundaryStatic } from './raw-text-split-boundary
 import { fixture as rawTextStyleEscapeReactive } from './raw-text-style-escape-reactive'
 import { fixture as rawTextStyleScriptEscape } from './raw-text-style-script-escape'
 import { fixture as rawTextStyleScriptStatic } from './raw-text-style-script-static'
+import { fixture as rawTextBraceDelimiterScript } from './raw-text-brace-delimiter-script'
+import { fixture as rawTextBraceDelimiterStyle } from './raw-text-brace-delimiter-style'
+import { fixture as rawTextBraceDelimiterScriptType } from './raw-text-brace-delimiter-script-type'
+import { fixture as rawTextBraceDelimiterScriptTypeExpression } from './raw-text-brace-delimiter-script-type-expression'
+import { fixture as rawTextBraceDelimiterScriptTypeNonAscii } from './raw-text-brace-delimiter-script-type-non-ascii'
+import { fixture as rawTextBraceDelimiterScriptSpread } from './raw-text-brace-delimiter-script-spread'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
 import { fixture as rawTextHostAnnotationXmlEncodings } from './raw-text-host-annotation-xml-encodings'
@@ -2492,6 +2498,12 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextStyleEscapeReactive,
   rawTextStyleScriptEscape,
   rawTextStyleScriptStatic,
+  rawTextBraceDelimiterScript,
+  rawTextBraceDelimiterStyle,
+  rawTextBraceDelimiterScriptType,
+  rawTextBraceDelimiterScriptTypeExpression,
+  rawTextBraceDelimiterScriptTypeNonAscii,
+  rawTextBraceDelimiterScriptSpread,
   rawTextHostAnnotationXml,
   rawTextHostAnnotationXmlSvg,
   rawTextHostAnnotationXmlEncodings,

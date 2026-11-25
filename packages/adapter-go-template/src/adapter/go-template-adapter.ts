@@ -123,7 +123,7 @@ import {
   planTextDisplay,
   rawTextChildError,
 } from '@barefootjs/jsx'
-import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, escapeRawText, isRawTextTag as isSharedRawTextTag, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, isRawTextTag as isSharedRawTextTag, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
   capitalize,
@@ -164,6 +164,7 @@ import {
   GO_NATIVE_SAFE,
   goNumberLiteral,
 } from "./lib/go-emit.ts"
+import { emitRawTextLiteral, goRawTextContext, literalRawText, needsRawTextLiteralAction } from './lib/raw-text-literal.ts'
 import type {
   GoRenderCtx,
   HigherOrderShape,
@@ -4590,12 +4591,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * text through one `escapeRawText` (`IRElement.rawTextContent`, #3934): it
    * is not HTML-escaped, and an end tag spelled across text nodes
    * (`</sty` + `le>`) is still rewritten. An expression part was refused by
-   * `refuseDynamicRawText`, so it contributes nothing here.
+   * `refuseDynamicRawText`, so it contributes nothing here. A `{` the Go
+   * lexer would read as an action prints the whole text through one typed
+   * action instead, in foreign content too (`raw-text-literal.ts`, #3967).
    */
   private renderElementContent(element: IRElement): string {
-    if (!element.rawTextContent || !isSharedRawTextTag(element.tag)) return this.renderChildren(element.children)
-    const text = element.rawTextContent.map(part => (part.type === 'text' ? part.value : '')).join('')
-    return escapeGoStaticText(escapeRawText(element.tag, text))
+    const tag = element.tag
+    const literal = isSharedRawTextTag(tag) ? literalRawText(element, tag) : null
+    if (literal === null) return this.renderChildren(element.children)
+    if (!needsRawTextLiteralAction(literal.text)) return literal.text
+    const context = goRawTextContext(literal.tag, element.attrs)
+    if (context) return emitRawTextLiteral(context, literal.text)
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `A \`{\` that would open a Go action, in the text of a <script> whose \`type\` html/template may read either way (a value computed at render time, a value a spread can replace, a /* @client */ value, a value with a character outside ASCII, or a value with such a \`{\`), can't render on the Go template adapter: html/template escapes the text as JS or as HTML depending on how it reads that attribute, and reads an empty type differently from Go 1.26 on.`,
+      loc: element.loc,
+      suggestion: {
+        message: 'Write the script `type` as an ASCII string literal, or as a template literal ending in static ASCII text.',
+      },
+    })
+    return ''
   }
 
   renderElement(element: IRElement): string {

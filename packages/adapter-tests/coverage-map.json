@@ -17312,6 +17312,53 @@
         "text"
       ]
     },
+    "raw-text-brace-delimiter-script": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "raw-text-brace-delimiter-script-spread": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "raw-text-brace-delimiter-script-type": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "raw-text-brace-delimiter-script-type-expression": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "condition"
+      ]
+    },
+    "raw-text-brace-delimiter-script-type-non-ascii": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
+    "raw-text-brace-delimiter-style": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "raw-text-foreign-content": {
       "kinds": [
         "identifier",
