@@ -3765,3 +3765,29 @@ func TestAbsentAsNilCompoundNullishLeft(t *testing.T) {
 		}
 	}
 }
+
+// TestRawTextLiteral_PrintsAsWritten pins #3967: the literal text of a
+// <style> / <script> holding `{{` prints unchanged when typed for the context
+// html/template reads at the start of the element body, where a `{{"{"}}`
+// guard would print `ZgotmplZ` (CSS) or a quoted string (JS).
+func TestRawTextLiteral_PrintsAsWritten(t *testing.T) {
+	cases := []struct{ name, src, want string }{
+		{"style", `<style>{{bf_raw_text_literal "css" ".t {{color:red}} .w {"}}</style>`, `<style>.t {{color:red}} .w {</style>`},
+		{"script", `<script>{{bf_raw_text_literal "js" "if (a) {{ b(\"{{\", /\\{{2}/) }}"}}</script>`, `<script>if (a) {{ b("{{", /\{{2}/) }}</script>`},
+		{"json-ld", `<script type="application/ld+json">{{bf_raw_text_literal "js" "{\"a\":\"{{x}}\"}"}}</script>`, `<script type="application/ld+json">{"a":"{{x}}"}</script>`},
+		{"non-js type", `<script type="text/template">{{bf_raw_text_literal "html" "\\u003ca href=\"{{u}}\" title='{{t}}'> & {"}}</script>`, `<script type="text/template">\u003ca href="{{u}}" title='{{t}}'> & {</script>`},
+	}
+	for _, c := range cases {
+		tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(c.src))
+		var buf strings.Builder
+		if err := tmpl.Execute(&buf, nil); err != nil {
+			t.Fatalf("%s: Execute: %v", c.name, err)
+		}
+		if got := buf.String(); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+	if _, err := RawTextLiteral("url", "x"); err == nil {
+		t.Errorf("an unknown context must be an error")
+	}
+}
