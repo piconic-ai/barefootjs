@@ -11555,6 +11555,29 @@
       "axes": [],
       "contexts": []
     },
+    "member-read-on-low-precedence-const": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toFixed",
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "logical:||",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "member-seeded-nullable-signal-attr": {
       "kinds": [
         "call",
@@ -19874,6 +19897,30 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-local-call-member-on-conditional": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
         "text"
       ]
     },
