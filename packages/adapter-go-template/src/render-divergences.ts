@@ -122,6 +122,23 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
+  'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
+  // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
+  'spread-closed-rest-repeated': { limitation: 'closed-rest-repeated' },
+  'spread-closed-rest-repeated-last': { limitation: 'closed-rest-repeated' },
+  'spread-closed-rest-repeated-after-bag': { limitation: 'closed-rest-repeated' },
+  // The bag's `crossOrigin` renders as `cross-origin` beside the folded literal `crossorigin`.
+  'spread-closed-rest-then-bag-renamed-key': { limitation: 'spread-bag-camel-key-name' },
+  // A destructured prop typed as a record, spread on an element, does not build.
+  'spread-optional-bag-literal-before': { limitation: 'record-prop-bag-spread' },
+  // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
+  // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
+  // writes it as it is or renames only its own few keys (`crossorigin`).
+  'spread-open-bag-hono-renamed-keys': { limitation: 'spread-bag-camel-key-name' },
+  // The bag's `crossOrigin` renders as `cross-origin` beside the literal
+  // `crossorigin`, which the compiler keeps since it is another attribute here.
+  'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },

@@ -167,6 +167,22 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same class: the spread bags reach their elements only through
   // `applyRestAttrs`; `attr-spread-key-overlap` pins the SSR contract.
   'attr-spread-key-overlap',
+  // Same class: the open bags reach their elements only through
+  // `applyRestAttrs`; these fixtures pin the SSR spread-key names.
+  'spread-open-bag-attr-names',
+  'spread-open-bag-hono-renamed-keys',
+  'spread-open-bag-literal-alias-before',
+  'spread-open-bag-literal-renamed-elsewhere',
+  // The CSR template renders every expansion of a repeated closed rest, as
+  // the template adapters do (limitation `closed-rest-repeated`).
+  'spread-closed-rest-repeated',
+  'spread-closed-rest-repeated-last',
+  'spread-closed-rest-repeated-around-bag',
+  'spread-closed-rest-repeated-after-bag',
+  'spread-closed-rest-repeated-attr-spelled-bag-key',
+  'spread-closed-rest-then-bag-renamed-key',
+  // Open bags reach their elements only through `applyRestAttrs`; these
+  // fixtures pin the SSR contract.
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

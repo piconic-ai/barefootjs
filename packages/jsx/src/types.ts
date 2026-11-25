@@ -1829,6 +1829,12 @@ export interface IRAttribute extends AttrMeta {
    */
   restFallback?: JsSourceText
   /**
+   * With `restFallback`: the rest key's own read (`rest.title`), so a later
+   * open spread's guard can keep the expanded value whenever the rest carries
+   * the key (`markAttrsOverridableBySpread`).
+   */
+  restRead?: JsSourceText
+  /**
    * Set on a literal or bare boolean attribute that a later open spread
    * (`<p title="a" {...rest}>`) may carry the same key of. JS lets the later
    * write win, so the attribute renders once, from the spread. The spread's

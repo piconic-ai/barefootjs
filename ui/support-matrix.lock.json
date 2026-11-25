@@ -7343,6 +7343,18 @@
               "limitations": [
                 "namespace-import-primitive-without-program"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
             }
           ]
         },
@@ -7838,6 +7850,24 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -8376,6 +8406,24 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -9127,6 +9175,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -9683,6 +9749,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10233,6 +10317,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -10768,6 +10870,24 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -11315,6 +11435,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -11859,6 +11991,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12400,6 +12550,24 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -13567,6 +13735,30 @@
               "limitations": [
                 "namespace-import-primitive-without-program"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-alias-before",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
             }
           ]
         },
@@ -14236,6 +14428,48 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -14960,6 +15194,48 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -16023,6 +16299,54 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
+              "fixture": "spread-optional-bag-literal-before",
+              "limitations": [
+                "record-prop-bag-spread"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -16801,6 +17125,48 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17549,6 +17915,48 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18276,6 +18684,48 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
               ]
             },
             {
@@ -19030,6 +19480,30 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -19775,6 +20249,48 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20511,6 +21027,48 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-hono-renamed-keys",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
+              "fixture": "spread-open-bag-literal-renamed-elsewhere",
+              "limitations": [
+                "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -21138,6 +21696,18 @@
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
             }
           ]
         },
@@ -21687,6 +22257,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -22303,6 +22903,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -23150,6 +23780,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -23790,6 +24450,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -24409,6 +25099,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -25040,6 +25760,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -25668,6 +26418,30 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -26275,6 +27049,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -26900,6 +27704,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -27007,6 +27841,18 @@
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
             }
           ]
         },
@@ -27100,6 +27946,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -27212,6 +28088,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -27393,6 +28299,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -27505,6 +28441,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -27614,6 +28580,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -27735,6 +28731,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -27847,6 +28873,30 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -27956,6 +29006,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -28077,6 +29157,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -28194,6 +29304,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -28732,6 +29854,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -29288,6 +30440,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -30087,6 +31269,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -30685,6 +31897,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -31265,6 +32507,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -31824,6 +33096,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -32416,6 +33718,30 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             },
             {
@@ -32999,6 +34325,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -33567,6 +34923,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -33679,6 +35065,18 @@
               "fixture": "body-statement-write-through-holder",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
               ]
             }
           ]
@@ -33941,6 +35339,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -34239,6 +35655,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -34570,6 +36004,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -34880,6 +36332,24 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -35175,6 +36645,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -35479,6 +36967,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -35792,6 +37298,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -36081,6 +37599,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -36379,6 +37915,24 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -44863,6 +46417,18 @@
               "limitations": [
                 "authored-format-date-call"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
             }
           ]
         },
@@ -45328,6 +46894,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -45848,6 +47444,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -46581,6 +48207,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -47119,6 +48775,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -47642,6 +49328,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -48177,6 +49893,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -48709,6 +50455,30 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -49226,6 +50996,36 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -49755,6 +51555,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -50064,6 +51894,18 @@
               "limitations": [
                 "body-statement-write-read-as-declared"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-around-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
             }
           ]
         },
@@ -50151,6 +51993,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -50257,6 +52129,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -50432,6 +52334,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -50535,6 +52467,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -50644,6 +52606,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -50747,6 +52739,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {
@@ -50856,6 +52878,30 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -50962,6 +53008,36 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -51065,6 +53141,36 @@
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-after-bag",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-both",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-repeated-last",
+              "limitations": [
+                "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-then-bag-renamed-key",
+              "limitations": [
+                "spread-bag-camel-key-name"
               ]
             },
             {

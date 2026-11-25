@@ -32,6 +32,12 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
+  'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
+  // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
+  'spread-closed-rest-repeated': { limitation: 'closed-rest-repeated' },
+  'spread-closed-rest-repeated-last': { limitation: 'closed-rest-repeated' },
+  'spread-closed-rest-repeated-after-bag': { limitation: 'closed-rest-repeated' },
   // A binding a body statement mutates (`items.push('z')`) handed to a
   // child as a prop: the template runs no body statement and does not pass
   // on a binding whose declared value a statement changes, so the child
