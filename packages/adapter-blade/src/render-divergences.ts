@@ -172,6 +172,13 @@ export const renderDivergences: RenderDivergences = {
   // A boolean member of an object-typed prop as a text child (`{props.cfg.on}`)
   // prints the boolean where JSX renders nothing.
   'object-prop-member-boolean-text-child': { limitation: 'object-prop-member-boolean-text-child' },
+  // A closed rest declaring `tabIndex` and `tabindex`, then a later
+  // `tabindex`: the rest's `tabIndex` still renders, first.
+  'spread-closed-rest-both-cases-later-write': { limitation: 'closed-rest-both-cases-later-write' },
+  // A closed rest key `strokeWidth` on an SVG element renders camelCased.
+  'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
+  // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
+  'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
 }
 
 /**

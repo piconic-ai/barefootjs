@@ -325,10 +325,13 @@ export function foldAttrName(name: string): string {
  * as the reference does, writes such a key as an attribute the browser takes
  * for `attrName` ({@link foldAttrName}). A key the reference renames
  * ({@link SPREAD_KEY_ATTR_NAMES}) is not listed: {@link spreadKeysRenamedTo}
- * answers for it.
+ * answers for it. A boolean attribute (`readonly`) lists none: its presence,
+ * not its value, is what renders, and the adapters do not spell a bag's
+ * boolean alike, so the literal is left as it is.
  */
 export function spreadKeysInOtherCase(attrName: string): string[] {
   const folded = foldAttrName(attrName)
+  if (isBooleanAttr(folded)) return []
   return [...Object.keys(HTML_CAMEL_ALIASES), ...SVG_XML_CAMEL_ATTRS].filter(key =>
     key !== attrName
     && foldAttrName(key) === folded

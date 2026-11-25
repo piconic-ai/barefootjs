@@ -13833,6 +13833,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -14515,6 +14521,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -14536,6 +14554,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -15287,6 +15311,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -15308,6 +15344,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -16395,6 +16437,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -16416,6 +16470,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -17227,6 +17287,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -17248,6 +17320,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -18023,6 +18101,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-non-ascii-key",
               "limitations": [
                 "closed-rest-non-ascii-key"
@@ -18050,6 +18140,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -18807,6 +18903,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -18828,6 +18936,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -19609,6 +19723,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -19630,6 +19756,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -20375,6 +20507,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -20396,6 +20540,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -21159,6 +21309,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -21180,6 +21342,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -21836,6 +22004,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -22398,6 +22572,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -22419,6 +22605,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -23050,6 +23242,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -23071,6 +23275,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -23930,6 +24140,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -23951,6 +24173,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -24606,6 +24834,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -24627,6 +24867,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -25264,6 +25510,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-non-ascii-key",
               "limitations": [
                 "closed-rest-non-ascii-key"
@@ -25291,6 +25549,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -25934,6 +26198,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -25955,6 +26231,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -26598,6 +26880,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -26619,6 +26913,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -27232,6 +27532,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -27253,6 +27565,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -27890,6 +28208,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -27911,6 +28241,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -28165,6 +28501,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -28310,6 +28652,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -28527,6 +28875,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -28675,6 +29029,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -28820,6 +29180,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -28977,6 +29343,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -29125,6 +29497,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -29258,6 +29636,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -29415,6 +29799,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -29544,6 +29934,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
               ]
             },
             {
@@ -30097,6 +30493,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -30118,6 +30526,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -30689,6 +31103,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -30710,6 +31136,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -31521,6 +31953,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -31542,6 +31986,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -32155,6 +32605,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -32176,6 +32638,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -32771,6 +33239,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-non-ascii-key",
               "limitations": [
                 "closed-rest-non-ascii-key"
@@ -32798,6 +33278,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -33375,6 +33861,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -33396,6 +33894,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -34003,6 +34507,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -34024,6 +34540,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -34607,6 +35129,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -34628,6 +35162,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -35211,6 +35751,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -35232,6 +35784,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -44496,6 +45054,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
             }
           ]
         },
@@ -44517,6 +45081,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
               ]
             }
           ]
@@ -44564,6 +45134,12 @@
               "limitations": [
                 "derived-object-literal-signal"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
             }
           ]
         },
@@ -44585,6 +45161,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
               ]
             }
           ]
@@ -44608,6 +45190,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
             }
           ]
         },
@@ -44629,6 +45217,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
               ]
             },
             {
@@ -44664,6 +45258,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
             }
           ]
         },
@@ -44686,6 +45286,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
+              ]
             }
           ]
         },
@@ -44707,6 +45313,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-boolean-case-keys",
+              "limitations": [
+                "rest-key-boolean-name-case"
               ]
             },
             {
@@ -45138,6 +45750,12 @@
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
               ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
             }
           ]
         },
@@ -45267,6 +45885,18 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -45433,6 +46063,18 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -45662,6 +46304,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -45840,6 +46494,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-open-bag-literal-case-alias",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -46006,9 +46672,21 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-non-ascii-key",
               "limitations": [
                 "closed-rest-non-ascii-key"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -46181,6 +46859,18 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -46362,6 +47052,18 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -46513,6 +47215,18 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -46679,6 +47393,18 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-both-cases-later-write",
+              "limitations": [
+                "closed-rest-both-cases-later-write"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -52464,6 +53190,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -52603,6 +53335,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -52814,6 +53552,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -52953,6 +53697,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -53098,6 +53848,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-then-bag-renamed-key",
               "limitations": [
                 "spread-bag-camel-key-name"
@@ -53237,6 +53993,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -53382,6 +54144,12 @@
               ]
             },
             {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -53509,6 +54277,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {
@@ -53651,6 +54425,12 @@
               "fixture": "spread-closed-rest-repeated-last",
               "limitations": [
                 "closed-rest-repeated"
+              ]
+            },
+            {
+              "fixture": "spread-closed-rest-svg-case-keys",
+              "limitations": [
+                "closed-rest-svg-camel-key-name"
               ]
             },
             {

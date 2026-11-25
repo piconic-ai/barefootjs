@@ -20135,6 +20135,32 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-boolean-case-keys": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-both-cases-later-write": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-client-literal-after": {
       "kinds": [
         "identifier",
@@ -20279,6 +20305,21 @@
       ],
       "axes": [
         "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-svg-case-keys": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
         "logical:??"
       ],
       "contexts": [

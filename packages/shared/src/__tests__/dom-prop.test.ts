@@ -290,7 +290,8 @@ describe('spreadKeysInOtherCase', () => {
   // [attribute, the keys that spell it in another letter case]
   const matrix: Array<[string, string[]]> = [
     ['tabindex', ['tabIndex']],
-    ['readonly', ['readOnly']],
+    // A boolean attribute lists none.
+    ['readonly', []],
     ['maxlength', ['maxLength']],
     ['viewbox', ['viewBox']],
     // A key the reference renames is `spreadKeysRenamedTo`'s answer.

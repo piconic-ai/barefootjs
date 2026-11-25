@@ -65,6 +65,9 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // as `undefined` (limitation `closed-rest-repeated`).
   'spread-closed-rest-repeated-around-bag',
   'spread-closed-rest-repeated-after-bag',
+  // Hand-authored to the later literal: the reference renders the rest's
+  // other spelling first (limitation `closed-rest-both-cases-later-write`).
+  'spread-closed-rest-both-cases-later-write',
 ])
 
 async function main() {

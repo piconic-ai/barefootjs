@@ -160,32 +160,20 @@ describe('a closed rest key and an attribute that differ in letter case', () => 
     const el = elementOf(`export function C({ ...rest }: { tabIndex?: number }) { return <x-el {...rest} tabindex="1">x</x-el> }`, new TestAdapter())
     expect(texts(el)).toEqual(['tabindex=literal:1'])
   })
-  test('two keys of one rest that differ in case render as one attribute, neither the other\'s earlier write', () => {
+  test('two keys of one rest that differ in case stay separate writes', () => {
     const el = elementOf(`export function C({ ...rest }: { tabIndex?: number; tabindex?: number }) { return <x-el {...rest}>x</x-el> }`, new TestAdapter())
-    expect(texts(el)).toEqual(['tabIndex=rest.tabIndex ?? (rest.tabindex)'])
+    expect(texts(el)).toEqual(['tabIndex=rest.tabIndex', 'tabindex=rest.tabindex'])
   })
-  test('a later literal replaces both keys of one rest that differ in case', () => {
-    const el = elementOf(`export function C({ ...rest }: { tabIndex?: number; tabindex?: number }) { return <x-el {...rest} tabindex="1">x</x-el> }`, new TestAdapter())
-    expect(texts(el)).toEqual(['tabindex=literal:1'])
+  test('an SVG key the reference kebab-cases matches by its exact name only, on either side', () => {
+    const type = '{ strokeWidth?: number; strokewidth?: number }'
+    const after = elementOf(`export function C({ ...rest }: ${type}) { return <x-el {...rest} strokeWidth={3}>x</x-el> }`, new TestAdapter())
+    expect(texts(after)).toEqual(['strokewidth=rest.strokewidth', 'stroke-width=3'])
+    const before = elementOf(`export function C({ ...rest }: ${type}) { return <x-el strokeWidth={3} {...rest}>x</x-el> }`, new TestAdapter())
+    expect(texts(before)).toEqual(['strokeWidth=rest.strokeWidth ?? (3)', 'strokewidth=rest.strokewidth'])
   })
-  test('an earlier literal is the fallback of the merged keys', () => {
-    const el = elementOf(`export function C({ ...rest }: { tabIndex?: number; tabindex?: number }) { return <x-el tabindex="1" {...rest}>x</x-el> }`, new TestAdapter())
-    expect(texts(el)).toEqual(['tabIndex=rest.tabIndex ?? (rest.tabindex ?? ("1"))'])
-  })
-  test('component props keep both spellings as separate props', () => {
-    const file = compileJSX(`import { K } from './k'
-export function C({ ...rest }: { tabIndex?: number; tabindex?: number }) { return <K tabindex="1" {...rest} /> }`, 'Component.tsx', { adapter: new TestAdapter(), outputIR: true }).files.find(f => f.type === 'ir')
-    const ir = JSON.parse(file?.content ?? '{}') as ComponentIR
-    const props: string[] = []
-    const visit = (n: unknown): void => {
-      if (n === null || typeof n !== 'object') return
-      if (Array.isArray(n)) { n.forEach(visit); return }
-      const node = n as { type?: string; props?: Array<{ name: string }> }
-      if (node.type === 'component' && node.props) props.push(...node.props.map(p => p.name))
-      for (const v of Object.values(n)) visit(v)
-    }
-    visit(ir.root)
-    expect(props).toEqual(['tabIndex', 'tabindex'])
+  test('a boolean attribute is not folded', () => {
+    const el = elementOf(`export function C({ ...rest }: { HIDDEN?: string }) { return <x-el hidden {...rest}>x</x-el> }`, new TestAdapter())
+    expect(texts(el)).toEqual(['hidden=boolean-attr', 'HIDDEN=rest.HIDDEN'])
   })
   test('a non-ASCII letter is not folded: Ä and ä are two attributes', () => {
     const el = elementOf(`export function C({ ...rest }: { Ä?: number }) { return <x-el {...rest} ä="1">x</x-el> }`, new TestAdapter())

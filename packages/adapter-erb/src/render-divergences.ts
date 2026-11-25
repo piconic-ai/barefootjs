@@ -163,6 +163,13 @@ export const renderDivergences: RenderDivergences = {
   // An element child a component reads into a signal: the signal's text
   // slot escapes the captured markup.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
+  // A closed rest declaring `tabIndex` and `tabindex`, then a later
+  // `tabindex`: the rest's `tabIndex` still renders, first.
+  'spread-closed-rest-both-cases-later-write': { limitation: 'closed-rest-both-cases-later-write' },
+  // A closed rest key `strokeWidth` on an SVG element renders camelCased.
+  'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
+  // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
+  'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
 }
 
 /**

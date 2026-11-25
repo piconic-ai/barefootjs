@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -7495,14 +7495,8 @@ function closedRestFallbacks(
   entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
   ctx: TransformContext,
   writeTokens: KeyWriteTokens,
-  mergeSameAttr: boolean,
-): {
-  properties: ts.JsxAttributeLike[]
-  fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>
-  merged: Map<ts.JsxSpreadAttribute, Set<string>>
-} {
+): { properties: ts.JsxAttributeLike[]; fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>> } {
   const fallbacks = new Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>()
-  const merged = new Map<ts.JsxSpreadAttribute, Set<string>>()
   const dropped = new Set<ts.JsxAttributeLike>()
   const lastWrite = new LastKeyWrites(writeTokens)
   for (const attr of properties) {
@@ -7519,12 +7513,11 @@ function closedRestFallbacks(
     } else if (source === null) {
       lastWrite.clear()
     } else {
-      const plan = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx, mergeSameAttr)
-      if (plan.fallbacks.size > 0) fallbacks.set(attr, plan.fallbacks)
-      if (plan.merged.size > 0) merged.set(attr, plan.merged)
+      const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
+      if (keyFallbacks.size > 0) fallbacks.set(attr, keyFallbacks)
     }
   }
-  return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks, merged }
+  return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks }
 }
 
 /**
@@ -7551,9 +7544,14 @@ function closedRestKeysWrittenLater(
   const result = new Map<ts.JsxSpreadAttribute, Set<string>>()
   const laterJsxNames = new Set<string>()
   const laterAttrNames = new Set<string>()
+  // Each later write's attribute, `=`-prefixed as it renders, and, where
+  // that name is certain ({@link foldedAttrName}), in the case a browser
+  // compares it in.
   const noteWrite = (jsxName: string): void => {
     laterJsxNames.add(jsxName)
-    laterAttrNames.add(foldAttrName(toHTMLAttrName(jsxName)))
+    laterAttrNames.add(`=${toHTMLAttrName(jsxName)}`)
+    const folded = foldedAttrName(jsxName, 'attr')
+    if (folded !== null) laterAttrNames.add(folded)
   }
   for (const attr of [...properties].reverse()) {
     if (ts.isJsxAttribute(attr)) {
@@ -7567,9 +7565,13 @@ function closedRestKeysWrittenLater(
       continue
     }
     if (closedRestSpreadSource(attr, ctx) === null) continue
-    // Every key of the rest that renders as the attribute goes, the keys
-    // that spell it in another letter case included ({@link restKeyGroups}).
-    const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key) || laterAttrNames.has(foldAttrName(toSpreadAttrName(key))))
+    // A key that shares its attribute with another key of the rest is
+    // replaced only by a write of its exact name ({@link restKeysSharingAttr}).
+    const sameAttr = restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys)
+    const folded = (key: string): string | null => (sameAttr.has(key) ? null : foldedAttrName(key, 'bag'))
+    const written = ctx.analyzer.restPropsExpandedKeys.filter(key => laterJsxNames.has(key)
+      || laterAttrNames.has(`=${toSpreadAttrName(key)}`)
+      || laterAttrNames.has(folded(key) ?? '='))
     if (written.length > 0) result.set(attr, new Set(written))
   }
   return result
@@ -7586,74 +7588,44 @@ function isClientOnlyAttr(attr: ts.JsxAttribute, ctx: TransformContext): boolean
   return hasLeadingClientDirective(init.expression, ctx.sourceFile) || shouldAutoDeferReactiveBrand(init.expression, ctx)
 }
 
-/**
- * {@link closedRestFallbacks} for one closed rest spread reading its keys
- * off `source`. With `mergeSameAttr` (an element), the keys that render as
- * one attribute (`tabIndex`, `tabindex`: {@link restKeyGroups}) are lowered
- * to ONE attribute, the first declared key, that reads the others as its
- * fallbacks (`rest.tabIndex ?? (rest.tabindex)`); the others are `merged`
- * away. Rendered as separate attributes, the browser would keep the first
- * that renders, which is what the chain yields. No key of the group is
- * another's earlier write.
- */
+/** {@link closedRestFallbacks} for one closed rest spread reading its keys off `source`. */
 function closedRestKeyFallbacks(
   attr: ts.JsxSpreadAttribute,
   source: string,
   lastWrite: LastKeyWrites,
   dropped: Set<ts.JsxAttributeLike>,
   ctx: TransformContext,
-  mergeSameAttr: boolean,
-): { fallbacks: Map<string, RestKeyFallback>; merged: Set<string> } {
-  const fallbacks = new Map<string, RestKeyFallback>()
-  const merged = new Set<string>()
-  const keys = ctx.analyzer.restPropsExpandedKeys
-  for (const group of mergeSameAttr ? restKeyGroups(keys) : keys.map(key => [key])) {
-    const [head, ...others] = group
-    // Looked up before the group records its own write, so a key of the
-    // group never finds another.
-    const earlier = latestWrite(group.map(key => lastWrite.get(key, 'bag')))
-    for (const key of others) merged.add(key)
-    const keep = earlier === undefined || earlier.value === null || (earlier.attr !== undefined && !isReadOnlyAttrValue(earlier.attr.initializer))
-      ? refuseEarlierWrite(attr, head, earlier, ctx)
-      : earlier.value
-    const fallback = chainRestReads(others.map(key => `${source}.${key}`), source, keep)
-    const read = `${source}.${head}`
-    const write: RestKeyFallback = fallback === undefined
-      ? { text: read, templateText: read, freeIdentifiers: new Set([source]) }
-      : { text: restKeyWithFallback(read, fallback.text), templateText: restKeyWithFallback(read, fallback.templateText), freeIdentifiers: new Set([source, ...fallback.freeIdentifiers]) }
-    if (fallback !== undefined) fallbacks.set(head, fallback)
-    for (const key of group) lastWrite.set(key, 'bag', { value: write })
-    if (keep !== undefined && earlier?.attr) dropped.add(earlier.attr)
+): Map<string, RestKeyFallback> {
+  const keyFallbacks = new Map<string, RestKeyFallback>()
+  // Two keys of this rest that are one attribute to a browser (`tabIndex`,
+  // `tabindex`) are both emitted, so neither may be the other's earlier
+  // write: they keep matching by their exact name only.
+  const sameAttr = restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys)
+  for (const key of ctx.analyzer.restPropsExpandedKeys) {
+    const read = `${source}.${key}`
+    const kind = sameAttr.has(key) ? 'exact' : 'bag'
+    const earlier = lastWrite.get(key, kind)
+    lastWrite.set(key, kind, { value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
+    if (!earlier) continue
+    if (earlier.value === null || (earlier.attr && !isReadOnlyAttrValue(earlier.attr.initializer))) {
+      const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
+      ctx.analyzer.errors.push(createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(earlier.attr ?? attr, ctx.sourceFile, ctx.filePath), {
+        message: `'${key}' is written before a {...${ctx.getJS(attr.expression)}} spread that may also carry it, and ${why} when the caller omits '${key}'.`,
+        suggestion: { message: `Write '${key}' after the spread, or compute the value in a local const and pass that.` },
+      }))
+      continue
+    }
+    keyFallbacks.set(key, earlier.value)
+    lastWrite.set(key, kind, {
+      value: {
+        text: restKeyWithFallback(read, earlier.value.text),
+        templateText: restKeyWithFallback(read, earlier.value.templateText),
+        freeIdentifiers: new Set([source, ...earlier.value.freeIdentifiers]),
+      },
+    })
+    if (earlier.attr) dropped.add(earlier.attr)
   }
-  return { fallbacks, merged }
-}
-
-/** The write of {@link KeyWrite}s recorded latest: {@link LastKeyWrites.get} keeps one per name, the group takes the last. */
-function latestWrite(writes: ReadonlyArray<KeyWrite | undefined>): KeyWrite | undefined {
-  return writes.reduce<KeyWrite | undefined>((latest, write) => write ?? latest, undefined)
-}
-
-/**
- * BF021 for an earlier write of `key` a closed rest spread would have to keep
- * as its fallback but cannot: a value with no expression form, or one that
- * may have an effect. Undefined: the rest keeps no fallback (also when there
- * is no earlier write).
- */
-function refuseEarlierWrite(attr: ts.JsxSpreadAttribute, key: string, earlier: KeyWrite | undefined, ctx: TransformContext): undefined {
-  if (earlier === undefined) return undefined
-  const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
-  ctx.analyzer.errors.push(createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(earlier.attr ?? attr, ctx.sourceFile, ctx.filePath), {
-    message: `'${key}' is written before a {...${ctx.getJS(attr.expression)}} spread that may also carry it, and ${why} when the caller omits '${key}'.`,
-    suggestion: { message: `Write '${key}' after the spread, or compute the value in a local const and pass that.` },
-  }))
-  return undefined
-}
-
-/** `reads` one after another, then `last`, as a fallback chain; undefined when both are empty. */
-function chainRestReads(reads: readonly string[], source: string, last: RestKeyFallback | undefined): RestKeyFallback | undefined {
-  return reads.reduceRight<RestKeyFallback | undefined>((next, read) => next === undefined
-    ? { text: read, templateText: read, freeIdentifiers: new Set([source]) }
-    : { text: restKeyWithFallback(read, next.text), templateText: restKeyWithFallback(read, next.templateText), freeIdentifiers: new Set([source, ...next.freeIdentifiers]) }, last)
+  return keyFallbacks
 }
 
 /** A value a closed rest spread's key falls back to ({@link closedRestFallbacks}): its source text and free names. */
@@ -7671,17 +7643,11 @@ interface KeyWrite {
 }
 
 /**
- * The keys of a closed rest spread its expansion leaves out: the ones a
- * later write replaces ({@link closedRestKeysWrittenLater}) and the ones
- * lowered into another key of their attribute ({@link closedRestKeyFallbacks}).
+ * What wrote a key, for {@link KeyWriteTokens}: an explicit attribute
+ * (`attr`), a spread bag's key (`bag`), or a bag key that matches its exact
+ * name only (`exact`, {@link restKeysSharingAttr}).
  */
-function keysNotExpanded(writtenLater: ReadonlySet<string> | undefined, merged: ReadonlySet<string> | undefined): ReadonlySet<string> | undefined {
-  if (!merged) return writtenLater
-  return writtenLater ? new Set([...writtenLater, ...merged]) : merged
-}
-
-/** What wrote a key, for {@link KeyWriteTokens}: an explicit attribute (`attr`) or a spread bag's key (`bag`). */
-type KeyWriteKind = 'attr' | 'bag'
+type KeyWriteKind = 'attr' | 'bag' | 'exact'
 
 /**
  * The names a write of `name` counts as, for {@link closedRestFallbacks}.
@@ -7693,29 +7659,49 @@ type KeyWriteTokens = (name: string, kind: KeyWriteKind) => readonly string[]
 const propWriteTokens: KeyWriteTokens = name => [name]
 
 /**
- * An element attribute: its name as written, and the attribute it renders
- * as in the case a browser compares it in (`foldAttrName`), so an earlier
- * `tabindex="1"` and a closed rest's `tabIndex` are one attribute. The
- * attribute name is `\0`-prefixed, so it never equals a written name.
+ * An element attribute: its name as written, and, where it is certain
+ * ({@link foldedAttrName}), the attribute it renders as in the case a
+ * browser compares it in, so an earlier `tabindex="1"` and a closed rest's
+ * `tabIndex` are one attribute. The attribute name is `\0`-prefixed, so it
+ * never equals a written name.
  */
-const elementWriteTokens: KeyWriteTokens = (name, kind) =>
-  [name, `\0${foldAttrName(kind === 'attr' ? toHTMLAttrName(name) : toSpreadAttrName(name))}`]
+const elementWriteTokens: KeyWriteTokens = (name, kind) => {
+  const folded = kind === 'exact' ? null : foldedAttrName(name, kind)
+  return folded === null ? [name] : [name, `\0${folded}`]
+}
 
 /**
- * A closed rest's keys, grouped by the attribute each renders as, in the
- * case a browser compares it in (`foldAttrName`): `[["tabIndex",
- * "tabindex"], ["title"]]`. A group keeps the declared order of its keys,
- * and the groups the order of their first key.
+ * The attribute a write of `name` renders as, in the case a browser
+ * compares it in (`foldAttrName`), or null where matching by it is not
+ * safe, so the write matches by its exact name as before:
+ * - a bag key that renders with its own spelling (no spread rename) only
+ *   when that spelling is the attribute in another letter case (`tabIndex`,
+ *   `viewBox`); a key the reference writes as another name on some elements
+ *   (`strokeWidth`, `stroke-width` on SVG) is not;
+ * - never a boolean attribute (`hidden`, `HIDDEN`), whose presence, not its
+ *   value, is what renders: a fallback chain could not tell which spelling
+ *   renders.
  */
-function restKeyGroups(keys: readonly string[]): string[][] {
+function foldedAttrName(name: string, kind: 'attr' | 'bag'): string | null {
+  const rendered = kind === 'attr' ? toHTMLAttrName(name) : toSpreadAttrName(name)
+  if (kind === 'bag' && rendered === name && foldAttrName(toHTMLAttrName(name)) !== foldAttrName(name)) return null
+  const folded = foldAttrName(rendered)
+  return isBooleanAttr(folded) ? null : folded
+}
+
+/**
+ * The keys of a closed rest that render as the same attribute as another
+ * of its keys (`tabIndex` and `tabindex`, `foldAttrName`). The rest emits
+ * each of them, so matching them to an earlier or later write by the
+ * attribute would merge two keys the caller writes separately.
+ */
+function restKeysSharingAttr(keys: readonly string[]): ReadonlySet<string> {
   const byAttr = new Map<string, string[]>()
   for (const key of keys) {
-    const attr = foldAttrName(toSpreadAttrName(key))
-    const group = byAttr.get(attr)
-    if (group) group.push(key)
-    else byAttr.set(attr, [key])
+    const attr = foldedAttrName(key, 'bag')
+    if (attr !== null) byAttr.set(attr, [...(byAttr.get(attr) ?? []), key])
   }
-  return [...byAttr.values()]
+  return new Set([...byAttr.values()].filter(group => group.length > 1).flat())
 }
 
 /** The last {@link KeyWrite} of each name, as {@link KeyWriteTokens} groups them. */
@@ -8058,13 +8044,13 @@ function processAttributes(
   let refExpr: ts.Expression | null = null
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
-  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx, elementWriteTokens, true)
+  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx, elementWriteTokens)
   const writtenLater = closedRestKeysWrittenLater(restPlan.properties, spreadPlan.entries, ctx)
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       hasSpread = true
-      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr), keysNotExpanded(writtenLater.get(attr), restPlan.merged.get(attr))))
+      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr), writtenLater.get(attr)))
       continue
     }
 
@@ -9924,7 +9910,7 @@ function processComponentProps(
 ): IRProp[] {
   const props: IRProp[] = []
   const spreadPlan = staticSpreadPlan(attributes, ctx)
-  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx, propWriteTokens, false)
+  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx, propWriteTokens)
 
   for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {

@@ -17,4 +17,7 @@ export const renderDivergences: RenderDivergences = {
   // replaces the earlier write, so Hono renders no `title`.
   'spread-closed-rest-repeated-around-bag': { limitation: 'closed-rest-repeated' },
   'spread-closed-rest-repeated-after-bag': { limitation: 'closed-rest-repeated' },
+  // A later `tabindex` replaces only the rest key spelled the same; the
+  // rest's `tabIndex` renders first, and a browser keeps it.
+  'spread-closed-rest-both-cases-later-write': { limitation: 'closed-rest-both-cases-later-write' },
 }

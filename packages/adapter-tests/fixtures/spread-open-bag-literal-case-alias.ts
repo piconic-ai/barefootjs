@@ -16,9 +16,7 @@ import { createFixture } from '../src/types'
  * `RestThenBag` puts the signal bag after a closed rest declaring
  * `tabindex`, which took the literal as its fallback (`rest.tabindex ??
  * "1"`): the bag's `tabIndex` replaces the fallback when the caller omits
- * `tabindex`, and the caller's value when it passes one. `BothThenBag`
- * spreads a closed rest declaring both spellings before the bag, which
- * replaces whichever the caller passes.
+ * `tabindex`, and the caller's value when it passes one.
  */
 export const fixture = createFixture({
   id: 'spread-open-bag-literal-case-alias',
@@ -26,7 +24,7 @@ export const fixture = createFixture({
   source: `
 import { PropsObject } from './props-object'
 import { Getter } from './getter'
-import { RestThenBag, BothThenBag } from './rest-then-bag'
+import { RestThenBag } from './rest-then-bag'
 type P = { rows?: { id: number; attrs: Record<string, unknown> }[]; [key: string]: unknown }
 export function SpreadOpenBagLiteralCaseAlias({ rows = [], ...rest }: P) {
   return (
@@ -38,8 +36,6 @@ export function SpreadOpenBagLiteralCaseAlias({ rows = [], ...rest }: P) {
       <Getter />
       <RestThenBag />
       <RestThenBag tabindex={3} />
-      <BothThenBag tabindex={3} />
-      <BothThenBag />
       <ul>{rows.map(r => <li key={r.id} tabIndex="1" {...r.attrs}>{r.id}</li>)}</ul>
       <ol>{rows.map(Object => <li key={Object.id} tabindex="1" {...Object.attrs}>{Object.id}</li>)}</ol>
     </div>
@@ -67,10 +63,6 @@ export function RestThenBag({ ...rest }: { tabindex?: number }) {
   const [bag] = createSignal<Record<string, unknown>>({ tabIndex: 5 })
   return <p tabIndex="1" {...rest} {...bag()}>e</p>
 }
-export function BothThenBag({ ...rest }: { tabIndex?: number; tabindex?: number }) {
-  const [bag] = createSignal<Record<string, unknown>>({ tabIndex: 5 })
-  return <p {...rest} {...bag()}>f</p>
-}
 `,
   },
   props: { tabIndex: 2, maxLength: '3', rows: [{ id: 1, attrs: { tabIndex: 6 } }, { id: 2, attrs: {} }] },
@@ -83,15 +75,13 @@ export function BothThenBag({ ...rest }: { tabIndex?: number; tabindex?: number 
       <p bf-s="test_s4" bf="s0" tabIndex="4">d</p>
       <p bf-s="test_s5" bf="s0" tabIndex="5">e</p>
       <p bf-s="test_s6" bf="s0" tabIndex="5">e</p>
-      <p bf-s="test_s7" bf="s0" tabIndex="5">f</p>
-      <p bf-s="test_s8" bf="s0" tabIndex="5">f</p>
-      <ul bf="s11">
-        <li bf="s10" data-key="1" tabIndex="6"><!--bf:s9-->1<!--/--></li>
-        <li bf="s10" data-key="2" tabindex="1"><!--bf:s9-->2<!--/--></li>
+      <ul bf="s9">
+        <li bf="s8" data-key="1" tabIndex="6"><!--bf:s7-->1<!--/--></li>
+        <li bf="s8" data-key="2" tabindex="1"><!--bf:s7-->2<!--/--></li>
       </ul>
-      <ol bf="s14">
-        <li bf="s13" data-key="1" tabIndex="6"><!--bf:s12-->1<!--/--></li>
-        <li bf="s13" data-key="2" tabindex="1"><!--bf:s12-->2<!--/--></li>
+      <ol bf="s12">
+        <li bf="s11" data-key="1" tabIndex="6"><!--bf:s10-->1<!--/--></li>
+        <li bf="s11" data-key="2" tabindex="1"><!--bf:s10-->2<!--/--></li>
       </ol>
     </div>
   `,

@@ -14912,6 +14912,124 @@
           }
         }
       },
+      "spread-closed-rest-boolean-case-keys": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "rest-key-boolean-name-case"
+          ]
+        }
+      },
+      "spread-closed-rest-both-cases-later-write": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-both-cases-later-write"
+          ]
+        }
+      },
       "spread-closed-rest-non-ascii-key": {
         "minijinja": {
           "kind": "render",
@@ -15155,6 +15273,62 @@
           "kind": "render",
           "limitations": [
             "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-svg-case-keys": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-svg-camel-key-name"
           ]
         }
       },
@@ -17711,6 +17885,14 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-closed-rest-boolean-case-keys": {
+        "description": "Closed rest keys hidden and HIDDEN render as separate writes, beside a bare hidden",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-boolean-case-keys.ts"
+      },
+      "spread-closed-rest-both-cases-later-write": {
+        "description": "A literal after a closed rest declaring tabIndex and tabindex renders once, the literal",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-both-cases-later-write.ts"
+      },
       "spread-closed-rest-non-ascii-key": {
         "description": "A closed rest key Ä and a later attribute ä render as two attributes",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-non-ascii-key.ts"
@@ -17734,6 +17916,10 @@
       "spread-closed-rest-repeated-last": {
         "description": "A closed rest spread repeated after a literal renders the rest value once",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-last.ts"
+      },
+      "spread-closed-rest-svg-case-keys": {
+        "description": "An explicit strokeWidth beside a closed rest declaring strokeWidth and strokewidth replaces only…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-svg-case-keys.ts"
       },
       "spread-closed-rest-then-bag-renamed-key": {
         "description": "An open bag after a closed rest spread displaces the folded literal only where it writes the same…",
@@ -18569,6 +18755,28 @@
         "BF101"
       ]
     },
+    "closed-rest-both-cases-later-write": {
+      "title": "A later attribute after a closed rest declaring it in two letter cases",
+      "kind": "silent",
+      "given": "a closed rest spread whose props type declares one attribute in two ASCII letter cases (`tabIndex?: number; tabindex?: number`), followed by an explicit attribute that writes it (`tabindex=\"1\"`), with the caller passing the other spelling",
+      "expected": "the attribute renders once, with the later write (`tabindex=\"1\"`)",
+      "actual": "Renders the rest key of the other spelling beside the later write (`tabIndex=\"2\" tabindex=\"1\"`), so a browser keeps the rest's value",
+      "fixtures": [
+        "spread-closed-rest-both-cases-later-write"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "closed-rest-non-ascii-key": {
       "title": "A closed rest key that is not an ASCII identifier",
       "kind": "silent",
@@ -18597,6 +18805,27 @@
       ],
       "adapters": [
         "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "closed-rest-svg-camel-key-name": {
+      "title": "A closed rest key in SVG camelCase on an SVG element",
+      "kind": "silent",
+      "given": "a closed rest spread whose props type declares an SVG presentation attribute in camelCase (`strokeWidth`), spread onto an SVG element (`<path {...rest} />`)",
+      "expected": "the key renders kebab-cased (`stroke-width=\"2\"`)",
+      "actual": "Renders the key with its camelCase spelling (`strokeWidth=\"2\"`), which an SVG element does not read as `stroke-width`",
+      "fixtures": [
+        "spread-closed-rest-svg-case-keys"
+      ],
+      "adapters": [
         "blade",
         "erb",
         "go-template",
@@ -19697,6 +19926,27 @@
       ],
       "diagnostics": [
         "BF105"
+      ]
+    },
+    "rest-key-boolean-name-case": {
+      "title": "A closed rest key spelling a boolean attribute in another letter case",
+      "kind": "silent",
+      "given": "a closed rest spread whose props type declares a key that spells a boolean attribute in another letter case (`HIDDEN?: string`), passed a string (`\"yes\"`)",
+      "expected": "the key renders with its value (`HIDDEN=\"yes\"`)",
+      "actual": "Renders the key as a bare boolean attribute (`HIDDEN`), dropping its value",
+      "fixtures": [
+        "spread-closed-rest-boolean-case-keys"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "rich-typed-prop-hydration": {
