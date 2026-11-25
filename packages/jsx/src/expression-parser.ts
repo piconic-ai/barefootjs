@@ -923,6 +923,15 @@ function objectLiteralKeyName(
   return null
 }
 
+/**
+ * The `raw` a converted node keeps: the caller's string for the top-level
+ * node, else `node`'s own source text (`outerRaw` for a synthetic node with
+ * no source file).
+ */
+function nodeRaw(node: ts.Node, outerRaw: string, nested: boolean): string {
+  return nested ? ownSourceText(node, outerRaw) : outerRaw
+}
+
 /** `node`'s own source text, or `fallback` for a synthetic node with no source file. */
 function ownSourceText(node: ts.Node, fallback: string): string {
   try {
@@ -942,7 +951,7 @@ function ownSourceText(node: ts.Node, fallback: string): string {
  * (`xs.map(x => ({ a: x }))`) does not splice the whole expression back in.
  */
 function convertNode(node: ts.Node, outerRaw: string, nested = false): ParsedExpr {
-  const raw = nested ? ownSourceText(node, outerRaw) : outerRaw
+  const raw = nodeRaw(node, outerRaw, nested)
   // Identifier: count, name, items
   if (ts.isIdentifier(node)) {
     return { kind: 'identifier', name: node.text }
