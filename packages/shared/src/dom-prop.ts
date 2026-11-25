@@ -250,6 +250,60 @@ export function toHTMLAttrName(key: string): string {
 }
 
 /**
+ * The bag keys a JSX spread (`<p {...bag} />`) renames when the reference
+ * adapter renders it. Hono's JSX renderer maps these eight React-style
+ * names (`hono/jsx`'s `normalizeIntrinsicElementKey`) and writes every
+ * other bag key as it is (`tabIndex` stays `tabIndex`, `dataTestId` stays
+ * `dataTestId`), so this is narrower than `HTML_CAMEL_ALIASES`, which
+ * applies to an attribute written on the element itself.
+ *
+ * Consumed by `renderElementAttributes` (a key a closed rest or a static
+ * object spread expanded into its own attribute) and ported by the
+ * template runtimes' `spread_attrs` helpers for an open bag. The shared
+ * `spread-*-attr-names` fixtures pin both to the reference.
+ */
+export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
+  className: 'class',
+  htmlFor: 'for',
+  crossOrigin: 'crossorigin',
+  httpEquiv: 'http-equiv',
+  itemProp: 'itemprop',
+  fetchPriority: 'fetchpriority',
+  noModule: 'nomodule',
+  formAction: 'formaction',
+}
+
+/**
+ * The attribute name a spread bag key renders as ({@link SPREAD_KEY_ATTR_NAMES}).
+ * A name outside the table passes through, so an attribute name Phase 1
+ * already normalized (`class`, `tabindex`) is left as it is.
+ */
+export function toSpreadAttrName(key: string): string {
+  return Object.prototype.hasOwnProperty.call(SPREAD_KEY_ATTR_NAMES, key) ? SPREAD_KEY_ATTR_NAMES[key] : key
+}
+
+/**
+ * The {@link SPREAD_KEY_ATTR_NAMES} keys every template adapter's native
+ * spread helper renames to the same attribute today: the default for an
+ * adapter that declares no `spreadKeyRenames`. The other five
+ * (`crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`) are
+ * kebab-cased by most helpers (`cross-origin`, limitation
+ * `spread-bag-camel-key-name`); Pebble's helper renames all eight.
+ */
+export const SPREAD_KEYS_RENAMED_EVERYWHERE: ReadonlySet<string> = new Set(['className', 'htmlFor', 'httpEquiv'])
+
+/**
+ * The spread bag keys a spread helper that renames `renamed` renders as the
+ * attribute `attrName` ({@link SPREAD_KEY_ATTR_NAMES} reversed, limited to
+ * `renamed`): `['htmlFor']` for `for`; `['crossOrigin']` for `crossorigin`
+ * only when the helper renames `crossOrigin`. A key spelled as the attribute
+ * itself (`for`) is not listed.
+ */
+export function spreadKeysRenamedTo(attrName: string, renamed: ReadonlySet<string> = SPREAD_KEYS_RENAMED_EVERYWHERE): string[] {
+  return Object.keys(SPREAD_KEY_ATTR_NAMES).filter(key => SPREAD_KEY_ATTR_NAMES[key] === attrName && renamed.has(key))
+}
+
+/**
  * Runtime variant of attribute name mapping that additionally applies
  * camelCase→kebab conversion for `data-*` and `aria-*` convenience
  * props (e.g. `dataTestId` → `data-test-id`) and preserves SVG XML

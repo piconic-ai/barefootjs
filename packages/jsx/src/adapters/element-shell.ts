@@ -5,7 +5,7 @@
  * language; the order and the conditions live here once.
  */
 
-import { BF_PORTAL_OWNER, BF_REGION, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
+import { BF_PORTAL_OWNER, BF_REGION, isRawTextTag, toSpreadAttrName, type RawTextTag } from '@barefootjs/shared'
 import type { IRElement, IRExpression, IRFragment, IRNode, IRText } from '../types.ts'
 import { emitAttrValue, type AttrValueEmitter } from './attr-value-emitter.ts'
 import { isDangerousInnerHtmlAttr } from './dangerous-inner-html.ts'
@@ -43,8 +43,12 @@ export function renderElementAttributes(element: IRElement, emitter: AttrValueEm
     // defined rendering outside a `.map()` anyway; drop it rather than
     // leak an invalid `key="..."` HTML attribute.
     if (attr.name === 'key') continue
-    // Rewrite JSX special-prop names to their HTML-attribute counterparts (#1475).
-    const attrName = attr.name === 'className' ? 'class' : attr.name
+    // A key a spread carried (a closed rest's expanded key, a static spread
+    // entry) still has the bag's spelling; rename it the way the reference
+    // renders a spread bag key (`className` -> `class`, `htmlFor` -> `for`).
+    // An attribute written on the element itself was normalized in Phase 1
+    // and passes through.
+    const attrName = toSpreadAttrName(attr.name)
     // A literal a later open spread may also carry the key of renders only
     // when the bag lacks it (`IRAttribute.spreadOverridable`), so the key
     // appears once, with the spread's value.

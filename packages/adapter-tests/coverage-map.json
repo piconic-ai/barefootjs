@@ -20139,6 +20139,224 @@
         "text"
       ]
     },
+    "spread-closed-rest-attr-names": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-attr-names-overlap": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-client-literal-after": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-literal-alias-after": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-after-bag": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-around-bag": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-attr-spelled-bag-key": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-both": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-repeated-last": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-then-bag-renamed-key": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-attr-names": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "spread-open-bag-hono-renamed-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-alias-before": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-renamed-elsewhere": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-optional-bag-literal-before": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "stateless-rest-spread-forward": {
       "kinds": [
         "identifier"

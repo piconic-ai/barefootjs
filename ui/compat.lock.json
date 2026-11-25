@@ -14912,6 +14912,416 @@
           }
         }
       },
+      "spread-closed-rest-repeated": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-after-bag": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-around-bag": {
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-both": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-repeated-last": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "closed-rest-repeated"
+          ]
+        }
+      },
+      "spread-closed-rest-then-bag-renamed-key": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        }
+      },
+      "spread-open-bag-hono-renamed-keys": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-camel-key-name"
+          ]
+        }
+      },
+      "spread-open-bag-literal-alias-before": {
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        }
+      },
+      "spread-open-bag-literal-renamed-elsewhere": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-key-alias-literal-duplicate"
+          ]
+        }
+      },
+      "spread-optional-bag-literal-before": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "record-prop-bag-spread"
+          ]
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -17257,6 +17667,46 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-closed-rest-repeated": {
+        "description": "A literal before a closed rest spread twice renders once when the rest omits its key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated.ts"
+      },
+      "spread-closed-rest-repeated-after-bag": {
+        "description": "A literal before a closed rest, an open bag and two more repeats of the rest renders once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-after-bag.ts"
+      },
+      "spread-closed-rest-repeated-around-bag": {
+        "description": "A literal before a closed rest spread repeated around an open bag renders the last write that…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-around-bag.ts"
+      },
+      "spread-closed-rest-repeated-both": {
+        "description": "A closed rest spread repeated around an open bag carrying the same key renders the rest value once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-both.ts"
+      },
+      "spread-closed-rest-repeated-last": {
+        "description": "A closed rest spread repeated after a literal renders the rest value once",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-repeated-last.ts"
+      },
+      "spread-closed-rest-then-bag-renamed-key": {
+        "description": "An open bag after a closed rest spread displaces the folded literal only where it writes the same…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-then-bag-renamed-key.ts"
+      },
+      "spread-open-bag-hono-renamed-keys": {
+        "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
+      },
+      "spread-open-bag-literal-alias-before": {
+        "description": "A literal htmlFor before an open bag carrying htmlFor renders the bag value once; literals the bag…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-alias-before.ts"
+      },
+      "spread-open-bag-literal-renamed-elsewhere": {
+        "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-renamed-elsewhere.ts"
+      },
+      "spread-optional-bag-literal-before": {
+        "description": "A literal before an omitted optional bag spread renders",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-optional-bag-literal-before.ts"
+      },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
@@ -18069,6 +18519,32 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "closed-rest-repeated": {
+      "title": "The same closed rest spread repeated on one element",
+      "kind": "silent",
+      "given": "an earlier write of a key (a literal), then the same closed rest spread more than once (`{...rest} {...rest}`), adjacent or around an open spread (`{...rest} {...bag} {...rest}`)",
+      "expected": "the key renders once, with the last write JS makes: the rest's value, else an intervening bag's, else the earlier write",
+      "actual": "Renders the key once per expansion (`title=\"fallback\" title=\"fallback\"`), the rest's value ahead of the bag's, or drops the earlier write because a later expansion writes the omitted key as `undefined`",
+      "fixtures": [
+        "spread-closed-rest-repeated",
+        "spread-closed-rest-repeated-after-bag",
+        "spread-closed-rest-repeated-around-bag",
+        "spread-closed-rest-repeated-both",
+        "spread-closed-rest-repeated-last"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "component-scope-helper-call": {
@@ -19103,6 +19579,19 @@
         "BF102"
       ]
     },
+    "record-prop-bag-spread": {
+      "title": "A destructured prop typed as a record, spread onto an element",
+      "kind": "silent",
+      "given": "a destructured prop typed as a record (`bag?: Record<string, string>`) spread onto an intrinsic element (`{...bag}`)",
+      "expected": "the element renders the bag's entries, or nothing for an omitted bag",
+      "actual": "Emits a program that does not build: the prop field and the spread field get different types",
+      "fixtures": [
+        "spread-optional-bag-literal-before"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "ref-effect-attr-state-ssr": {
       "title": "Attribute written only by a ref callback never reaches SSR",
       "kind": "refusal",
@@ -19192,6 +19681,49 @@
         "minijinja",
         "mojolicious",
         "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "spread-bag-camel-key-name": {
+      "title": "An open spread bag key in camelCase outside the spread renames",
+      "kind": "silent",
+      "given": "an open spread (`{...rest}` with an index-signature props type) whose bag holds a camelCase key other than `className`, `htmlFor` and `httpEquiv`: one the reference renames (`crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`) or one it writes as it is (`tabIndex`, `ariaLabel`, `dataTestId`, `strokeWidth`)",
+      "expected": "the five renamed keys render lowercased (`crossorigin`, `itemprop`, `fetchpriority`, `nomodule`, `formaction`) and every other key renders with the bag's spelling (`tabIndex`, `ariaLabel`, `dataTestId`, `strokeWidth`)",
+      "actual": "Renders every camelCase key kebab-cased (`cross-origin`, `tab-index`, `aria-label`, `data-test-id`, `stroke-width`)",
+      "fixtures": [
+        "spread-closed-rest-then-bag-renamed-key",
+        "spread-open-bag-hono-renamed-keys"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "twig",
+        "xslate"
+      ]
+    },
+    "spread-key-alias-literal-duplicate": {
+      "title": "A literal attribute and an open spread bag key that renames to it",
+      "kind": "silent",
+      "given": "a literal written with a React-style name a spread renames (`htmlFor=\"explicit\"`, `crossOrigin`) before an open spread (`{...rest}`) whose bag carries that key",
+      "expected": "the attribute renders once, with the bag's value (`for=\"spread\"`); a key the bag lacks keeps the literal",
+      "actual": "Renders the attribute twice (`for=\"explicit\" for=\"spread\"`), or the literal beside the bag key kebab-cased (`crossorigin=\"anonymous\" cross-origin=\"use-credentials\"`), so a browser keeps the literal",
+      "fixtures": [
+        "spread-open-bag-literal-alias-before",
+        "spread-open-bag-literal-renamed-elsewhere"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
         "twig",
         "xslate"
       ]
