@@ -158,6 +158,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // body rest onto its root. The real-browser fixture-hydrate and oracle
   // suites check the client.
   'open-body-rest-spread-element',
+  // Same `applyRestAttrs`-not-modeled harness class: the `<script>`'s
+  // `type` and `id` arrive through its `{...rest}` spread. Per-adapter
+  // render conformance pins the SSR contract the fixture exists for.
+  'raw-text-brace-delimiter-script-spread',
   // Same `applyRestAttrs`-not-modeled harness class: every bag reaches its
   // element only through a spread, which the harness stubs as a noop, so the
   // template shows the literal each spread overrides. The per-adapter render

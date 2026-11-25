@@ -133,3 +133,40 @@ export function T({ tip }: { tip: string }) {
     })
   }
 })
+
+describe('GoTemplateAdapter - a Go action brace in literal <script> text (#3967)', () => {
+  const brace = 'if (window.__no) &#123;&#123; b() &#125;&#125;'
+  const scriptErrors = (component: string) => compile(component).errors.map(e => e.code)
+
+  test('a type a spread can replace is refused: html/template may read the body either way', () => {
+    expect(scriptErrors(`
+export function T({ ...rest }: { [key: string]: any }) {
+  return <div><script type="text/plain" {...rest}>${brace}</script></div>
+}
+`)).toEqual(['BF101'])
+  })
+
+  test('a literal type with such a brace is refused: it prints through an action html/template does not read as a type', () => {
+    expect(scriptErrors(`
+export function T() {
+  return <div><script type="text/x{">${brace}</script></div>
+}
+`)).toEqual(['BF101'])
+  })
+
+  test('a computed type is refused: html/template reads an empty type differently across Go releases', () => {
+    expect(scriptErrors(`
+export function T({ kind }: { kind: string }) {
+  return <div><script type={kind}>${brace}</script></div>
+}
+`)).toEqual(['BF101'])
+  })
+
+  test('the same text without the brace is not refused', () => {
+    expect(scriptErrors(`
+export function T({ ...rest }: { [key: string]: any }) {
+  return <div><script type="text/plain" {...rest}>if (window.__no) b()</script></div>
+}
+`)).toEqual([])
+  })
+})

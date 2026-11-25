@@ -8,6 +8,16 @@
 
 import ts from 'typescript'
 import { loweringNodeChildren, type LoweringMatcher } from './lowering-registry.ts'
+import {
+  arrowBodyNeedsParens,
+  assignmentOperandNeedsParens,
+  binaryOperandNeedsParens,
+  conditionalTestNeedsParens,
+  groupLeadingBrace,
+  parenthesize,
+  receiverNeedsParens,
+  unaryArgumentNeedsParens,
+} from './parsed-expr-precedence.ts'
 
 // =============================================================================
 // Parsed Expression Types
@@ -816,7 +826,9 @@ export function tsNodeToParsedExpr(node: ts.Node): ParsedExpr {
   } catch {
     /* synthetic node without a source file */
   }
-  return convertNode(node, raw)
+  // A bare object literal has no caller parentheses to keep: it is grouped as
+  // a nested one is (`objectLiteralRaw`).
+  return convertNode(node, raw, ts.isObjectLiteralExpression(node))
 }
 
 /**
@@ -915,9 +927,53 @@ function objectLiteralKeyName(
 }
 
 /**
- * Convert a TypeScript AST node to ParsedExpr.
+ * The `raw` a converted node keeps: the caller's string for the top-level
+ * node, else `node`'s own source text (`outerRaw` for a synthetic node with
+ * no source file).
  */
-function convertNode(node: ts.Node, raw: string): ParsedExpr {
+function nodeRaw(node: ts.Node, outerRaw: string, nested: boolean): string {
+  return nested ? ownSourceText(node, outerRaw) : outerRaw
+}
+
+/**
+ * The `raw` an object literal keeps, which the printers print it back as
+ * (verbatim, so `?.`, template escapes and the rest stay as the source wrote
+ * them) and which a consumer lowering the literal from its text reads. It is
+ * grouped in every case, since a leading `{` parses as a block (#3965):
+ *
+ *   - Top level (`nested` false): the caller's string, which already holds
+ *     the parentheses the literal was parsed in.
+ *   - Nested and written in parentheses: the text of those parentheses, so a
+ *     pair the source supplied is reused, never doubled.
+ *   - Nested and written bare (an argument, an element, a property value, a
+ *     returned value): its own text in parentheses.
+ */
+function objectLiteralRaw(node: ts.ObjectLiteralExpression, raw: string, nested: boolean): string {
+  if (!nested) return raw
+  const parent = node.parent as ts.Node | undefined
+  return parent && ts.isParenthesizedExpression(parent) ? ownSourceText(parent, raw) : `(${raw})`
+}
+
+/** `node`'s own source text, or `fallback` for a synthetic node with no source file. */
+function ownSourceText(node: ts.Node, fallback: string): string {
+  try {
+    return node.getText()
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * Convert a TypeScript AST node to ParsedExpr.
+ *
+ * `raw` is the text an `unsupported` / `object-literal` node keeps. The
+ * caller's `raw` is kept for the top-level node (and through its own
+ * parentheses), byte-identical to the expression string it parsed; a nested
+ * node keeps its OWN source text (#3965), so printing a tree that holds one
+ * (`xs.map(x => ({ a: x }))`) does not splice the whole expression back in.
+ */
+function convertNode(node: ts.Node, outerRaw: string, nested = false): ParsedExpr {
+  const raw = nodeRaw(node, outerRaw, nested)
   // Identifier: count, name, items
   if (ts.isIdentifier(node)) {
     return { kind: 'identifier', name: node.text }
@@ -950,8 +1006,8 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
 
   // Call expression: count(), items(), filter()
   if (ts.isCallExpression(node)) {
-    const callee = convertNode(node.expression, raw)
-    const args = node.arguments.map(arg => convertNode(arg, raw))
+    const callee = convertNode(node.expression, raw, true)
+    const args = node.arguments.map(arg => convertNode(arg, raw, true))
     // `recv?.method(args)` is `undefined` when `recv` is nullish (#3435).
     // The lowerings below (an `array-method` node above all) model a plain
     // call, so the optional hop becomes an explicit guard every adapter
@@ -976,7 +1032,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
 
   // Array literal: [a, b, c]
   if (ts.isArrayLiteralExpression(node)) {
-    const elements = node.elements.map(el => convertNode(el, raw))
+    const elements = node.elements.map(el => convertNode(el, raw, true))
     return { kind: 'array-literal', elements }
   }
 
@@ -991,23 +1047,23 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       if (ts.isPropertyAssignment(prop)) {
         const k = objectLiteralKeyName(prop.name)
         if (k === null) return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
-        properties.push({ kind: 'prop', key: k.key, keyKind: k.keyKind, shorthand: false, value: convertNode(prop.initializer, raw) })
+        properties.push({ kind: 'prop', key: k.key, keyKind: k.keyKind, shorthand: false, value: convertNode(prop.initializer, raw, true) })
       } else if (ts.isShorthandPropertyAssignment(prop)) {
         const key = prop.name.text
         properties.push({ kind: 'prop', key, keyKind: 'identifier', shorthand: true, value: { kind: 'identifier', name: key } })
       } else if (ts.isSpreadAssignment(prop)) {
-        properties.push({ kind: 'spread', expr: convertNode(prop.expression, raw) })
+        properties.push({ kind: 'spread', expr: convertNode(prop.expression, raw, true) })
       } else {
         // Computed key, method, getter/setter — not a plain map.
         return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
       }
     }
-    return { kind: 'object-literal', properties, raw }
+    return { kind: 'object-literal', properties, raw: objectLiteralRaw(node, raw, nested) }
   }
 
   // Property access: user.name, items().length
   if (ts.isPropertyAccessExpression(node)) {
-    const object = convertNode(node.expression, raw)
+    const object = convertNode(node.expression, raw, true)
     const property = node.name.text
 
     // Return as normal member - filter.length is handled in adapter
@@ -1016,7 +1072,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
 
   // Element access: items[0], obj['key']
   if (ts.isElementAccessExpression(node)) {
-    const object = convertNode(node.expression, raw)
+    const object = convertNode(node.expression, raw, true)
     const argNode = node.argumentExpression
     // `argumentExpression` is non-optional in the TS types but CAN be
     // undefined on an AST recovered from incomplete source (`arr[`). Guard
@@ -1039,18 +1095,19 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // carry the index as its own ParsedExpr so the adapter can lower it
     // (the literal forms above fold into a static property path; this
     // one can't). #1897 (data-table).
-    const index = convertNode(argNode, raw)
+    const index = convertNode(argNode, raw, true)
     // An object-literal index (`arr[{…}]`) isn't lowerable — surface it
     // as the whole expression, exactly as an `unsupported` index did
-    // before the kind existed (byte-identical; Roadmap A-1).
-    if (index.kind === 'unsupported' || index.kind === 'object-literal') return index
+    // before the kind existed (byte-identical; Roadmap A-1). The index keeps
+    // its own text; the surfaced node carries the element access's.
+    if (index.kind === 'unsupported' || index.kind === 'object-literal') return { ...index, raw }
     return { kind: 'index-access', object, index }
   }
 
   // Binary expression: a === b, count > 0, a + b
   if (ts.isBinaryExpression(node)) {
-    const left = convertNode(node.left, raw)
-    const right = convertNode(node.right, raw)
+    const left = convertNode(node.left, raw, true)
+    const right = convertNode(node.right, raw, true)
     const opToken = node.operatorToken
 
     // Logical operators
@@ -1071,22 +1128,22 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
 
   // Prefix unary expression: !value, -count
   if (ts.isPrefixUnaryExpression(node)) {
-    const argument = convertNode(node.operand, raw)
+    const argument = convertNode(node.operand, raw, true)
     const op = getUnaryOperatorString(node.operator)
     return { kind: 'unary', op, argument }
   }
 
   // Conditional expression: cond ? a : b
   if (ts.isConditionalExpression(node)) {
-    const test = convertNode(node.condition, raw)
-    const consequent = convertNode(node.whenTrue, raw)
-    const alternate = convertNode(node.whenFalse, raw)
+    const test = convertNode(node.condition, raw, true)
+    const consequent = convertNode(node.whenTrue, raw, true)
+    const alternate = convertNode(node.whenFalse, raw, true)
     return { kind: 'conditional', test, consequent, alternate }
   }
 
   // Parenthesized expression: (a + b)
   if (ts.isParenthesizedExpression(node)) {
-    return convertNode(node.expression, raw)
+    return convertNode(node.expression, raw, nested)
   }
 
   // Template literal: `Hello ${name}`
@@ -1098,7 +1155,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     }
     // Spans (expression + literal pairs)
     for (const span of node.templateSpans) {
-      parts.push({ type: 'expression', expr: convertNode(span.expression, raw) })
+      parts.push({ type: 'expression', expr: convertNode(span.expression, raw, true) })
       if (span.literal.text) {
         parts.push({ type: 'string', value: span.literal.text })
       }
@@ -1133,7 +1190,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     // local-var bodies stay refused.
     let body: ParsedExpr
     if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) {
-      body = convertNode(node.body, raw)
+      body = convertNode(node.body, raw, true)
     } else {
       const block = node.body as ts.Block
       const stmts = block.statements
@@ -1141,7 +1198,7 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
       // (convertNode on the returned node), byte-identical for the existing
       // corpus.
       if (stmts.length === 1 && ts.isReturnStatement(stmts[0]) && stmts[0].expression) {
-        body = convertNode(stmts[0].expression, raw)
+        body = convertNode(stmts[0].expression, raw, true)
       } else {
         // General value-producing block: normalize `let`-inline + value `if` /
         // early `return` into a single expression (#2040). Imperative shapes
@@ -1655,7 +1712,7 @@ function collectDestructureBindings(
     // default inline.
     let defaultExpr: ParsedExpr | undefined
     if (el.initializer) {
-      const parsed = convertNode(el.initializer, raw)
+      const parsed = convertNode(el.initializer, raw, true)
       // An object-literal default isn't lowered into a destructured filter
       // predicate yet — refuse it exactly as before the kind existed, with
       // the same reason text the `unsupported` fallback produced (A-1).
@@ -3283,9 +3340,13 @@ function parseIfBranch(
 }
 
 /**
- * Convert ParsedExpr back to a string for debugging.
+ * Convert ParsedExpr back to a string for debugging. A child that binds
+ * looser than its position allows is parenthesized
+ * ({@link ./parsed-expr-precedence.ts}), so `(a ? b : c).k` does not print as
+ * `a ? b : c.k` (#3965).
  */
 export function exprToString(expr: ParsedExpr): string {
+  const s = exprToString
   switch (expr.kind) {
     case 'identifier':
       return expr.name
@@ -3294,52 +3355,98 @@ export function exprToString(expr: ParsedExpr): string {
       if (expr.value === null) return 'null'
       return String(expr.value)
     case 'call':
-      return `${exprToString(expr.callee)}(${expr.args.map(exprToString).join(', ')})`
+      return `${receiverText(expr.callee, false, s)}(${argsText(expr.args, s)})`
     case 'member':
-      return `${exprToString(expr.object)}.${expr.property}`
+      return memberText(expr, s)
     case 'index-access':
-      return `${exprToString(expr.object)}[${exprToString(expr.index)}]`
+      return `${receiverText(expr.object, false, s)}[${s(expr.index)}]`
     case 'binary':
-      return `${exprToString(expr.left)} ${expr.op} ${exprToString(expr.right)}`
-    case 'unary':
-      return `${expr.op}${exprToString(expr.argument)}`
     case 'logical':
-      return `${exprToString(expr.left)} ${expr.op} ${exprToString(expr.right)}`
+      return binaryText(expr, s)
+    case 'unary':
+      return unaryText(expr, s)
     case 'conditional':
-      return `${exprToString(expr.test)} ? ${exprToString(expr.consequent)} : ${exprToString(expr.alternate)}`
+      return conditionalText(expr, s)
     case 'template-literal':
       return '`' + expr.parts.map(p =>
-        p.type === 'string' ? p.value : `\${${exprToString(p.expr)}}`
+        p.type === 'string' ? p.value : `\${${s(p.expr)}}`
       ).join('') + '`'
-    case 'arrow': {
-      // Single-param arrows round-trip without parens (`x => …`); multi-param
-      // need them (`(a, b) => …`).
-      const params = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
-      return `${params} => ${exprToString(expr.body)}`
-    }
+    case 'arrow':
+      return arrowText(expr, s)
     case 'regex':
       return expr.raw
     case 'array-literal':
-      return `[${expr.elements.map(exprToString).join(', ')}]`
+      return `[${argsText(expr.elements, s)}]`
     case 'array-method':
-      if (expr.method === 'flat') {
-        // Preserve the normalised / dynamic depth so diagnostics don't
-        // misleadingly print `.flat()` for a `.flat(2)` / `.flat(Infinity)`
-        // / `.flat(depthProp)` source.
-        if (expr.depthExpr) {
-          return `${exprToString(expr.object)}.flat(${exprToString(expr.depthExpr)})`
-        }
-        const d = expr.flatDepth
-        const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
-        return `${exprToString(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
-      }
-      return `${exprToString(expr.object)}.${expr.method}(${expr.args.map(exprToString).join(', ')})`
+      return arrayMethodText(expr, s)
     case 'unsupported':
     // `raw` holds the original expression string (same value the old
     // `unsupported` carried), so the round-trip stays byte-identical.
     case 'object-literal':
       return `[UNSUPPORTED: ${expr.raw}]`
   }
+}
+
+/** A child printer: `exprToString` or `stringifyParsedExpr`. */
+type PrintChild = (expr: ParsedExpr) => string
+
+/** The receiver of a member / index read or a call, parenthesized when it binds looser (#3965). */
+function receiverText(object: ParsedExpr, dotted: boolean, print: PrintChild): string {
+  return groupLeadingBrace(parenthesize(print(object), receiverNeedsParens(object, dotted)))
+}
+
+/** Call arguments or array elements, comma-joined. */
+function argsText(items: readonly ParsedExpr[], print: PrintChild): string {
+  return items.map(item => assignmentText(item, print)).join(', ')
+}
+
+/**
+ * A member read. A computed one (`arr[0]`, `obj['a-b']`) keeps its brackets:
+ * numeric indices round-trip verbatim; string keys are quoted so `obj['key']`
+ * doesn't degrade to `obj[key]` (a bare-identifier lookup with different
+ * semantics).
+ */
+function memberText(expr: Extract<ParsedExpr, { kind: 'member' }>, print: PrintChild): string {
+  if (!expr.computed) return `${receiverText(expr.object, true, print)}.${expr.property}`
+  const key = /^-?\d+$/.test(expr.property) ? expr.property : JSON.stringify(expr.property)
+  return `${receiverText(expr.object, false, print)}[${key}]`
+}
+
+function binaryText(expr: Extract<ParsedExpr, { kind: 'binary' | 'logical' }>, print: PrintChild): string {
+  const left = parenthesize(print(expr.left), binaryOperandNeedsParens(expr, expr.left, 'left'))
+  const right = parenthesize(print(expr.right), binaryOperandNeedsParens(expr, expr.right, 'right'))
+  return `${left} ${expr.op} ${right}`
+}
+
+function unaryText(expr: Extract<ParsedExpr, { kind: 'unary' }>, print: PrintChild): string {
+  return `${expr.op}${parenthesize(print(expr.argument), unaryArgumentNeedsParens(expr.op, expr.argument))}`
+}
+
+function conditionalText(expr: Extract<ParsedExpr, { kind: 'conditional' }>, print: PrintChild): string {
+  const test = parenthesize(print(expr.test), conditionalTestNeedsParens(expr.test))
+  const consequent = parenthesize(print(expr.consequent), assignmentOperandNeedsParens(expr.consequent))
+  const alternate = parenthesize(print(expr.alternate), assignmentOperandNeedsParens(expr.alternate))
+  return `${test} ? ${consequent} : ${alternate}`
+}
+
+function arrowText(expr: Extract<ParsedExpr, { kind: 'arrow' }>, print: PrintChild): string {
+  // Single-param arrows round-trip without parens (`x => …`); multi-param
+  // need them (`(a, b) => …`).
+  const params = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
+  return `${params} => ${groupLeadingBrace(parenthesize(print(expr.body), arrowBodyNeedsParens(expr.body)))}`
+}
+
+function arrayMethodText(expr: Extract<ParsedExpr, { kind: 'array-method' }>, print: PrintChild): string {
+  const object = receiverText(expr.object, true, print)
+  if (expr.method !== 'flat') return `${object}.${expr.method}(${argsText(expr.args, print)})`
+  // Preserve the normalised / dynamic depth: `'infinity'` → `Infinity`, `1`
+  // is left implicit (`.flat()`), a dynamic depth prints its own expression,
+  // so a `.flat(2)` / `.flat(Infinity)` / `.flat(depthProp)` source does not
+  // print as `.flat()`.
+  if (expr.depthExpr) return `${object}.flat(${print(expr.depthExpr)})`
+  const d = expr.flatDepth
+  const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
+  return `${object}.flat(${d === 1 ? '' : depthSrc})`
 }
 
 /**
@@ -3349,9 +3456,17 @@ export function exprToString(expr: ParsedExpr): string {
  * their quoted form, and unsupported nodes pass through their raw
  * source. Used by adapter-side AST rewrites (templatePrimitives
  * substitution, etc.) where the result must be re-fed into a
- * downstream conversion pipeline.
+ * downstream conversion pipeline. Grouping is decided by the same
+ * {@link ./parsed-expr-precedence.ts} helpers as `exprToString` (#3965).
  */
 export function stringifyParsedExpr(expr: ParsedExpr): string {
+  // Printed first, a leading `{` would open a block statement.
+  return groupLeadingBrace(printJs(expr))
+}
+
+/** {@link stringifyParsedExpr} for a sub-expression, which never starts a statement. */
+function printJs(expr: ParsedExpr): string {
+  const s = printJs
   switch (expr.kind) {
     case 'identifier':
       return expr.name
@@ -3360,63 +3475,46 @@ export function stringifyParsedExpr(expr: ParsedExpr): string {
       if (expr.literalType === 'null') return 'null'
       return String(expr.value)
     case 'call':
-      return `${stringifyParsedExpr(expr.callee)}(${expr.args.map(stringifyParsedExpr).join(', ')})`
-    case 'member': {
-      const obj = stringifyParsedExpr(expr.object)
-      if (!expr.computed) return `${obj}.${expr.property}`
-      // Numeric indices round-trip verbatim (`arr[0]`); string keys
-      // need quoting so `obj['key']` doesn't degrade to `obj[key]`
-      // (a bare-identifier lookup with different semantics).
-      const key = /^-?\d+$/.test(expr.property)
-        ? expr.property
-        : JSON.stringify(expr.property)
-      return `${obj}[${key}]`
-    }
+      return `${receiverText(expr.callee, false, s)}(${argsText(expr.args, s)})`
+    case 'member':
+      return memberText(expr, s)
     case 'index-access':
-      return `${stringifyParsedExpr(expr.object)}[${stringifyParsedExpr(expr.index)}]`
+      return `${receiverText(expr.object, false, s)}[${s(expr.index)}]`
     case 'binary':
-      return `${stringifyParsedExpr(expr.left)} ${expr.op} ${stringifyParsedExpr(expr.right)}`
-    case 'unary':
-      return `${expr.op}${stringifyParsedExpr(expr.argument)}`
     case 'logical':
-      return `${stringifyParsedExpr(expr.left)} ${expr.op} ${stringifyParsedExpr(expr.right)}`
+      return binaryText(expr, s)
+    case 'unary':
+      return unaryText(expr, s)
     case 'conditional':
-      return `${stringifyParsedExpr(expr.test)} ? ${stringifyParsedExpr(expr.consequent)} : ${stringifyParsedExpr(expr.alternate)}`
+      return conditionalText(expr, s)
     case 'template-literal':
       return '`' + expr.parts.map(p =>
-        p.type === 'string' ? p.value : `\${${stringifyParsedExpr(p.expr)}}`
+        p.type === 'string' ? p.value : `\${${s(p.expr)}}`
       ).join('') + '`'
-    case 'arrow': {
+    case 'arrow':
       // Round-trip to valid JS for the CSR / Hono path and downstream
       // re-parsers. A higher-order callback (`.sort`/`.filter`/…) reaches here
-      // as the arrow argument of a generic `call`. Single-param arrows round-
-      // trip without parens (`x => …`); multi-param need them (`(a, b) => …`).
-      const params = expr.params.length === 1 ? expr.params[0] : `(${expr.params.join(', ')})`
-      return `${params} => ${stringifyParsedExpr(expr.body)}`
-    }
+      // as the arrow argument of a generic `call`.
+      return arrowText(expr, s)
     case 'regex':
       return expr.raw
     case 'array-literal':
-      return `[${expr.elements.map(stringifyParsedExpr).join(', ')}]`
+      return `[${argsText(expr.elements, s)}]`
     case 'array-method':
-      if (expr.method === 'flat') {
-        // Round-trip the normalised / dynamic depth back to JS for the
-        // CSR / Hono path: `'infinity'` → `Infinity`, `1` is left implicit
-        // (`.flat()`), a dynamic depth round-trips its own expression.
-        if (expr.depthExpr) {
-          return `${stringifyParsedExpr(expr.object)}.flat(${stringifyParsedExpr(expr.depthExpr)})`
-        }
-        const d = expr.flatDepth
-        const depthSrc = d === 'infinity' ? 'Infinity' : String(d)
-        return `${stringifyParsedExpr(expr.object)}.flat(${d === 1 ? '' : depthSrc})`
-      }
-      return `${stringifyParsedExpr(expr.object)}.${expr.method}(${expr.args.map(stringifyParsedExpr).join(', ')})`
+      return arrayMethodText(expr, s)
     case 'unsupported':
-    // `raw` is the original expression string, so re-stringification is
-    // byte-identical to the pre-`object-literal` behaviour (Roadmap A-1).
+    // `raw` is the node's own source text (the caller's string at the top
+    // level); an object literal's is its source text, grouped
+    // (`objectLiteralRaw`), so `?.`, template escapes and the rest print
+    // as written.
     case 'object-literal':
       return expr.raw
   }
+}
+
+/** An expression in an assignment-level position: an argument, an element, a property value. */
+function assignmentText(item: ParsedExpr, print: PrintChild): string {
+  return parenthesize(print(item), assignmentOperandNeedsParens(item))
 }
 
 /**
@@ -4190,7 +4288,7 @@ function convertCallExpression(node: ts.CallExpression, raw: string, callee: Par
           // the depth expression itself is outside the supported
           // surface — the depth must be *expressible*, even if not
           // known until render time.
-          const parsedDepth = convertNode(depthNode, raw)
+          const parsedDepth = convertNode(depthNode, raw, true)
           if (checkSupport(parsedDepth, 'rendered', []).supported) {
             depthExpr = parsedDepth
             flatDepth = 1 // unused placeholder — consumers must check `depthExpr` first

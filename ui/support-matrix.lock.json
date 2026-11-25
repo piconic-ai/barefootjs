@@ -2854,8 +2854,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 182,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L182"
+        "line": 192,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L192"
       },
       "example": {
         "fixture": "client-only-loop",
@@ -3716,8 +3716,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 184,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L184"
+        "line": 194,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L194"
       },
       "example": {
         "fixture": "array-at-default",
@@ -5655,8 +5655,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 180,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L180"
+        "line": 190,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L190"
       },
       "example": {
         "fixture": "deferred-child-phrasing-parent",
@@ -7330,8 +7330,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 175,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L175"
+        "line": 185,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L185"
       },
       "example": {
         "fixture": "entries-loop-string-addition",
@@ -12725,8 +12725,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 172,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L172"
+        "line": 182,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L182"
       },
       "example": {
         "fixture": "aliased-prop-signal-tag-collision",
@@ -13710,8 +13710,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 177,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L177"
+        "line": 187,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L187"
       },
       "example": {
         "fixture": "ternary-template-literal-branch",
@@ -16296,6 +16296,12 @@
               "fixture": "raw-text-backslash-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-brace-delimiter-script-type-expression",
+              "limitations": [
+                "brace-in-script-text-with-computed-type"
               ]
             },
             {
@@ -21475,8 +21481,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 170,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L170"
+        "line": 180,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L180"
       },
       "example": {
         "fixture": "aliased-destructured-prop",
@@ -21911,8 +21917,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 174,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
+        "line": 184,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L184"
       },
       "example": {
         "fixture": "nested-loop-child-component-record-cell",
@@ -28350,8 +28356,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 171,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L171"
+        "line": 181,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L181"
       },
       "example": {
         "fixture": "boolean-attr-literals",
@@ -29839,8 +29845,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 178,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L178"
+        "line": 188,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L188"
       },
       "example": {
         "fixture": "destructure-default-array-child",
@@ -35869,8 +35875,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 173,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
+        "line": 183,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L183"
       },
       "example": {
         "fixture": "at-sign-beside-brace",
@@ -38888,8 +38894,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 183,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L183"
+        "line": 193,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L193"
       },
       "example": {
         "fixture": "body-destructure-non-literal-default",
@@ -38913,8 +38919,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 181,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L181"
+        "line": 191,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L191"
       }
     },
     "template-literal": {
@@ -39391,8 +39397,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 179,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
+        "line": 189,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L189"
       },
       "example": {
         "fixture": "template-delimiter-contextual-escape",
@@ -39539,8 +39545,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 176,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L176"
+        "line": 186,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L186"
       },
       "example": {
         "fixture": "omitted-optional-number-negation",
@@ -40752,8 +40758,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 185,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L185"
+        "line": 195,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L195"
       },
       "example": {
         "fixture": "ref-mount-attr",
@@ -40961,8 +40967,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 210,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L210"
+        "line": 220,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
       },
       "example": {
         "fixture": "array-at-default",
@@ -40986,8 +40992,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 211,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L211"
+        "line": 221,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
       },
       "example": {
         "fixture": "array-concat",
@@ -41011,8 +41017,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 223,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
+        "line": 233,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L233"
       },
       "example": {
         "fixture": "string-endsWith",
@@ -41036,8 +41042,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 229,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L229"
+        "line": 239,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L239"
       },
       "example": {
         "fixture": "array-flat",
@@ -41142,8 +41148,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 207,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L207"
+        "line": 217,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
       },
       "example": {
         "fixture": "array-includes",
@@ -41167,8 +41173,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 208,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L208"
+        "line": 218,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
       },
       "example": {
         "fixture": "array-indexOf",
@@ -41741,8 +41747,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 206,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L206"
+        "line": 216,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
       },
       "example": {
         "fixture": "array-join-default",
@@ -41766,8 +41772,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 209,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L209"
+        "line": 219,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
       },
       "example": {
         "fixture": "array-lastIndexOf",
@@ -41791,8 +41797,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 228,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L228"
+        "line": 238,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L238"
       },
       "example": {
         "fixture": "string-padEnd",
@@ -41816,8 +41822,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 227,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L227"
+        "line": 237,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L237"
       },
       "example": {
         "fixture": "string-padStart",
@@ -41841,8 +41847,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 226,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L226"
+        "line": 236,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L236"
       },
       "example": {
         "fixture": "string-repeat",
@@ -41866,8 +41872,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 224,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L224"
+        "line": 234,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L234"
       },
       "example": {
         "fixture": "string-replace",
@@ -41891,8 +41897,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 225,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L225"
+        "line": 235,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L235"
       },
       "example": {
         "fixture": "string-replaceall",
@@ -41916,8 +41922,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 213,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L213"
+        "line": 223,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L223"
       },
       "example": {
         "fixture": "array-reverse",
@@ -42034,8 +42040,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 212,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L212"
+        "line": 222,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
       },
       "example": {
         "fixture": "array-slice-copy",
@@ -42059,8 +42065,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 221,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L221"
+        "line": 231,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L231"
       },
       "example": {
         "fixture": "string-split",
@@ -42201,8 +42207,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 222,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L222"
+        "line": 232,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L232"
       },
       "example": {
         "fixture": "string-startsWith",
@@ -42226,8 +42232,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 220,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L220"
+        "line": 230,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L230"
       },
       "example": {
         "fixture": "number-tofixed",
@@ -42251,8 +42257,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 215,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L215"
+        "line": 225,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L225"
       },
       "example": {
         "fixture": "string-toLowerCase",
@@ -42276,8 +42282,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 214,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L214"
+        "line": 224,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L224"
       },
       "example": {
         "fixture": "array-toReversed",
@@ -42448,8 +42454,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 216,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L216"
+        "line": 226,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L226"
       },
       "example": {
         "fixture": "string-toUpperCase",
@@ -42473,8 +42479,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 217,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L217"
+        "line": 227,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L227"
       },
       "example": {
         "fixture": "string-trim",
@@ -42498,8 +42504,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 219,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L219"
+        "line": 229,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L229"
       },
       "example": {
         "fixture": "string-trim-sided",
@@ -42523,8 +42529,8 @@
       },
       "source": {
         "file": "packages/jsx/src/expression-parser.ts",
-        "line": 218,
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L218"
+        "line": 228,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L228"
       },
       "example": {
         "fixture": "string-trim-sided",
