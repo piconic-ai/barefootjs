@@ -11999,6 +11999,29 @@
       }
     }
   ],
+  "module-let-const-reader-reads-context-through-function": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetConstReaderReadsContextThroughFunction_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetConstReaderReadsContextThroughFunction_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetConstReaderReadsContextThroughFunction_test"
+      }
+    }
+  ],
   "module-let-const-reads-shared-hidden-read": [
     {
       "name": "gen:base:empty",

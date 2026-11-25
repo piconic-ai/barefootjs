@@ -113,7 +113,7 @@ interface RoleEnv {
 }
 
 /** How the replica treats a module const that a replica member reads. */
-type ReplicaRole = 'declared' | 'shared' | 'blocked'
+type ReplicaRole = 'declared' | 'shared' | 'module-level' | 'blocked'
 
 /**
  * - `declared`: a plain value the component never reassigns, evaluated in the
@@ -123,11 +123,18 @@ type ReplicaRole = 'declared' | 'shared' | 'blocked'
  * - `shared`: a binding the component or a module function reassigns (and the
  *   component does not hide: a hidden one is written only as the component's own binding). The storage stays
  *   at client-module level, where the component writes it (#3932).
- * - `blocked`: a value the replica has nothing to evaluate (JSX, a system
- *   construct, a bare `let` nobody writes).
+ * - `module-level`: a system construct (`createContext`, `new WeakMap()`) the
+ *   component does not hide. The replica never declares it (its identity is
+ *   one per module), but the client script already declares it at module
+ *   level before the replica (`compute-scope.ts`), so a member reading it
+ *   stays in the replica and is still evaluated once.
+ * - `blocked`: a value the replica has nothing to evaluate and the client
+ *   script does not declare at module level (JSX, a hidden system construct,
+ *   a bare `let` nobody writes).
  */
 function replicaRole(c: ConstantInfo, env: RoleEnv): ReplicaRole {
-  if (c.isJsx || c.isJsxFunction || c.systemConstructKind) return 'blocked'
+  if (c.isJsx || c.isJsxFunction) return 'blocked'
+  if (c.systemConstructKind) return env.componentNames.has(c.name) ? 'blocked' : 'module-level'
   if ((c.reassigned || env.writtenByFunction.has(c.name)) && !env.componentNames.has(c.name)) return 'shared'
   return c.value !== undefined && c.value !== '' ? 'declared' : 'blocked'
 }
@@ -168,7 +175,7 @@ function seedsClosure(
   env: RoleEnv,
 ): boolean {
   const role = replicaRole(c, env)
-  if (role === 'blocked') return false
+  if (role === 'blocked' || role === 'module-level') return false
   const reads = freeIdentifiersOfConstant(c)
   if (intersects(reads, env.componentNames)) return true
   // Only a binding the client script already declares at client-module level:

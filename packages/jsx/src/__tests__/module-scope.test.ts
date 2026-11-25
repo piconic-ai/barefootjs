@@ -508,6 +508,8 @@ function loadClientScript(clientJs: string, log: unknown[]): Map<string, (scope:
     const $c = $
     const createEffect = (fn) => fn()
     const lazySlots = () => () => {}
+    const createContext = (v) => ({ defaultValue: v })
+    const useContext = (c) => c.defaultValue
     const createSignal = (v) => { let x = v; return [() => x, (n) => { x = typeof n === 'function' ? n(x) : n }] }
     const escapeText = (v) => String(v)
     const escapeTextOrMarkup = (v) => String(v)
@@ -599,5 +601,70 @@ export function C() {
     inits.get('C')!(scope)
     scope.click('s0')
     expect(log).toEqual([[12, 2]])
+  })
+
+  // A module const evaluated in the replica runs once, at module load, even
+  // when what it reads (through a module function) is a system construct the
+  // client script already declares at module level.
+  describe.each([
+    ['a context', "const dep = createContext(0)", 'dep ? 10 : 20'],
+    ['a WeakMap', 'const dep = new WeakMap()', 'dep ? 10 : 20'],
+  ])('a replica const whose module function reads %s', (_label, decl, body) => {
+    test('is evaluated once for every instance', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext } from '@barefootjs/client'
+const base = 'm'
+let count = 1
+${decl}
+function offset() { return ${body} }
+const initial = count + offset()
+function g() { return base + count }
+export function C({ base }: { base: string }) {
+  count = count + 1
+  return <button onClick={() => __log([initial, g()])}>{base}</button>
+}
+`)
+      const log: unknown[] = []
+      const inits = loadClientScript(clientJs, log)
+      const first = fakeScope()
+      const second = fakeScope()
+      inits.get('C')!(first)
+      inits.get('C')!(second)
+      first.click('s1')
+      second.click('s1')
+      expect(log).toEqual([[11, 'm3'], [11, 'm3']])
+    })
+  })
+
+  // What the replica cannot read at module level keeps the member in the
+  // component's view: the module still loads.
+  describe.each([
+    ['a bare let nobody writes', 'let dep', 'dep ? 20 : 10'],
+    ['a context the component hides', 'const dep = createContext(0)', 'dep ? 10 : 20'],
+  ])('a replica const whose module function reads %s', (label, decl, body) => {
+    test('falls back to the init body and loads', () => {
+      const hides = label.includes('hides') ? 'const dep = 1\n  ' : ''
+      const { clientJs } = compile(`
+'use client'
+import { createContext } from '@barefootjs/client'
+const base = 'm'
+let count = 1
+${decl}
+function offset() { return ${body} }
+const initial = count + offset()
+function g() { return base + count }
+export function C({ base }: { base: string }) {
+  ${hides}count = count + 1
+  return <button onClick={() => __log([initial, g(), dep])}>{base}</button>
+}
+`)
+      const log: unknown[] = []
+      const inits = loadClientScript(clientJs, log)
+      const scope = fakeScope()
+      expect(() => inits.get('C')!(scope)).not.toThrow()
+      scope.click('s1')
+      expect(log).toHaveLength(1)
+    })
   })
 })
