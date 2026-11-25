@@ -61,6 +61,7 @@ describe('compileForCompat', () => {
           'body-rest-props-name-shadowed',
           'body-rest-taken-key-read',
           'body-statement-write-read-as-declared',
+          'brace-in-script-text-with-computed-type',
           'callback-index-param',
           'callback-outside-evaluator',
           'caller-rows-computed-key',
