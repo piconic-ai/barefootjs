@@ -16161,6 +16161,12 @@
               ]
             },
             {
+              "fixture": "raw-text-brace-delimiter-script-type-expression",
+              "limitations": [
+                "brace-in-script-text-with-computed-type"
+              ]
+            },
+            {
               "fixture": "raw-text-foreign-content",
               "limitations": [
                 "dynamic-text-in-style-script-element"

@@ -13179,6 +13179,20 @@
           }
         }
       },
+      "raw-text-brace-delimiter-script-type-expression": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "brace-in-script-text-with-computed-type"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "raw-text-foreign-content": {
         "go-template": {
           "kind": "refusal",
@@ -17559,6 +17573,10 @@
         "description": "A backslash-escaped < / & split across the children of <style> still reads as the same CSS string",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-backslash-reactive.ts"
       },
+      "raw-text-brace-delimiter-script-type-expression": {
+        "description": "A tag-opening brace in <script> text prints as written when the type is an expression or a ternary",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-brace-delimiter-script-type-expression.ts"
+      },
       "raw-text-foreign-content": {
         "description": "A component-rooted <style> / <script> placed in an <svg> holds no markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-foreign-content.ts"
@@ -18388,6 +18406,22 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "brace-in-script-text-with-computed-type": {
+      "title": "A tag-opening brace in the text of a `<script>` whose type is computed at render time",
+      "kind": "refusal",
+      "given": "a `{` that would open a template tag, in the literal text of a `<script>` whose `type` ends in a value computed at render time (`<script type={kind}>if (a) &#123;&#123; b() &#125;&#125;</script>`)",
+      "expected": "the text as written inside the element",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "raw-text-brace-delimiter-script-type-expression"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "callback-index-param": {
