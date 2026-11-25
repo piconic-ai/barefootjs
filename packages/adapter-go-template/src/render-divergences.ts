@@ -178,9 +178,10 @@ export const renderDivergences: RenderDivergences = {
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
   // A `{` that would open an action is printed through `{{"{"}}`, which
   // html/template escapes by context: `%7b` in a template-literal URL
-  // attribute, `ZgotmplZ` in a `<style>` element. A literal attribute value
-  // goes through `bf_attr` and prints as written; a template literal keeps
-  // the attribute's contextual escaping for its dynamic part.
+  // attribute. A literal attribute value goes through `bf_attr` and prints
+  // as written; a template literal keeps the attribute's contextual
+  // escaping for its dynamic part. (The fixture's `<style>` text prints as
+  // written, through a typed `bf_raw_text_literal`.)
   'template-delimiter-contextual-escape': { limitation: 'brace-delimiter-in-contextual-escape' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template

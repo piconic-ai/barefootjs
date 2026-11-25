@@ -10695,6 +10695,147 @@
       }
     }
   ],
+  "member-read-on-low-precedence-const": [
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "a": "ab",
+        "b": "cd",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true,
+        "a": "ab",
+        "b": "cd",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "on": false,
+        "a": "",
+        "b": "cd",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "on": false,
+        "a": "<b>&\"'</b>",
+        "b": "cd",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "on": false,
+        "a": "日本語",
+        "b": "cd",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "<b>&\"'</b>",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "日本語",
+        "n": 1,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": 0,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": -7,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": 1234567890,
+        "m": 2
+      }
+    },
+    {
+      "name": "gen:m:zero",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": 1,
+        "m": 0
+      }
+    },
+    {
+      "name": "gen:m:negative",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": 1,
+        "m": -7
+      }
+    },
+    {
+      "name": "gen:m:large",
+      "props": {
+        "on": false,
+        "a": "ab",
+        "b": "cd",
+        "n": 1,
+        "m": 1234567890
+      }
+    }
+  ],
   "member-seeded-nullable-signal-attr-inline": [
     {
       "name": "gen:initial:object:+label",
@@ -17311,6 +17452,56 @@
       }
     }
   ],
+  "raw-text-brace-delimiter-script-type": [
+    {
+      "name": "gen:prefix:empty",
+      "props": {
+        "prefix": ""
+      }
+    },
+    {
+      "name": "gen:prefix:markup",
+      "props": {
+        "prefix": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:prefix:multibyte",
+      "props": {
+        "prefix": "日本語"
+      }
+    }
+  ],
+  "raw-text-brace-delimiter-script-type-expression": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "kind": "text/plain",
+        "on": false
+      }
+    }
+  ],
   "raw-text-host-dynamic": [
     {
       "name": "gen:label:empty",
@@ -19638,6 +19829,44 @@
       "name": "gen:c:multibyte",
       "props": {
         "c": "日本語"
+      }
+    }
+  ],
+  "signal-seed-local-call-member-on-conditional": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
       }
     }
   ],
