@@ -66,7 +66,44 @@ export function P({ label, ...rest }: { label: string; title?: string }) {
 }
 `)
     const [p] = elements(ir.root, 'p')
-    expect(attrExpr(p, 'title')).toEqual(['rest.title', 'literal'])
+    // The spread's expansion drops the key the later attribute writes, so
+    // the element carries it once, as the literal.
+    expect(attrExpr(p, 'title')).toEqual(['literal'])
+  })
+
+  test('a later attribute spelled as the attribute a rest key renders as wins over it', () => {
+    const ir = irOf(`
+export function P({ label, ...rest }: { label: string; htmlFor?: string; className?: string }) {
+  return <label {...rest} for="x" className="c">{label}</label>
+}
+`)
+    const [label] = elements(ir.root, 'label')
+    expect(label.attrs.map(a => a.name)).toEqual(['for', 'class'])
+  })
+
+  test('a client-only attribute after the spread leaves the rest key in place', () => {
+    const ir = irOf(`
+export function P({ label, ...rest }: { label: string; htmlFor?: string }) {
+  return <label {...rest} htmlFor={/* @client */ 'c'}>{label}</label>
+}
+`)
+    const [label] = elements(ir.root, 'label')
+    expect(label.attrs.map(a => a.name)).toEqual(['htmlFor', 'for'])
+  })
+
+  test('a repeated closed rest keeps every expansion', () => {
+    const ir = irOf(`
+export function P({ label, bag, ...rest }: { label: string; bag: Record<string, string>; title?: string }) {
+  return <div><p title="f" {...rest} {...bag} {...rest}>{label}</p><i title="f" {...rest} {...rest}>{label}</i></div>
+}
+`)
+    const [p] = elements(ir.root, 'p')
+    // Across the open bag both expansions stay (limitation
+    // `closed-rest-repeated`).
+    expect(attrExpr(p, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title'])
+    const [i] = elements(ir.root, 'i')
+    // Every expansion of a repeated rest stays (limitation `closed-rest-repeated`).
+    expect(attrExpr(i, 'title')).toEqual(['rest.title ?? ("f")', 'rest.title ?? (rest.title ?? ("f"))'])
   })
 
   test('a member read before the spread is a fallback', () => {

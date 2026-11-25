@@ -238,6 +238,12 @@ export interface AnalyzerContext {
    * a body it could run. See `spec/callback-fidelity.md`.
    */
   acceptsCallbackBody?: CallbackBodyAcceptor
+  /**
+   * The spread bag keys the target adapter's spread helper renames as the
+   * reference does (`TemplateAdapter.spreadKeyRenames`); undefined for the
+   * default set. Set by the compiler before Phase 1 builds the IR.
+   */
+  spreadKeyRenames?: ReadonlySet<string>
 
   // Directive
   hasUseClientDirective: boolean

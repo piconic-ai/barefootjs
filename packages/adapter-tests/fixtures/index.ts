@@ -602,6 +602,22 @@ import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
 import { fixture as jsxSpreadMultiple } from './jsx-spread-multiple'
 import { fixture as jsxSpreadStaticAndSpread } from './jsx-spread-static-and-spread'
 import { fixture as jsxSpreadRestProp } from './jsx-spread-rest-prop'
+import { fixture as spreadOpenBagAttrNames } from './spread-open-bag-attr-names'
+import { fixture as spreadOpenBagHonoRenamedKeys } from './spread-open-bag-hono-renamed-keys'
+import { fixture as spreadClosedRestAttrNames } from './spread-closed-rest-attr-names'
+import { fixture as spreadClosedRestAttrNamesOverlap } from './spread-closed-rest-attr-names-overlap'
+import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-literal-alias-before'
+import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
+import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
+import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
+import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
+import { fixture as spreadClosedRestRepeatedAfterBag } from './spread-closed-rest-repeated-after-bag'
+import { fixture as spreadClosedRestRepeatedLast } from './spread-closed-rest-repeated-last'
+import { fixture as spreadClosedRestRepeatedBoth } from './spread-closed-rest-repeated-both'
+import { fixture as spreadClosedRestThenBagRenamedKey } from './spread-closed-rest-then-bag-renamed-key'
+import { fixture as spreadClosedRestRepeatedAttrSpelledBagKey } from './spread-closed-rest-repeated-attr-spelled-bag-key'
+import { fixture as spreadClosedRestRepeatedAroundBag } from './spread-closed-rest-repeated-around-bag'
+import { fixture as spreadOptionalBagLiteralBefore } from './spread-optional-bag-literal-before'
 import { fixture as restSpreadRootHydrationProps } from './rest-spread-root-hydration-props'
 import { fixture as propsObjectSpreadChildHydrationProps } from './props-object-spread-child-hydration-props'
 import { fixture as restSpreadChildOverrideHydrationProps } from './rest-spread-child-override-hydration-props'
@@ -2185,6 +2201,22 @@ export const jsxFixtures: JSXFixture[] = [
   jsxSpreadMultiple,
   jsxSpreadStaticAndSpread,
   jsxSpreadRestProp,
+  spreadOpenBagAttrNames,
+  spreadOpenBagHonoRenamedKeys,
+  spreadClosedRestAttrNames,
+  spreadClosedRestAttrNamesOverlap,
+  spreadOpenBagLiteralAliasBefore,
+  spreadClosedRestLiteralAliasAfter,
+  spreadOpenBagLiteralRenamedElsewhere,
+  spreadClosedRestClientLiteralAfter,
+  spreadClosedRestRepeated,
+  spreadClosedRestRepeatedAfterBag,
+  spreadClosedRestRepeatedLast,
+  spreadClosedRestRepeatedBoth,
+  spreadClosedRestThenBagRenamedKey,
+  spreadClosedRestRepeatedAttrSpelledBagKey,
+  spreadClosedRestRepeatedAroundBag,
+  spreadOptionalBagLiteralBefore,
   restSpreadRootHydrationProps,
   propsObjectSpreadChildHydrationProps,
   restSpreadChildOverrideHydrationProps,
