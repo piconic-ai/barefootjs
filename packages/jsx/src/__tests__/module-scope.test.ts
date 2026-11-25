@@ -603,21 +603,30 @@ export function C() {
     expect(log).toEqual([[12, 2]])
   })
 
-  // A module const evaluated in the replica runs once, at module load, even
-  // when what it reads (through a module function) is a system construct the
-  // client script already declares at module level.
+  // The wider replica of #3968 is all or nothing: when what it would take in
+  // reaches a declaration the replica cannot host (a system construct, a bare
+  // `let`, a hidden name of that kind), or an initializer outside it reads one
+  // of its bindings, the client script is the one the narrower replica gives.
+  const run = (clientJs: string, instances = 1) => {
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scopes = Array.from({ length: instances }, () => fakeScope())
+    for (const scope of scopes) inits.get('C')!(scope)
+    return { log, scopes }
+  }
+
   describe.each([
-    ['a context', "const dep = createContext(0)", 'dep ? 10 : 20'],
-    ['a WeakMap', 'const dep = new WeakMap()', 'dep ? 10 : 20'],
-  ])('a replica const whose module function reads %s', (_label, decl, body) => {
-    test('is evaluated once for every instance', () => {
+    ['a context', 'const dep = createContext(0)'],
+    ['a WeakMap', 'const dep = new WeakMap()'],
+  ])('a replica const whose module function reads %s', (_label, decl) => {
+    test('is still evaluated once for every instance, as before', () => {
       const { clientJs } = compile(`
 'use client'
 import { createContext } from '@barefootjs/client'
 const base = 'm'
 let count = 1
 ${decl}
-function offset() { return ${body} }
+function offset() { return dep ? 10 : 20 }
 const initial = count + offset()
 function g() { return base + count }
 export function C({ base }: { base: string }) {
@@ -625,46 +634,87 @@ export function C({ base }: { base: string }) {
   return <button onClick={() => __log([initial, g()])}>{base}</button>
 }
 `)
-      const log: unknown[] = []
-      const inits = loadClientScript(clientJs, log)
-      const first = fakeScope()
-      const second = fakeScope()
-      inits.get('C')!(first)
-      inits.get('C')!(second)
-      first.click('s1')
-      second.click('s1')
+      // The context stays a module-level declaration; the replica does not take it in.
+      expect(clientJs).toContain('var dep = dep ?? ')
+      const { log, scopes } = run(clientJs, 2)
+      for (const scope of scopes) scope.click('s1')
       expect(log).toEqual([[11, 'm3'], [11, 'm3']])
     })
   })
 
-  // What the replica cannot read at module level keeps the member in the
-  // component's view: the module still loads.
-  describe.each([
-    ['a bare let nobody writes', 'let dep', 'dep ? 20 : 10'],
-    ['a context the component hides', 'const dep = createContext(0)', 'dep ? 10 : 20'],
-  ])('a replica const whose module function reads %s', (label, decl, body) => {
-    test('falls back to the init body and loads', () => {
-      const hides = label.includes('hides') ? 'const dep = 1\n  ' : ''
-      const { clientJs } = compile(`
+  test('a context initialized from a shared let initialized from a context keeps its order', () => {
+    const { clientJs } = compile(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const first = createContext(1)
+let count = first.defaultValue ?? 0
+const second = createContext(count)
+export function C() {
+  count = count + 1
+  return <button onClick={() => __log([count, useContext(second)])}>x</button>
+}
+`)
+    expect(clientJs).not.toContain('__bf_module_C')
+    const { log, scopes } = run(clientJs)
+    scopes[0].click('s0')
+    expect(log).toEqual([[2, 1]])
+  })
+
+  test('a shared let initialized from a context and a module const is not taken into the replica', () => {
+    const { clientJs } = compile(`
 'use client'
 import { createContext } from '@barefootjs/client'
+const ctx = createContext('a')
+const seed = ''
+let counter = seed || ctx.defaultValue
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => __log(counter)}>x</button>
+}
+`)
+    // As before #3968: the module-level initializer reads the copied const
+    // (a known limitation; see the PR's remaining limitations).
+    expect(clientJs).not.toContain('__bf_module_C')
+    expect(clientJs).toContain("var counter = counter ?? (seed || ctx.defaultValue)")
+  })
+
+  test('a replica const whose module function reads a bare let nobody writes is not widened', () => {
+    const { clientJs } = compile(`
+'use client'
 const base = 'm'
 let count = 1
-${decl}
-function offset() { return ${body} }
+let dep
+function offset() { return dep ? 20 : 10 }
 const initial = count + offset()
 function g() { return base + count }
 export function C({ base }: { base: string }) {
-  ${hides}count = count + 1
-  return <button onClick={() => __log([initial, g(), dep])}>{base}</button>
+  count = count + 1
+  return <button onClick={() => __log([initial, g()])}>{base}</button>
 }
 `)
-      const log: unknown[] = []
-      const inits = loadClientScript(clientJs, log)
-      const scope = fakeScope()
-      expect(() => inits.get('C')!(scope)).not.toThrow()
-      scope.click('s1')
-      expect(log).toHaveLength(1)
-    })
+    // The replica declares neither the function nor the bare `let`, as before
+    // #3968 (the replica's `initial` then calls an `offset` it cannot see: a
+    // known limitation of the narrower replica).
+    const replica = clientJs.slice(clientJs.indexOf('var __bf_module_C'), clientJs.indexOf('})()'))
+    expect(replica).toContain('const initial = count + offset()')
+    expect(replica).not.toContain('offset = ')
+    expect(replica).not.toContain('dep')
+  })
+
+  test('a shared let a later shared let reads is assigned before it in the replica', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 'a'
+let counter = seed
+let other = counter + '?'
+export function C() {
+  counter = counter + '!'
+  other = other + '.'
+  return <button onClick={() => __log([counter, other])}>x</button>
+}
+`)
+    const { log, scopes } = run(clientJs)
+    scopes[0].click('s0')
+    expect(log).toEqual([['a!', 'a?.']])
   })
 })

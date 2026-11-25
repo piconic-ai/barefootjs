@@ -1,11 +1,11 @@
 import { $, createComponent, createContext, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots } from '@barefootjs/client/runtime'
 
 var ctx = ctx ?? createContext(0)
-var count
-var __bf_module_ModuleLetConstReaderReadsContextThroughFunction = __bf_module_ModuleLetConstReaderReadsContextThroughFunction ?? (() => {
-  const offset = function() {
+var offset = offset ?? function() {
   return ctx ? 10 : 20
 }
+var count
+var __bf_module_ModuleLetConstReaderReadsContextThroughFunction = __bf_module_ModuleLetConstReaderReadsContextThroughFunction ?? (() => {
   const g = function() {
   return base + count
 }

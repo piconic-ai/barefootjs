@@ -35,7 +35,9 @@
  * consts it reads are not declared, since the script copies them into the init
  * body (#3968). One only a handler or a module function writes stays a
  * per-instance copy in the init body, so two inlined files' bindings of the
- * same name do not meet.
+ * same name do not meet. That widening is all or nothing
+ * (`scopeSensitiveClosure`): unless the replica can host everything it would
+ * take in, the replica is the one the hidden names alone call for.
  */
 
 import type { ConstantInfo, FunctionInfo, InitStatementInfo, IRMetadata } from './types.ts'
@@ -113,7 +115,7 @@ interface RoleEnv {
 }
 
 /** How the replica treats a module const that a replica member reads. */
-type ReplicaRole = 'declared' | 'shared' | 'module-level' | 'blocked'
+type ReplicaRole = 'declared' | 'shared' | 'blocked'
 
 /**
  * - `declared`: a plain value the component never reassigns, evaluated in the
@@ -123,18 +125,11 @@ type ReplicaRole = 'declared' | 'shared' | 'module-level' | 'blocked'
  * - `shared`: a binding the component or a module function reassigns (and the
  *   component does not hide: a hidden one is written only as the component's own binding). The storage stays
  *   at client-module level, where the component writes it (#3932).
- * - `module-level`: a system construct (`createContext`, `new WeakMap()`) the
- *   component does not hide. The replica never declares it (its identity is
- *   one per module), but the client script already declares it at module
- *   level before the replica (`compute-scope.ts`), so a member reading it
- *   stays in the replica and is still evaluated once.
- * - `blocked`: a value the replica has nothing to evaluate and the client
- *   script does not declare at module level (JSX, a hidden system construct,
- *   a bare `let` nobody writes).
+ * - `blocked`: a value the replica has nothing to evaluate (JSX, a system
+ *   construct, a bare `let` nobody writes).
  */
 function replicaRole(c: ConstantInfo, env: RoleEnv): ReplicaRole {
-  if (c.isJsx || c.isJsxFunction) return 'blocked'
-  if (c.systemConstructKind) return env.componentNames.has(c.name) ? 'blocked' : 'module-level'
+  if (c.isJsx || c.isJsxFunction || c.systemConstructKind) return 'blocked'
   if ((c.reassigned || env.writtenByFunction.has(c.name)) && !env.componentNames.has(c.name)) return 'shared'
   return c.value !== undefined && c.value !== '' ? 'declared' : 'blocked'
 }
@@ -160,72 +155,116 @@ function replicaCanDeclareFunction(f: FunctionInfo): boolean {
   return !f.isJsxFunction && !f.isMultiReturnJsxHelper && !f.containsJsx
 }
 
-/**
- * Must the module const `c` (one the component does not hide) be evaluated in
- * the replica? When it reads a name the component binds, or when it is a
- * shared binding a top-level statement reassigns whose initializer reads
- * another module const or function: that binding's storage is a client-module
- * variable, so its initializer would run at client-module level, where a
- * module declaration copied into the init body is not declared (#3968).
- */
-function seedsClosure(
-  c: ConstantInfo,
-  moduleConstants: ReadonlyMap<string, ConstantInfo>,
-  moduleFunctions: ReadonlyMap<string, FunctionInfo>,
-  env: RoleEnv,
-): boolean {
-  const role = replicaRole(c, env)
-  if (role === 'blocked' || role === 'module-level') return false
-  const reads = freeIdentifiersOfConstant(c)
-  if (intersects(reads, env.componentNames)) return true
-  // Only a binding the client script already declares at client-module level:
-  // one a handler or a module function alone writes stays a per-instance copy
-  // in the init body, where the consts it reads are declared too.
-  if (role !== 'shared' || !env.writtenByStatement.has(c.name)) return false
-  for (const read of reads) {
-    if (read !== c.name && (moduleConstants.has(read) || moduleFunctions.has(read))) return true
-  }
-  return false
+/** The module consts and functions the replica may declare, and what each reads. */
+interface ModuleDeclarations {
+  constants: ReadonlyMap<string, ConstantInfo>
+  functions: ReadonlyMap<string, FunctionInfo>
+  /** Module functions the replica cannot declare (JSX helpers). */
+  undeclarableFunctions: ReadonlySet<string>
+  freeOf: (name: string) => ReadonlySet<string>
 }
 
 /**
- * The module declarations whose evaluation depends on a name the component
- * binds, or that a shared binding's initializer reads, closed over what they
- * read: each member of the result must be evaluated in module scope, together.
+ * The seeds every replica has had (#3739, #3932): a module declaration the
+ * component can read (its name is not hidden) that itself reads a name the
+ * component binds.
  */
-function scopeSensitiveClosure(
-  moduleConstants: ReadonlyMap<string, ConstantInfo>,
-  moduleFunctions: ReadonlyMap<string, FunctionInfo>,
-  env: RoleEnv,
-): Set<string> {
+function hiddenNameSeeds(decls: ModuleDeclarations, env: RoleEnv): string[] {
   const { componentNames } = env
-  const freeOf = (name: string): ReadonlySet<string> => {
-    const c = moduleConstants.get(name)
-    if (c) return freeIdentifiersOfConstant(c)
-    return moduleFunctions.get(name)?.freeIdentifiers ?? new Set()
+  const seeds: string[] = []
+  for (const [name, c] of decls.constants) {
+    if (componentNames.has(name) || replicaRole(c, env) === 'blocked') continue
+    if (intersects(freeIdentifiersOfConstant(c), componentNames)) seeds.push(name)
   }
-  const closure = new Set<string>()
-  const pending: string[] = []
-  // Seeds: a module declaration the component can read (its name is not
-  // hidden) that itself reads a name the component binds, or a shared binding
-  // whose initializer reads another module declaration.
-  for (const [name, c] of moduleConstants) {
-    if (!componentNames.has(name) && seedsClosure(c, moduleConstants, moduleFunctions, env)) pending.push(name)
-  }
-  for (const [name, f] of moduleFunctions) {
+  for (const [name, f] of decls.functions) {
     if (componentNames.has(name)) continue
-    if (intersects(f.freeIdentifiers ?? new Set(), componentNames)) pending.push(name)
+    if (intersects(f.freeIdentifiers ?? new Set(), componentNames)) seeds.push(name)
   }
+  return seeds
+}
+
+/**
+ * The seeds #3968 adds: a shared module `let` a top-level statement of the
+ * component reassigns (so its storage is at client-module level already)
+ * whose initializer reads another module const or function. At client-module
+ * level those are not declared: the script copies them into the init body.
+ * One a handler or a module function alone writes stays a per-instance copy
+ * in the init body, where what it reads is declared too.
+ */
+function moduleReadSeeds(decls: ModuleDeclarations, env: RoleEnv): string[] {
+  const seeds: string[] = []
+  for (const [name, c] of decls.constants) {
+    if (env.componentNames.has(name) || !env.writtenByStatement.has(name)) continue
+    if (replicaRole(c, env) !== 'shared') continue
+    const reads = [...freeIdentifiersOfConstant(c)].filter(r => r !== name)
+    if (reads.some(r => decls.constants.has(r) || decls.functions.has(r))) seeds.push(name)
+  }
+  return seeds
+}
+
+/** Add to `closure` what its members read: module consts, and module functions. */
+function closeOverReads(closure: Set<string>, pending: string[], decls: ModuleDeclarations): void {
   while (pending.length > 0) {
     const name = pending.pop()!
     if (closure.has(name)) continue
     closure.add(name)
-    for (const read of freeOf(name)) {
-      if (!closure.has(read) && (moduleConstants.has(read) || moduleFunctions.has(read))) pending.push(read)
+    for (const read of decls.freeOf(name)) {
+      if (!closure.has(read) && (decls.constants.has(read) || decls.functions.has(read))) pending.push(read)
     }
   }
-  addReadersOfSharedStorage(closure, moduleConstants, moduleFunctions, freeOf, env)
-  return dropUndeclarableMembers(closure, moduleConstants, freeOf, env)
+}
+
+/**
+ * The module declarations whose evaluation depends on a name the component
+ * binds, closed over what they read: each member of the result must be
+ * evaluated in module scope, together.
+ *
+ * #3968 widens this, all or nothing: with the shared `let`s that read a module
+ * declaration as further seeds, and module functions followed for the consts
+ * that read shared storage, the wider closure is taken only when the replica
+ * can host every member of it and no initializer outside it reads one of its
+ * bindings. Otherwise the result is exactly the narrower closure.
+ */
+function scopeSensitiveClosure(decls: ModuleDeclarations, env: RoleEnv): Set<string> {
+  const seeds = hiddenNameSeeds(decls, env)
+  const narrow = new Set<string>()
+  closeOverReads(narrow, [...seeds], decls)
+  addReadersOfSharedStorage(narrow, decls, env, false)
+  const wide = new Set<string>()
+  closeOverReads(wide, [...seeds, ...moduleReadSeeds(decls, env)], decls)
+  addReadersOfSharedStorage(wide, decls, env, true)
+  const widened = [...wide].some(n => !narrow.has(n))
+  if (widened && replicaHostsAll(wide, decls, env) && noOutsideInitializerReads(wide, decls, env)) return wide
+  return dropUndeclarableMembers(narrow, decls.constants, decls.freeOf, env)
+}
+
+/**
+ * Can the replica evaluate every member of `closure` on its own? Each const
+ * must be one it declares or assigns, and nothing may read a module function
+ * it cannot declare.
+ */
+function replicaHostsAll(closure: ReadonlySet<string>, decls: ModuleDeclarations, env: RoleEnv): boolean {
+  for (const name of closure) {
+    const c = decls.constants.get(name)
+    if (c && replicaRole(c, env) === 'blocked') return false
+    if (intersects(decls.freeOf(name), decls.undeclarableFunctions)) return false
+  }
+  return true
+}
+
+/**
+ * Does any module const outside `closure` that the client script evaluates at
+ * client-module level (a shared binding, a system construct) read a member of
+ * `closure`? It runs before the replica, so it would read the binding before
+ * the replica gave it its value. A plain const outside is copied into the init
+ * body, which runs after the replica.
+ */
+function noOutsideInitializerReads(closure: ReadonlySet<string>, decls: ModuleDeclarations, env: RoleEnv): boolean {
+  for (const [name, c] of decls.constants) {
+    if (closure.has(name) || replicaRole(c, env) === 'declared') continue
+    if (intersects(freeIdentifiersOfConstant(c), closure)) return false
+  }
+  return true
 }
 
 /**
@@ -233,15 +272,16 @@ function scopeSensitiveClosure(
  * (directly or through another such const) must run in the replica, after the
  * shared initializers before it: at module level it would run before the
  * replica gave the binding its value. Add each such const, with what it reads,
- * once the closure holds a shared binding.
+ * once the closure holds a shared binding. `followFunctions` also adds the
+ * module functions those consts read (#3968).
  */
 function addReadersOfSharedStorage(
   closure: Set<string>,
-  moduleConstants: ReadonlyMap<string, ConstantInfo>,
-  moduleFunctions: ReadonlyMap<string, FunctionInfo>,
-  freeOf: (name: string) => ReadonlySet<string>,
+  decls: ModuleDeclarations,
   env: RoleEnv,
+  followFunctions: boolean,
 ): void {
+  const moduleConstants = decls.constants
   const tainted = new Set([...closure].filter(n => {
     const c = moduleConstants.get(n)
     return c !== undefined && replicaRole(c, env) === 'shared'
@@ -258,14 +298,24 @@ function addReadersOfSharedStorage(
       changed = true
     }
   }
-  // What the added consts read joins the closure too: the module consts and
-  // the module functions, and what those read in turn, as for the seeds.
+  addReadsOfMembers(closure, decls, followFunctions)
+}
+
+/**
+ * Add what the members of `closure` read: the module consts they read and,
+ * with `followFunctions`, the module functions too and what those read.
+ */
+function addReadsOfMembers(closure: Set<string>, decls: ModuleDeclarations, followFunctions: boolean): void {
+  const follows = (name: string): boolean => decls.constants.has(name) || (followFunctions && decls.functions.has(name))
   const pending = [...closure]
   while (pending.length > 0) {
-    for (const read of freeOf(pending.pop()!)) {
-      if (closure.has(read) || !(moduleConstants.has(read) || moduleFunctions.has(read))) continue
-      closure.add(read)
-      pending.push(read)
+    const name = pending.pop()!
+    if (!decls.constants.has(name) && !followFunctions) continue
+    for (const read of decls.freeOf(name)) {
+      if (follows(read) && !closure.has(read)) {
+        closure.add(read)
+        pending.push(read)
+      }
     }
   }
 }
@@ -344,7 +394,16 @@ export function moduleScopeView(metadata: ViewMetadata, replicaBaseName: string)
     writtenByFunction: namesWrittenByModuleFunctions(metadata.localFunctions),
     writtenByStatement: namesWrittenByStatements(metadata.initStatements ?? []),
   }
-  const closure = scopeSensitiveClosure(moduleConstants, moduleFunctions, env)
+  const undeclarableFunctions = new Set(
+    metadata.localFunctions.filter(f => isModuleLexicalFunction(f) && !replicaCanDeclareFunction(f)).map(f => f.name),
+  )
+  const freeOf = (name: string): ReadonlySet<string> => {
+    const c = moduleConstants.get(name)
+    if (c) return freeIdentifiersOfConstant(c)
+    return moduleFunctions.get(name)?.freeIdentifiers ?? new Set()
+  }
+  const decls: ModuleDeclarations = { constants: moduleConstants, functions: moduleFunctions, undeclarableFunctions, freeOf }
+  const closure = scopeSensitiveClosure(decls, env)
   const inClosure = [...moduleConstants.values()].filter(c => closure.has(c.name))
   const constants = inClosure.filter(c => replicaRole(c, env) === 'declared')
   const shared = inClosure.filter(c => replicaRole(c, env) === 'shared')
