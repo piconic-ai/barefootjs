@@ -22,7 +22,7 @@ import {
   graphUsedIdentifiers,
 } from './build-references.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
-import { sharedStorageNames } from '../module-scope.ts'
+import { constMayBeEmittedAtModuleLevel, sharedStorageNames } from '../module-scope.ts'
 
 export interface DeclarationScopes {
   constantScope: Map<string, DeclarationScope>
@@ -200,6 +200,9 @@ function classifyConstantImmediate(
   // read and write one binding (#3932).
   if (c.isModule && sharedNames.has(c.name)) return 'module'
   if (!c.value) return 'init'   // `let x` placeholder
+  // The one gate for client-module level, shared with the module-scope
+  // replica's widening rule (#3968): every const it rejects is init-scoped.
+  if (!constMayBeEmittedAtModuleLevel(c)) return 'init'
   if (c.systemConstructKind) return 'module'
   if (c.isModule && initStmtAssigned.has(c.name)) return 'module'
   if (c.isModule && c.containsArrow) return 'pending-fixpoint'   // #2988

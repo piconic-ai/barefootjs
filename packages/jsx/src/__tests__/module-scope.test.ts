@@ -2,6 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { analyzeComponent, buildMetadata, compileJSX, collectModuleStringConsts, lookupLiteralConst, type ComponentIR } from '../index'
 import { TestAdapter } from '../adapters/test-adapter'
 import { moduleScopeView } from '../module-scope'
+import { combineParentChildClientJs } from '../combine-client-js'
 
 function compile(src: string) {
   const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter(), outputIR: true })
@@ -425,3 +426,379 @@ export function C() {
     expect(() => renderClientTemplate(clientJs)).not.toThrow()
   })
 })
+
+describe('a module let initializer that reads a module declaration (#3968)', () => {
+  const lines = (code: string, prefix: string) => code.split('\n').map(l => l.trim()).filter(l => l.startsWith(prefix))
+
+  test('a module const only the initializer reads is evaluated before the let', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = ''
+let counter = seed || 'x'
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    // One storage at module level; the replica gives it the value the module
+    // computes, with `seed` declared beside it.
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter'])
+    expect(lines(clientJs, 'counter = counter ??')).toEqual(["counter = counter ?? (seed || 'x')"])
+    expect(lines(clientJs, "const seed = ''")).toEqual(["const seed = ''"])
+    expect(() => renderClientTemplate(clientJs)).not.toThrow()
+  })
+
+  test('a module function the initializer calls is declared before the let', () => {
+    const { clientJs } = compile(`
+'use client'
+function suffix() { return 'q' }
+const head = 'p'
+const start = head + suffix()
+let counter = start
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    const order = clientJs.split('\n').map(l => l.trim())
+      .filter(l => /^(const suffix = |const head = |const start = head|counter = counter \?\?)/.test(l))
+    expect(order).toEqual([
+      "const suffix = function() { return 'q' }",
+      "const head = 'p'",
+      'const start = head + suffix()',
+      'counter = counter ?? start',
+    ])
+    expect(() => renderClientTemplate(clientJs)).not.toThrow()
+  })
+
+  test('a let whose initializer reads only globals stays a plain module-level declaration', () => {
+    const { clientJs } = compile(`
+'use client'
+let counter = String(1)
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>x</button>
+}
+`)
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter = counter ?? String(1)'])
+    expect(clientJs).not.toContain('__bf_module_C')
+  })
+})
+
+/**
+ * Load a client script with stand-in runtime helpers and return each
+ * component's init, by component name. The handlers report through `__log`,
+ * which pushes onto `log`.
+ */
+function loadClientScript(clientJs: string, log: unknown[]): Map<string, (scope: unknown) => void> {
+  const body = clientJs
+    .split('\n')
+    .filter(line => !line.startsWith('import '))
+    .join('\n')
+    .replace(/^export /gm, '')
+  const inits = new Map<string, (scope: unknown) => void>()
+  new Function(
+    '__log', '__inits',
+    `
+    const hydrate = (name, def) => { __inits.set(name, def.init) }
+    const createComponent = () => null
+    const renderChild = () => ''
+    const initChild = () => {}
+    const $ = (scope, ...ids) => ids.map(id => scope.el(id))
+    const $c = $
+    const createEffect = (fn) => fn()
+    const lazySlots = () => () => {}
+    const createContext = (v) => ({ defaultValue: v })
+    const createMemo = (fn) => { const v = fn(); return () => v }
+    const createQuery = (_fn, opts) => { __log({ ttl: opts.ttl }); return [() => opts.initial] }
+    const useContext = (c) => c.defaultValue
+    const createSignal = (v) => { let x = v; return [() => x, (n) => { x = typeof n === 'function' ? n(x) : n }] }
+    const escapeText = (v) => String(v)
+    const escapeTextOrMarkup = (v) => String(v)
+    const escapeTextOrNode = (v) => String(v)
+    ${body}
+    `,
+  )(((v: unknown) => log.push(v)), inits)
+  return inits
+}
+
+/** A stand-in scope whose elements record their click handlers. */
+function fakeScope() {
+  const handlers = new Map<string, () => void>()
+  return {
+    getAttribute: () => 'test',
+    el: (id: string) => ({ addEventListener: (_ev: string, fn: () => void) => handlers.set(id, fn) }),
+    click: (id: string) => handlers.get(id)!(),
+  }
+}
+
+describe('module let storage after #3968 (review follow-up)', () => {
+  const clientJsOf = (src: string, file: string) =>
+    compileJSX(src.trimStart(), file, { adapter: new TestAdapter() }).files.find(f => f.type === 'clientJs')?.content ?? ''
+
+  test('a handler-written let of one name in a parent and an inlined child keeps one binding per source module', () => {
+    const child = clientJsOf(`
+'use client'
+const seed = 1
+let count = seed
+export function Child() {
+  return <button onClick={() => { count = count + 1; __log(count) }}>c</button>
+}
+`, 'Child.tsx')
+    const parent = clientJsOf(`
+'use client'
+import { Child } from './Child'
+const seed = 10
+let count = seed
+export function Parent() {
+  return <div><button onClick={() => { count = count + 1; __log(count) }}>p</button><Child /></div>
+}
+`, 'Parent.tsx')
+    const combined = combineParentChildClientJs(new Map([['Parent', parent], ['Child', child]])).get('Parent')!
+    const log: unknown[] = []
+    const inits = loadClientScript(combined, log)
+    const parentScope = fakeScope()
+    const childScope = fakeScope()
+    inits.get('Parent')!(parentScope)
+    inits.get('Child')!(childScope)
+    parentScope.click('s0')
+    childScope.click('s0')
+    expect(log).toEqual([11, 2])
+  })
+
+  test('a module const reading a shared let and a module function is evaluated with the function in scope', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 1
+let count = seed
+function offset() { return seed + 10 }
+const initial = count + offset()
+export function C() {
+  count = count + 1
+  return <button onClick={() => __log([initial, count])}>x</button>
+}
+`)
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scope = fakeScope()
+    inits.get('C')!(scope)
+    scope.click('s0')
+    expect(log).toEqual([[12, 2]])
+  })
+
+  test('the reviewer repro: a handler-written let read by a module const that calls a module function loads', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 1
+let count = seed
+function offset() { return seed + 10 }
+const initial = count + offset()
+export function C() {
+  return <button onClick={() => { count = count + 1; __log([initial, count]) }}>x</button>
+}
+`)
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scope = fakeScope()
+    inits.get('C')!(scope)
+    scope.click('s0')
+    expect(log).toEqual([[12, 2]])
+  })
+
+  // The wider replica of #3968 is all or nothing: when what it would take in
+  // reaches a declaration the replica cannot host (a system construct, a bare
+  // `let`, a hidden name of that kind), or an initializer outside it reads one
+  // of its bindings, the client script is the one the narrower replica gives.
+  const run = (clientJs: string, instances = 1) => {
+    const log: unknown[] = []
+    const inits = loadClientScript(clientJs, log)
+    const scopes = Array.from({ length: instances }, () => fakeScope())
+    for (const scope of scopes) inits.get('C')!(scope)
+    return { log, scopes }
+  }
+
+  describe.each([
+    ['a context', 'const dep = createContext(0)'],
+    ['a WeakMap', 'const dep = new WeakMap()'],
+  ])('a replica const whose module function reads %s', (_label, decl) => {
+    test('is still evaluated once for every instance, as before', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext } from '@barefootjs/client'
+const base = 'm'
+let count = 1
+${decl}
+function offset() { return dep ? 10 : 20 }
+const initial = count + offset()
+function g() { return base + count }
+export function C({ base }: { base: string }) {
+  count = count + 1
+  return <button onClick={() => __log([initial, g()])}>{base}</button>
+}
+`)
+      // The context stays a module-level declaration; the replica does not take it in.
+      expect(clientJs).toContain('var dep = dep ?? ')
+      const { log, scopes } = run(clientJs, 2)
+      for (const scope of scopes) scope.click('s1')
+      expect(log).toEqual([[11, 'm3'], [11, 'm3']])
+    })
+  })
+
+  test('a context initialized from a shared let initialized from a context keeps its order', () => {
+    const { clientJs } = compile(`
+'use client'
+import { createContext, useContext } from '@barefootjs/client'
+const first = createContext(1)
+let count = first.defaultValue ?? 0
+const second = createContext(count)
+export function C() {
+  count = count + 1
+  return <button onClick={() => __log([count, useContext(second)])}>x</button>
+}
+`)
+    expect(clientJs).not.toContain('__bf_module_C')
+    const { log, scopes } = run(clientJs)
+    scopes[0].click('s0')
+    expect(log).toEqual([[2, 1]])
+  })
+
+  test('a shared let initialized from a context and a module const is not taken into the replica', () => {
+    const { clientJs } = compile(`
+'use client'
+import { createContext } from '@barefootjs/client'
+const ctx = createContext('a')
+const seed = ''
+let counter = seed || ctx.defaultValue
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => __log(counter)}>x</button>
+}
+`)
+    // As before #3968: the module-level initializer reads the copied const
+    // (a known limitation; see the PR's remaining limitations).
+    expect(clientJs).not.toContain('__bf_module_C')
+    expect(clientJs).toContain("var counter = counter ?? (seed || ctx.defaultValue)")
+  })
+
+  test('a replica const whose module function reads a bare let nobody writes is not widened', () => {
+    const { clientJs } = compile(`
+'use client'
+const base = 'm'
+let count = 1
+let dep
+function offset() { return dep ? 20 : 10 }
+const initial = count + offset()
+function g() { return base + count }
+export function C({ base }: { base: string }) {
+  count = count + 1
+  return <button onClick={() => __log([initial, g()])}>{base}</button>
+}
+`)
+    // The replica declares neither the function nor the bare `let`, as before
+    // #3968 (the replica's `initial` then calls an `offset` it cannot see: a
+    // known limitation of the narrower replica).
+    const replica = clientJs.slice(clientJs.indexOf('var __bf_module_C'), clientJs.indexOf('})()'))
+    expect(replica).toContain('const initial = count + offset()')
+    expect(replica).not.toContain('offset = ')
+    expect(replica).not.toContain('dep')
+  })
+
+  test('a shared let a later shared let reads is assigned before it in the replica', () => {
+    const { clientJs } = compile(`
+'use client'
+const seed = 'a'
+let counter = seed
+let other = counter + '?'
+export function C() {
+  counter = counter + '!'
+  other = other + '.'
+  return <button onClick={() => __log([counter, other])}>x</button>
+}
+`)
+    const { log, scopes } = run(clientJs)
+    scopes[0].click('s0')
+    expect(log).toEqual([['a!', 'a?.']])
+  })
+
+  // Every kind of declaration the client script evaluates at client-module
+  // level, ahead of the replica, must see `second` as the module gives it (2)
+  // before the component reassigns it: the replica is not widened when one of
+  // them reads a binding it would assign.
+  describe.each([
+    ['a client module signal', "/* @client */\nconst [early] = createSignal(second)", 'early()'],
+    ['a client module memo', '/* @client */\nconst early = createMemo(() => second)', 'early()'],
+    ['a context', 'const early = createContext(second)', 'useContext(early)'],
+    ['an arrow-bearing const', 'const early = [second, () => 0][0]', 'early'],
+    ['a client module signal through a module function', "/* @client */\nconst [early] = createSignal(read())", 'early()'],
+  ])('%s reading a shared let before the replica', (_label, decl, read) => {
+    test('is initialized from the module value', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext, createMemo, createSignal, useContext } from '@barefootjs/client'
+function pick(v, _f) { return v }
+let first = 1
+let second = first + 1
+function read() { return second }
+${decl}
+export function C() {
+  first = 10
+  second = 20
+  return <button onClick={() => __log(${read})}>x</button>
+}
+`)
+      const { log, scopes } = run(clientJs)
+      scopes[0].click('s0')
+      expect(log).toEqual([2])
+    })
+  })
+
+  test('a client module factory signal whose options read a shared let receives the module value', () => {
+    const { clientJs } = compile(`
+'use client'
+import { createQuery } from '@barefootjs/client'
+let first = 1
+let second = first + 1
+/* @client */
+const [early] = createQuery(() => http.get('/api/items'), { initial: [], ttl: Number(second.toFixed()) })
+export function C() {
+  first = 10
+  second = 20
+  return <button onClick={() => __log(early())}>x</button>
+}
+`)
+    const { log, scopes } = run(clientJs)
+    expect(log).toEqual([{ ttl: 2 }])
+    scopes[0].click('s0')
+    expect(log).toEqual([{ ttl: 2 }, []])
+  })
+
+  // Presence, not reads: any declaration the client script may evaluate at
+  // module level ahead of the replica keeps the replica as narrow as before
+  // #3968, whatever that declaration reads.
+  describe.each([
+    ['a client module signal', '/* @client */\nconst [early] = createSignal(0)'],
+    ['a client module memo', '/* @client */\nconst early = createMemo(() => 0)'],
+    ['a client module factory signal', "/* @client */\nconst [early] = createQuery(() => 0, { initial: [] })"],
+    ['a context', 'const early = createContext(0)'],
+    ['an arrow-bearing const', 'const early = [() => 0][0]'],
+    ['a shared let outside the closure', 'let early = 0'],
+  ])('with %s in the module', (_label, decl) => {
+    test('the shared let is left as before', () => {
+      const { clientJs } = compile(`
+'use client'
+import { createContext, createMemo, createQuery, createSignal } from '@barefootjs/client'
+${decl}
+const seed = ''
+let counter = seed || 'x'
+export function C() {
+  counter = counter + '!'
+  early = early
+  return <button onClick={() => __log(counter, early)}>x</button>
+}
+`.replace('  early = early\n', decl.startsWith('let ') ? '  early = 1\n' : ''))
+      expect(clientJs).not.toContain('__bf_module_C')
+      expect(clientJs).toContain("var counter = counter ?? (seed || 'x')")
+    })
+  })
+})
+

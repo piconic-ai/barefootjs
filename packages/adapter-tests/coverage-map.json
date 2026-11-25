@@ -13836,6 +13836,39 @@
         "text"
       ]
     },
+    "module-let-const-reader-calls-module-function": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-const-reader-reads-context-through-function": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-const-reads-shared-hidden-read": {
       "kinds": [
         "binary",
@@ -13884,6 +13917,23 @@
         "text"
       ]
     },
+    "module-let-handler-write-initializer-reads-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:||",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-hidden-read": {
       "kinds": [
         "binary",
@@ -13911,6 +13961,53 @@
       "axes": [
         "binary:+",
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-component-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:||",
+        "unary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-module-chain": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-reads-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:||"
       ],
       "contexts": [
         "text"

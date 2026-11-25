@@ -1718,6 +1718,12 @@ import { fixture as moduleLetConstReadsSharedHiddenRead } from './module-let-con
 import { fixture as moduleLetFunctionWriteHiddenRead } from './module-let-function-write-hidden-read'
 import { fixture as moduleLetLogicalInitializerHiddenRead } from './module-let-logical-initializer-hidden-read'
 import { fixture as moduleLetArrowInitializerHiddenRead } from './module-let-arrow-initializer-hidden-read'
+import { fixture as moduleLetInitializerReadsModuleConst } from './module-let-initializer-reads-module-const'
+import { fixture as moduleLetInitializerReadsModuleChain } from './module-let-initializer-reads-module-chain'
+import { fixture as moduleLetInitializerReadsComponentConst } from './module-let-initializer-reads-component-const'
+import { fixture as moduleLetHandlerWriteInitializerReadsModuleConst } from './module-let-handler-write-initializer-reads-module-const'
+import { fixture as moduleLetConstReaderCallsModuleFunction } from './module-let-const-reader-calls-module-function'
+import { fixture as moduleLetConstReaderReadsContextThroughFunction } from './module-let-const-reader-reads-context-through-function'
 import { fixture as moduleConstShadowedBySignal } from './module-const-shadowed-by-signal'
 import { fixture as moduleConstDeclaredAfterComponent } from './module-const-declared-after-component'
 import { fixture as moduleConstDestructureDefaultComponentConst } from './module-const-destructure-default-component-const'
@@ -3076,6 +3082,12 @@ export const jsxFixtures: JSXFixture[] = [
   moduleLetFunctionWriteHiddenRead,
   moduleLetLogicalInitializerHiddenRead,
   moduleLetArrowInitializerHiddenRead,
+  moduleLetInitializerReadsModuleConst,
+  moduleLetInitializerReadsModuleChain,
+  moduleLetInitializerReadsComponentConst,
+  moduleLetHandlerWriteInitializerReadsModuleConst,
+  moduleLetConstReaderCallsModuleFunction,
+  moduleLetConstReaderReadsContextThroughFunction,
   moduleConstShadowedBySignal,
   moduleConstDeclaredAfterComponent,
   moduleConstDestructureDefaultComponentConst,
