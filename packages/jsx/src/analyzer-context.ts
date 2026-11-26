@@ -512,35 +512,7 @@ export function typeNodeToTypeInfo(
   // `LiteralTypeNode(NullKeyword)` — NOT the bare `NullKeyword` the
   // switch above catches — which is exactly why nullish union arms were
   // invisible before.
-  if (ts.isLiteralTypeNode(typeNode)) {
-    const lit = typeNode.literal
-    if (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit)) {
-      return { kind: 'primitive', raw, primitive: 'string', literalValue: lit.text }
-    }
-    if (ts.isNumericLiteral(lit)) {
-      return { kind: 'primitive', raw, primitive: 'number', literalValue: lit.text }
-    }
-    if (
-      ts.isPrefixUnaryExpression(lit) &&
-      lit.operator === ts.SyntaxKind.MinusToken &&
-      ts.isNumericLiteral(lit.operand)
-    ) {
-      return { kind: 'primitive', raw, primitive: 'number', literalValue: `-${lit.operand.text}` }
-    }
-    if (lit.kind === ts.SyntaxKind.TrueKeyword || lit.kind === ts.SyntaxKind.FalseKeyword) {
-      return {
-        kind: 'primitive',
-        raw,
-        primitive: 'boolean',
-        literalValue: lit.kind === ts.SyntaxKind.TrueKeyword ? 'true' : 'false',
-      }
-    }
-    if (lit.kind === ts.SyntaxKind.NullKeyword) {
-      return { kind: 'primitive', raw, primitive: 'null' }
-    }
-    // BigInt and anything newer: opaque, as before.
-    return { kind: 'unknown', raw }
-  }
+  if (ts.isLiteralTypeNode(typeNode)) return literalTypeInfo(typeNode.literal, raw)
 
   // Union types
   if (ts.isUnionTypeNode(typeNode)) {
@@ -597,6 +569,36 @@ export function typeNodeToTypeInfo(
   }
 
   return opaqueTypeInfo(typeNode, raw, sourceFile, synthetic)
+}
+
+/** `typeNodeToTypeInfo` for a literal type node: a primitive of the literal's family carrying its value. */
+function literalTypeInfo(lit: ts.LiteralTypeNode['literal'], raw: string): TypeInfo {
+  if (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit)) {
+    return { kind: 'primitive', raw, primitive: 'string', literalValue: lit.text }
+  }
+  if (ts.isNumericLiteral(lit)) {
+    return { kind: 'primitive', raw, primitive: 'number', literalValue: lit.text }
+  }
+  if (
+    ts.isPrefixUnaryExpression(lit) &&
+    lit.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(lit.operand)
+  ) {
+    return { kind: 'primitive', raw, primitive: 'number', literalValue: `-${lit.operand.text}` }
+  }
+  if (lit.kind === ts.SyntaxKind.TrueKeyword || lit.kind === ts.SyntaxKind.FalseKeyword) {
+    return {
+      kind: 'primitive',
+      raw,
+      primitive: 'boolean',
+      literalValue: lit.kind === ts.SyntaxKind.TrueKeyword ? 'true' : 'false',
+    }
+  }
+  if (lit.kind === ts.SyntaxKind.NullKeyword) {
+    return { kind: 'primitive', raw, primitive: 'null' }
+  }
+  // BigInt and anything newer: opaque, as before.
+  return { kind: 'unknown', raw }
 }
 
 /**
