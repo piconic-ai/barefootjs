@@ -4773,6 +4773,14 @@
       }
     }
   ],
+  "date-loop-row-member": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "date-loop-row-member-client": [
     {
       "name": "gen:rows:empty",

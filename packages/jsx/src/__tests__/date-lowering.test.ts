@@ -819,6 +819,35 @@ describe('a catalogued Date call on a loop row (#3972)', () => {
     expect(errs[0].message).toContain("'.toLocaleDateString(...)' is a catalogued Date method")
   })
 
+  test.each([
+    ["'en-US'", 'a locale only'],
+    ["'en-US', {}", 'a locale and an empty options bag'],
+    ["'en-US', { month: 'long' }", 'options without a timeZone'],
+  ])('toLocaleDateString(%s) on a row (%s) keeps the uncatalogued message, as on a prop', (args) => {
+    const row = refusals(rowLoop('Row', `{r.at.toLocaleDateString(${args})}`))
+    expect(row).toHaveLength(1)
+    expect(row[0].message).toContain('no catalogued lowering')
+    const prop = refusals(`
+      export function Foo(props: { at: Date }) { return <p>{props.at.toLocaleDateString(${args})}</p> }`)
+    expect(prop).toHaveLength(1)
+    expect(prop[0].message).toContain('no catalogued lowering')
+  })
+
+  test.each([
+    ['{r.at?.getTime()}', "'r.at'"],
+    ['{r.meta?.at.getTime()}', "'r.meta.at'"],
+  ])('a nullable row read %s keeps its null guard in the advice instead of an unguarded rewrite', (body, path) => {
+    const errs = refusals(`
+      type Row = { at?: Date | null; meta?: { at: Date } }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">${body}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain(`${path} is read through the loop row binding 'r'`)
+    expect(errs[0].suggestion).toContain('under the same null check the optional chain makes')
+    expect(errs[0].suggestion).not.toContain('new Date(r.')
+  })
+
   test('an uncatalogued or ambient-locale call on a row keeps the uncatalogued message', () => {
     expect(refusals(rowLoop('Row', '{r.at.getDay()}'))[0].message).toContain('no catalogued lowering')
     expect(refusals(rowLoop('Row', '{r.at.toLocaleDateString()}'))[0].message).toContain('no catalogued lowering')

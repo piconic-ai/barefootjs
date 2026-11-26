@@ -26,4 +26,15 @@ export function DateLoopRowMember(props: { rows: Row[] }) {
 }
 `,
   props: { rows: [{ id: 'a', at: '2024-01-01T00:00:00.000Z' }, { id: 'b', at: '2025-06-15T12:00:00.000Z' }] },
+  // Hand-authored (the reference refuses this source, so there is nothing to
+  // generate it from): what each row renders once the lowering reaches loop
+  // rows. It keeps the CSR conformance refusal check running now, and turns
+  // into the output regression test when the pins go. Listed in
+  // `generate-expected-html.ts`'s SKIP_AUTO_UPDATE.
+  expectedHtml: `
+    <ul bf-s="test" bf="s1">
+      <li data-key="a"><!--bf:s0-->2024<!--/--></li>
+      <li data-key="b"><!--bf:s0-->2025<!--/--></li>
+    </ul>
+  `,
 })

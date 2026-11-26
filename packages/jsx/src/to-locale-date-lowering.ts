@@ -496,13 +496,23 @@ export function matchToLocaleDateStringCall(
 ): LoweringNode | null {
   if (callee.kind !== 'member' || callee.computed) return null
   if (callee.property !== 'toLocaleDateString' || args.length !== 2) return null
-  const [locale, options] = args
-  // Options bag: `timeZone` is REQUIRED (a literal 'UTC' | valid ±HH:MM |
-  // probe-verified canonical IANA zone (#2344) — its omission would read
-  // the host timezone); every OTHER key rides into
-  // the Intl probe as-is when its value is a string literal (#2334's
-  // fidelity rule: admit any literal options bag the probe can reproduce
-  // exactly, decline everything else — dateStyle, month/weekday forms, …).
+  const receiverType = resolveReceiverType(callee.object, metadata, new Map())
+  if (!receiverType || receiverType.kind !== 'interface') return null
+  const typeName = baseTypeName(receiverType.raw)
+  if (typeName !== 'Date') return null
+  if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
+  return lowerToLocaleDateStringOnDate(callee, args, metadata)
+}
+
+/**
+ * The options bag of an explicit-input `toLocaleDateString`: `timeZone` is
+ * REQUIRED (a literal 'UTC' | valid ±HH:MM | probe-verified canonical IANA
+ * zone (#2344) — its omission would read the host timezone); every OTHER key
+ * rides into the Intl probe as-is when its value is a string literal (#2334's
+ * fidelity rule: admit any literal options bag the probe can reproduce
+ * exactly, decline everything else — dateStyle, month/weekday forms, …).
+ */
+function readTimeZoneOptions(options: ParsedExpr): { tz: string; probeOptions: Record<string, string> } | null {
   if (options.kind !== 'object-literal') return null
   let tz: string | null = null
   const probeOptions: Record<string, string> = {}
@@ -520,13 +530,29 @@ export function matchToLocaleDateStringCall(
       probeOptions[prop.key] = value
     }
   }
-  if (tz === null) return null
+  return tz === null ? null : { tz, probeOptions }
+}
 
-  const receiverType = resolveReceiverType(callee.object, metadata, new Map())
-  if (!receiverType || receiverType.kind !== 'interface') return null
-  const typeName = baseTypeName(receiverType.raw)
-  if (typeName !== 'Date') return null
-  if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
+/**
+ * The `format_date` node for a `toLocaleDateString` call whose receiver is
+ * already known to be a `Date`, or `null` when its arguments are not an
+ * explicit input this module lowers (no literal `timeZone`, an unresolvable
+ * locale or options bag, ...). `matchToLocaleDateStringCall` applies it after
+ * proving the receiver type through props; `rich-type-refusal.ts` applies it
+ * to a receiver read through a loop row, so "the arguments would lower on a
+ * prop" is decided by this one rule.
+ */
+export function lowerToLocaleDateStringOnDate(
+  callee: ParsedExpr,
+  args: readonly ParsedExpr[],
+  metadata: IRMetadata,
+): LoweringNode | null {
+  if (callee.kind !== 'member' || callee.computed) return null
+  if (callee.property !== 'toLocaleDateString' || args.length !== 2) return null
+  const [locale, options] = args
+  const bag = readTimeZoneOptions(options)
+  if (!bag) return null
+  const { tz, probeOptions } = bag
 
   // Literal locale: resolve one pattern (+ name table when the probed
   // format contains month/weekday names) at build time.

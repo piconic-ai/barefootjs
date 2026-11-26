@@ -111,6 +111,20 @@ function matchDateCall(callee: ParsedExpr, args: readonly ParsedExpr[], metadata
   const typeName = baseTypeName(receiverType.raw)
   if (typeName !== 'Date') return null
   if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
+  return lowerDateAccessorOnDate(callee, args)
+}
+
+/**
+ * The `date` helper node for a call whose receiver is already known to be a
+ * `Date`, or `null` when the call shape is not catalogued (not a zero-arg
+ * `DATE_METHODS` accessor). `matchDateCall` applies it after proving the
+ * receiver type through props; `rich-type-refusal.ts` applies it to a
+ * receiver read through a loop row, to tell "would lower on a prop" from
+ * "not catalogued at all" without a second copy of the rule.
+ */
+export function lowerDateAccessorOnDate(callee: ParsedExpr, args: readonly ParsedExpr[]): LoweringNode | null {
+  if (callee.kind !== 'member' || callee.computed) return null
+  if (args.length !== 0 || !DATE_METHODS.has(callee.property)) return null
   return {
     kind: 'helper-call',
     helper: 'date',

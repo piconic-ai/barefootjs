@@ -781,9 +781,6 @@
     "packages/jsx/src/to-locale-date-lowering.ts": {
       "deriveFormat": [
         52
-      ],
-      "matchToLocaleDateStringCall": [
-        32
       ]
     },
     "packages/jsx/src/value-references.ts": {

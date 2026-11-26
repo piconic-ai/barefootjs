@@ -62,7 +62,7 @@ import type {
   EscapeKind,
 } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
-import { parseExpression } from './expression-parser.ts'
+import { parseExpression, optionalCallGuardTarget } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { ErrorCodes } from './errors.ts'
 import { isHydrationPayloadPropName } from './event-handler-name.ts'
@@ -78,7 +78,8 @@ import {
   receiverEvidenceLoss,
   resolveLoopBindingType,
 } from './rich-type-evidence.ts'
-import { DATE_METHODS } from './date-lowering.ts'
+import { DATE_METHODS, lowerDateAccessorOnDate } from './date-lowering.ts'
+import { lowerToLocaleDateStringOnDate } from './to-locale-date-lowering.ts'
 
 type Bindings = ReadonlyMap<string, TypeInfo | null>
 const EMPTY_BINDINGS: Bindings = new Map()
@@ -257,12 +258,13 @@ function pushDiagnostic(
   errors: CompilerError[],
   seen: Set<string>,
   loc: SourceLocation,
-  method: string,
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
   receiverPath: string,
   isProp: boolean,
   typeName: string,
-  loopItem: string | null,
+  loopItem: LoopItemCall | null,
 ): void {
+  const method = callee.property
   const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${method}`
   if (seen.has(key)) return
   seen.add(key)
@@ -283,28 +285,62 @@ function pushDiagnostic(
 
 /**
  * The loop item a catalogued `Date` call's receiver is read through, or
- * `null` when the receiver is prop-rooted or the call is not one the Date
- * lowering catalogues (a zero-arg `DATE_METHODS` accessor, or
- * `toLocaleDateString` with explicit arguments). The lowering plugins resolve
- * a receiver through props only, with no loop-row types (`date-lowering.ts`'s
- * module doc), so such a call on a loop item is refused even though the
- * same call on a prop lowers. Naming that keeps the refusal from claiming
- * the method has no catalogued lowering. A typed root that is not a prop is
- * always a loop item: arrow and index parameters are bound without a type.
+ * `null` when the receiver is prop-rooted or the call would not lower on a
+ * `Date` prop either. "Would lower" is the lowering plugins' own rule
+ * (`lowerDateAccessorOnDate`, `lowerToLocaleDateStringOnDate`) applied as if
+ * the receiver were a proven `Date`, so a `toLocaleDateString` without an
+ * explicit literal `timeZone` keeps the uncatalogued refusal, as on a prop.
+ * The plugins resolve a receiver through props only, with no loop-row types
+ * (`date-lowering.ts`'s module doc), so such a call on a loop item is refused
+ * even though the same call on a prop lowers. A typed root that is not a
+ * prop is always a loop item: arrow and index parameters are bound without a
+ * type. `nullGuarded` says the source reads the receiver through `?.`.
  */
 function loopItemOfCataloguedDateCall(
+  call: Extract<ParsedExpr, { kind: 'call' }>,
   callee: Extract<ParsedExpr, { kind: 'member' }>,
-  args: readonly ParsedExpr[],
+  meta: IRMetadata,
   typeName: string,
   bindings: Bindings,
-): string | null {
+): LoopItemCall | null {
   if (typeName !== 'Date') return null
-  const catalogued =
-    (DATE_METHODS.has(callee.property) && args.length === 0) || (callee.property === 'toLocaleDateString' && args.length > 0)
-  if (!catalogued) return null
   let root = callee.object
   while (root.kind === 'member' && !root.computed) root = root.object
-  return root.kind === 'identifier' && bindings.has(root.name) ? root.name : null
+  if (root.kind !== 'identifier' || !bindings.has(root.name)) return null
+  const lowers = lowerDateAccessorOnDate(callee, call.args) ?? lowerToLocaleDateStringOnDate(callee, call.args, meta)
+  if (!lowers) return null
+  return { name: root.name, nullGuarded: NULL_GUARDED_CALLS.has(call) || readsThroughOptionalChain(callee) }
+}
+
+interface LoopItemCall {
+  /** The loop row binding the receiver roots at. */
+  name: string
+  /** The receiver is read through `?.` (`r.at?.getTime()`, `r.meta?.at.getTime()`). */
+  nullGuarded: boolean
+}
+
+/**
+ * Calls written `recv?.method()`: the parser lowers them to a guard
+ * conditional around a plain call (`optionalCallGuardTarget`), so the call
+ * node itself no longer says it was optional. `checkExpr` marks the call when
+ * it visits the guard, before it reaches the call. Keyed by node identity, so
+ * a mark is a fact about that parse tree and never leaks to another one.
+ */
+const NULL_GUARDED_CALLS = new WeakSet<ParsedExpr>()
+
+function markNullGuardedCall(expr: ParsedExpr): void {
+  const call = optionalCallGuardTarget(expr)
+  if (call) NULL_GUARDED_CALLS.add(call)
+}
+
+/** Whether the receiver chain has a `?.` hop (`r.meta?.at.getTime()`). */
+function readsThroughOptionalChain(callee: Extract<ParsedExpr, { kind: 'member' }>): boolean {
+  let e: ParsedExpr = callee
+  while (e.kind === 'member') {
+    if (e.optional) return true
+    e = e.object
+  }
+  return false
 }
 
 /**
@@ -313,23 +349,27 @@ function loopItemOfCataloguedDateCall(
  * uncatalogued method. The escapes are the same two as for a prop receiver:
  * pre-compute per row, or revive the row field client-side (the row crosses
  * the `bf-p` boundary as JSON, so a bare `/* @client *\/` call would throw).
+ * For a receiver read through `?.` no copy-paste rewrite is offered, since
+ * `describeReceiverPath` drops the `?.` and `new Date(null)` is the epoch:
+ * the advice says to keep the null guard instead.
  */
 function pushLoopItemDiagnostic(
   errors: CompilerError[],
   loc: SourceLocation,
   method: string,
   receiverPath: string,
-  loopItem: string,
+  loopItem: LoopItemCall,
 ): void {
   const call = method === 'toLocaleDateString' ? `${method}(...)` : `${method}()`
-  const revival =
-    receiverPath === '<expression>'
+  const revival = loopItem.nullGuarded
+    ? `reviving the row field with new Date(...) under the same null check the optional chain makes (new Date(null) is the epoch, and reading a member of a missing value throws)`
+    : receiverPath === '<expression>'
       ? `wrapping the receiver in new Date(...) before calling .${call}`
       : `{/* @client */ new Date(${receiverPath}).${call}}`
   const where =
-    receiverPath === loopItem
+    receiverPath === loopItem.name
       ? `'${receiverPath}' is a loop row binding`
-      : `'${receiverPath}' is read through the loop row binding '${loopItem}'`
+      : `'${receiverPath}' is read through the loop row binding '${loopItem.name}'`
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
@@ -375,11 +415,11 @@ function checkExpr(
               errors,
               seen,
               loc,
-              expr.callee.property,
+              expr.callee,
               describeReceiverPath(expr.callee.object),
               receiverRootIsProp(expr.callee.object, bindings),
               typeName,
-              loopItemOfCataloguedDateCall(expr.callee, expr.args, typeName, bindings),
+              loopItemOfCataloguedDateCall(expr, expr.callee, meta, typeName, bindings),
             )
           }
         }
@@ -403,6 +443,7 @@ function checkExpr(
       recurse(expr.argument)
       break
     case 'conditional':
+      markNullGuardedCall(expr)
       recurse(expr.test)
       recurse(expr.consequent)
       recurse(expr.alternate)
