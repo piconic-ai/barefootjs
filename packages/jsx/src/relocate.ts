@@ -292,9 +292,42 @@ function decideReference(
 }
 
 /**
+ * Apply all per-name rewrites to `expr` by splicing each decision's
+ * `rewrittenAs` over the identifier nodes `collectFreeRefs` found for it,
+ * in one pass. Spliced text is never scanned again, so a rewrite that
+ * carries source of its own (a prop's destructure default, an inlined
+ * form) keeps its string literals and nested parameters as written even
+ * when they spell another rewritten name. Null when `refs`' nodes are not
+ * positioned over `expr` as `parseExpressionNode` wraps it (a node the
+ * caller parsed some other way), so the caller takes `applyRewrites`.
+ */
+function spliceRewrites(
+  expr: string,
+  refs: ReadonlyMap<string, readonly ts.Identifier[]>,
+  decisions: readonly RelocateDecision[],
+): string | null {
+  const splices: Array<{ start: number; end: number; text: string }> = []
+  for (const d of decisions) {
+    if (d.action === 'pass-through' || d.rewrittenAs === d.name) continue
+    for (const id of refs.get(d.name) ?? []) {
+      const sf = id.getSourceFile()
+      if (sf?.text !== `(${expr});`) return null
+      // `- 1`: the `(` `parseExpressionNode` puts before `expr`.
+      splices.push({ start: id.getStart(sf) - 1, end: id.getEnd() - 1, text: d.rewrittenAs })
+    }
+  }
+  let result = expr
+  for (const s of splices.sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, s.start) + s.text + result.slice(s.end)
+  }
+  return result
+}
+
+/**
  * Apply all per-name rewrites to the source text. Uses targeted
  * substitution (word-boundary regex) keyed by names that are AST-
  * confirmed free references. Pass-through decisions are skipped.
+ * The fallback for an expression `relocate` has no AST for.
  */
 function applyRewrites(
   text: string,
@@ -370,7 +403,7 @@ export function relocate(
     }
   }
 
-  const text = applyRewrites(expr, decisions)
+  const text = (exprNode ? spliceRewrites(expr, refs, decisions) : null) ?? applyRewrites(expr, decisions)
   return { text, ok, usedExternals, decisions }
 }
 
@@ -734,7 +767,8 @@ function parseExpressionNode(text: string): ts.Node | null {
       '__inline_check__.ts',
       `(${text});`,
       ts.ScriptTarget.Latest,
-      false,
+      // Parents let `spliceRewrites` position each identifier in `text`.
+      true,
       ts.ScriptKind.TS,
     )
     const stmt = sf.statements[0]
