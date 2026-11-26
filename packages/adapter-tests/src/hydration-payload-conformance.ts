@@ -36,6 +36,8 @@ export const FULL_HYDRATION_PAYLOAD_FIXTURES: ReadonlySet<string> = new Set([
   'filter-predicate-on-prefixed-prop',
   'filter-predicate-renamed-destructured-prop',
   'filter-predicate-block-shadowed-prop',
+  'inline-object-prop-index-signature-named-owner',
+  'intersection-member-index-signature-named-owner',
 ])
 
 export interface RunHydrationPayloadConformanceOptions {

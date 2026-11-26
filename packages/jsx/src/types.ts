@@ -93,12 +93,21 @@ export interface TypeInfo {
    * other intersection, except on a component's props type
    * (`props: Base & { label: string }`), where it is `'object'` (#3938). A
    * nested intersection (a member typed `A & B`, a union arm, an array
-   * element) keeps `'unknown'` so the adapters' type synthesis is unchanged
-   * (#3949). Absent on types from `tsTypeToTypeInfo` (synthetic nodes).
+   * element) keeps `'unknown'` so a `kind`-only type synthesis is unchanged
+   * (#3949); a backend that synthesizes an object type for it reads the
+   * merged members through `inlineIntersectionMembers`. Absent on types from
+   * `tsTypeToTypeInfo` (synthetic nodes).
    */
   inherits?: TypeInfo[]
   /** How `inherits` combines; present exactly when `inherits` is. */
   inheritance?: 'extends' | 'intersection'
+
+  /**
+   * Set on an object type literal that declares a member other than a plain
+   * property (an index signature, a method, a call or construct signature),
+   * so `properties` is not its whole key set. Absent otherwise.
+   */
+  openMembers?: true
 
   // For arrays
   elementType?: TypeInfo
@@ -2696,6 +2705,14 @@ export interface TypeDefinition {
    * non-string member included, so adapters need not re-read `definition`.
    */
   stringLiteralUnion?: string[]
+  /**
+   * Set when `properties` (with `inherits`) is not the definition's whole,
+   * concrete key set: it declares a member other than a plain property (an
+   * index signature, a method, a call or construct signature), or it has
+   * type parameters, whose members' types depend on the arguments. Absent
+   * otherwise.
+   */
+  openMembers?: true
   loc: SourceLocation
 }
 

@@ -200,8 +200,11 @@ function emitChildField(
   // (`interface{}`, `nillableParamNames`) takes the value unchanged: the
   // caller's nil is the child's `undefined`, which `bf.Number` would turn
   // into `NaN`.
-  if (coerce) {
-    fields.push({ goField: fieldName, goValue, coerce })
+  // A synthesized-struct field (an anonymous object type, #2674) is the
+  // child's own Go type, which a whole value of this caller's (its own
+  // synthesized struct, or an `interface{}`) is not: `bf.Coerce` converts it.
+  if (coerce || objectBakeTargetFor(childShape, jsxName)?.kind === 'struct') {
+    fields.push({ goField: fieldName, goValue, coerce: true })
     return
   }
   const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
