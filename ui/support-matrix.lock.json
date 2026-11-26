@@ -9757,30 +9757,6 @@
               ]
             },
             {
-              "fixture": "date-intersection-member",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-destructured",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-interface",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-literal-arm",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
@@ -17445,30 +17421,6 @@
               ]
             },
             {
-              "fixture": "date-intersection-member",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-destructured",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-interface",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-literal-arm",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
@@ -17712,6 +17664,30 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-nullable-member",
+              "limitations": [
+                "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-named-owner",
+              "limitations": [
+                "go-declined-intersection-nested-payload-keys"
               ]
             },
             {
@@ -26258,6 +26234,12 @@
               ]
             },
             {
+              "fixture": "inline-object-prop-nullable-member",
+              "limitations": [
+                "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -34587,30 +34569,6 @@
               ]
             },
             {
-              "fixture": "date-intersection-member",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-destructured",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-interface",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-literal-arm",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
@@ -34830,6 +34788,30 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-nullable-member",
+              "limitations": [
+                "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-named-owner",
+              "limitations": [
+                "go-declined-intersection-nested-payload-keys"
               ]
             },
             {
@@ -53973,6 +53955,12 @@
               ]
             },
             {
+              "fixture": "inline-object-prop-nullable-member",
+              "limitations": [
+                "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
               "fixture": "jsx-prop-loop-row-component-dynamic",
               "limitations": [
                 "loop-row-dynamic-jsx-prop"
@@ -60114,30 +60102,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "date-intersection-member",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-destructured",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-interface",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
-              "fixture": "date-intersection-member-literal-arm",
-              "limitations": [
-                "go-inline-intersection-member"
-              ]
-            },
-            {
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
@@ -60288,6 +60252,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
               ]
             },
             {
@@ -60515,10 +60491,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "destructure-default-param-inlined-array-const",
-        "description": "An inlined array const reading a parameter-destructured prop with an array default applies the default when the prop is omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-inlined-array-const.ts",
-        "code": "local[0]"
+        "fixture": "inline-object-prop-index-signature",
+        "description": "A key read through an inline object prop type with an index signature renders its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/inline-object-prop-index-signature.ts",
+        "code": "props.data['extra']"
       }
     },
     "member:optional": {

@@ -239,17 +239,25 @@ export function typeInfoToGo(
         if (resolved !== 'interface{}') return resolved
       }
       return 'interface{}'
-    case 'unknown': {
-      const inferred = preParsed ? inferGoTypeFromParsed(preParsed) : null
-      if (inferred) return inferred
-      if (defaultValue !== undefined) {
-        return inferTypeFromValue(defaultValue)
-      }
-      return 'interface{}'
-    }
+    case 'unknown':
+      return unknownTypeToGo(ctx, typeInfo, defaultValue, preParsed)
     default:
       return 'interface{}'
   }
+}
+
+/**
+ * `typeInfoToGo` for a `kind: 'unknown'` type: the struct synthesized for a
+ * nested inline intersection (`data: A & B`, `planSynthPropStructs`), else a
+ * type inferred from the default / initial value, else `interface{}`.
+ */
+function unknownTypeToGo(ctx: GoEmitContext, typeInfo: TypeInfo, defaultValue?: string, preParsed?: ParsedExpr): string {
+  const synthName = ctx.state.synthObjectStructNames.get(typeInfo)
+  if (synthName) return synthName
+  const inferred = preParsed ? inferGoTypeFromParsed(preParsed) : null
+  if (inferred) return inferred
+  if (defaultValue !== undefined) return inferTypeFromValue(defaultValue)
+  return 'interface{}'
 }
 
 /**

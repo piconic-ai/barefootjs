@@ -243,15 +243,14 @@ export function structOwnerResolver(
 ): (type: TypeInfo) => { name: string; properties: PropertyInfo[] } | null {
   const propsParams = metadata.propsParams ?? []
   const typeDefinitions = metadata.typeDefinitions ?? []
-  let synthNames: Map<TypeInfo, string> | null = null
+  let synthEntries: Map<TypeInfo, { name: string; properties: PropertyInfo[] }> | null = null
   return (type) => {
-    if (type.kind === 'object') {
-      synthNames ??= new Map(
-        planSynthPropStructs({ typeDefinitions, propsParams }, metadata.componentName).map(e => [e.typeInfo, e.name]),
-      )
-      const name = synthNames.get(type)
-      return name && type.properties ? { name, properties: type.properties } : null
-    }
+    synthEntries ??= new Map(
+      planSynthPropStructs({ typeDefinitions, propsParams }, metadata.componentName).map(e => [e.typeInfo, e]),
+    )
+    const synth = synthEntries.get(type)
+    if (synth) return { name: synth.name, properties: synth.properties }
+    if (type.kind === 'object') return null
     const td = type.raw ? typeDefinitions.find(t => t.name === type.raw) : undefined
     return td?.properties ? { name: td.name, properties: td.properties } : null
   }

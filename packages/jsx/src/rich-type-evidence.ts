@@ -126,6 +126,8 @@ export function baseTypeName(raw: string): string {
 }
 
 type EvidenceMetadata = Pick<IRMetadata, 'propsType' | 'propsObjectName' | 'propsParams' | 'typeDefinitions'>
+/** What an inheritance walk reads: only the file's type definitions. */
+type DefinitionTables = Pick<IRMetadata, 'typeDefinitions'>
 
 /**
  * Collapse a union to its single non-nullish arm (`Date | null` → `Date`),
@@ -175,7 +177,7 @@ export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo
 }
 
 /** A type that inherits members: a `TypeDefinition`, or an inline intersection `TypeInfo`. */
-type InheritingType = Pick<TypeDefinition, 'properties' | 'inherits' | 'inheritance'>
+type InheritingType = Pick<TypeDefinition, 'properties' | 'inherits' | 'inheritance' | 'openMembers'>
 
 /**
  * The inheriting type behind a receiver type, and the names already being
@@ -265,7 +267,7 @@ function intersectMemberSets(sets: readonly MemberSet[]): MemberSet {
  * agree. `visiting` breaks a cyclic chain (invalid TypeScript, but never an
  * infinite walk here).
  */
-function collectDefinitionMembers(def: InheritingType, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
+function collectDefinitionMembers(def: InheritingType, meta: DefinitionTables, visiting: Set<string>): MemberSet {
   const own: MemberSet = { members: [...(def.properties ?? [])], conflicts: new Set() }
   const inherited = (def.inherits ?? []).map((base) => inheritedMembers(base, meta, visiting))
   if (def.inheritance === 'intersection') return intersectMemberSets([own, ...inherited])
@@ -285,7 +287,7 @@ function collectDefinitionMembers(def: InheritingType, meta: EvidenceMetadata, v
   return { members, conflicts }
 }
 
-function inheritedMembers(base: TypeInfo, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
+function inheritedMembers(base: TypeInfo, meta: DefinitionTables, visiting: Set<string>): MemberSet {
   const empty: MemberSet = { members: [], conflicts: new Set() }
   if (base.kind === 'object') return { members: base.properties ?? [], conflicts: new Set() }
   if (base.kind !== 'interface') return empty
@@ -294,6 +296,49 @@ function inheritedMembers(base: TypeInfo, meta: EvidenceMetadata, visiting: Set<
   const def = meta.typeDefinitions.find((d) => d.name === name)
   if (!def) return empty
   return collectDefinitionMembers(def, meta, new Set(visiting).add(name))
+}
+
+/**
+ * The members of a NESTED inline intersection (a member, union arm or array
+ * element typed `A & B`, `kind: 'unknown'` with `inherits`), merged from every
+ * constituent with the same rule the type evidence uses, so a typed backend
+ * can synthesize one object type for it instead of an untyped field.
+ *
+ * `null` unless every member is known exactly: a constituent declared outside
+ * this file or not a reference / object literal (`hasUnresolvedBase`), one
+ * whose keys are not all properties (`hasClosedMembers`: an index signature,
+ * a method, a generic, a mapped type), a member whose declarations cannot be
+ * reconciled, or no member at all. The caller keeps its untyped
+ * representation for those.
+ */
+export function inlineIntersectionMembers(type: TypeInfo, meta: DefinitionTables): PropertyInfo[] | null {
+  if (type.kind !== 'unknown' || type.inheritance !== 'intersection' || !type.inherits) return null
+  if (definitionHasUnresolvedBase(type, meta, new Set())) return null
+  if (!hasClosedMembers(type, meta, new Set())) return null
+  const { members, conflicts } = collectDefinitionMembers(type, meta, new Set())
+  return conflicts.size === 0 && members.length > 0 ? members : null
+}
+
+/**
+ * Whether a definition's properties, with every type it inherits from, are
+ * its whole key set: no definition on the chain has `openMembers` (an index
+ * signature, a method, type parameters), and every named constituent is an
+ * object shape (an interface, an object literal alias, or an alias that
+ * inherits), not a mapped type, a union or a primitive alias, whose keys
+ * `properties` does not hold. A constituent not declared here is left to
+ * `definitionHasUnresolvedBase`.
+ */
+function hasClosedMembers(def: InheritingType, meta: DefinitionTables, visiting: Set<string>): boolean {
+  if (def.openMembers) return false
+  return (def.inherits ?? []).every((base) => {
+    if (base.kind === 'object') return !base.openMembers
+    if (base.kind !== 'interface') return false
+    const name = baseTypeName(base.raw)
+    if (visiting.has(name)) return true
+    const baseDef = meta.typeDefinitions.find((d) => d.name === name)
+    if (!baseDef || (!baseDef.properties && !baseDef.inherits)) return false
+    return hasClosedMembers(baseDef, meta, new Set(visiting).add(name))
+  })
 }
 
 /**
@@ -319,7 +364,7 @@ export function hasUnresolvedBase(type: TypeInfo | null, meta: EvidenceMetadata)
   return found ? definitionHasUnresolvedBase(found.def, meta, found.visiting) : false
 }
 
-function definitionHasUnresolvedBase(def: InheritingType, meta: EvidenceMetadata, visiting: Set<string>): boolean {
+function definitionHasUnresolvedBase(def: InheritingType, meta: DefinitionTables, visiting: Set<string>): boolean {
   return (def.inherits ?? []).some((base) => {
     if (base.kind === 'object') return false
     if (base.kind !== 'interface') return true

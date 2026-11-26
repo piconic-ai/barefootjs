@@ -8781,6 +8781,45 @@
       }
     }
   ],
+  "inline-object-prop-child-forward": [
+    {
+      "name": "gen:data:object:minimal",
+      "props": {
+        "data": {
+          "label": "",
+          "count": 0
+        }
+      }
+    }
+  ],
+  "inline-object-prop-index-signature": [
+    {
+      "name": "gen:data:object:minimal",
+      "props": {
+        "data": {
+          "label": ""
+        }
+      }
+    }
+  ],
+  "inline-object-prop-index-signature-destructured": [
+    {
+      "name": "gen:data:object:minimal",
+      "props": {
+        "data": {
+          "label": ""
+        }
+      }
+    }
+  ],
+  "inline-object-prop-nullable-member": [
+    {
+      "name": "gen:data:union:1",
+      "props": {
+        "data": null
+      }
+    }
+  ],
   "input": [
     {
       "name": "gen:className:absent",
@@ -8789,6 +8828,28 @@
         "placeholder": "Enter your name",
         "__instanceId": "Input_test"
       }
+    }
+  ],
+  "intersection-member-array": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "intersection-member-index-signature-array": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "intersection-member-optional": [
+    {
+      "name": "gen:data:absent",
+      "props": {}
     }
   ],
   "json-stringify-boolean-literal": [

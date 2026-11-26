@@ -93,11 +93,6 @@
         43
       ]
     },
-    "packages/adapter-go-template/src/adapter/type/type-codegen.ts": {
-      "typeInfoToGo": [
-        26
-      ]
-    },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
       "collectNullableSeedStructFields": [
         30
