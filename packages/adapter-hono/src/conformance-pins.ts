@@ -14,6 +14,7 @@ import type { ConformancePins } from '@barefootjs/jsx'
 export const conformancePins: ConformancePins = {
   'format-date': [{ code: 'BF056', severity: 'error', limitation: 'authored-format-date-call' }],
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
+  'date-loop-row-member': [{ code: 'BF021', severity: 'error', limitation: 'date-loop-row-receiver' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of

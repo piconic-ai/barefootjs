@@ -68,6 +68,11 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // Hand-authored to the later literal: the reference renders the rest's
   // other spelling first (limitation `closed-rest-both-cases-later-write`).
   'spread-closed-rest-both-cases-later-write',
+  // Hand-authored to the per-row accessor result (`2024`, `2025`): every
+  // adapter, the reference included, refuses the source with BF021
+  // (limitation `date-loop-row-receiver`), so there is no render to take it
+  // from.
+  'date-loop-row-member',
 ])
 
 async function main() {

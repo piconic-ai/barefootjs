@@ -11,7 +11,7 @@
  * only misses a refusal; a false positive would incorrectly block valid code.
  */
 
-import type { IRMetadata, PropertyInfo, TypeDefinition, TypeInfo } from './types.ts'
+import type { IRMetadata, LoopBindingPathSegment, PropertyInfo, TypeDefinition, TypeInfo } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 
 /**
@@ -436,6 +436,29 @@ function lookupProperty(objType: TypeInfo | null, propName: string, meta: Eviden
  */
 export function resolvePropDeclaredType(propName: string, meta: EvidenceMetadata): TypeInfo | null {
   return lookupProperty(meta.propsType, propName, meta)
+}
+
+/**
+ * The type a destructured `.map()` item binding reads (`({ at }) => …`,
+ * `({ meta: { at } }) => …`), resolved off the loop's element type along the
+ * binding's structured accessor steps. A field step is a property lookup; an
+ * index step (`([a]) => …`), a rest binding, or a binding without `segments`
+ * has no evidence (`null`), which callers treat as "not a rich type" exactly
+ * like an untyped loop item.
+ */
+export function resolveLoopBindingType(
+  elementType: TypeInfo | null,
+  segments: readonly LoopBindingPathSegment[] | undefined,
+  meta: EvidenceMetadata,
+): TypeInfo | null {
+  if (!segments || segments.length === 0) return null
+  let type = elementType
+  for (const seg of segments) {
+    if (seg.kind !== 'field') return null
+    type = lookupProperty(type, seg.key, meta)
+    if (!type) return null
+  }
+  return type
 }
 
 /**

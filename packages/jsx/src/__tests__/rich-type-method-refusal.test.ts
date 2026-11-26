@@ -110,9 +110,9 @@ describe('rich-type method-call refusal — fires (BF021)', () => {
     expect(errors[0].message).toContain("'.getTime()'")
     // A loop item is prop-DERIVED but not itself a prop — the message must
     // not call it one (only bare / props-object receivers earn "prop").
-    expect(errors[0].message).toContain("on 'i.at'")
+    expect(errors[0].message).toContain("'i.at' is read through the loop row binding 'i'")
     expect(errors[0].message).not.toContain("prop 'i.at'")
-    expect(errors[0].message).toContain("'Date'")
+    expect(errors[0].message).toContain('catalogued Date method')
   })
 
   test('renamed destructured prop ({ createdAt: c })', () => {
