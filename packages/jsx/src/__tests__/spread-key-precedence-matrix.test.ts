@@ -180,3 +180,35 @@ describe('a closed rest key and an attribute that differ in letter case', () => 
     expect(texts(el)).toEqual(['Ä=rest.Ä', 'ä=literal:1'])
   })
 })
+
+describe('a closed rest key named like an Object.prototype member', () => {
+  // An alias table read with such a key must not return the inherited
+  // member: the key is a plain attribute on an element and a plain prop on
+  // a component.
+  for (const key of ['toString', 'constructor', 'hasOwnProperty', '__proto__', 'valueOf']) {
+    test(`${key} on an element is a plain attribute`, () => {
+      const el = elementOf(`export function C({ ...rest }: { ${key}?: string }) { return <x-el {...rest}>x</x-el> }`, new TestAdapter())
+      expect(el.attrs.map(a => `${a.name}=${textOf(a)}`)).toEqual([`${key}=rest.${key}`])
+    })
+    test(`${key} beside a literal and an open bag compiles`, () => {
+      const el = elementOf(`export function C({ bag, ...rest }: { ${key}?: string; bag?: Record<string, string> }) { return <x-el ${key}="lit" {...rest} {...bag}>x</x-el> }`, new TestAdapter())
+      expect(el.attrs.filter(a => a.name === key).map(textOf)).toEqual([`rest.${key} ?? ("lit")`])
+    })
+    test(`${key} forwarded to a component is a plain prop`, () => {
+      const result = compileJSX(`import { K } from './k'
+export function C({ ...rest }: { ${key}?: string }) { return <K {...rest} /> }`, 'Component.tsx', { adapter: new TestAdapter(), outputIR: true })
+      expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+      const ir = JSON.parse(result.files.find(f => f.type === 'ir')?.content ?? '{}') as ComponentIR
+      const props: string[] = []
+      const visit = (n: unknown): void => {
+        if (n === null || typeof n !== 'object') return
+        if (Array.isArray(n)) { n.forEach(visit); return }
+        const node = n as { type?: string; props?: Array<{ name: string }> }
+        if (node.type === 'component' && node.props) props.push(...node.props.map(p => p.name))
+        for (const v of Object.values(n)) visit(v)
+      }
+      visit(ir.root)
+      expect(props).toEqual([key])
+    })
+  }
+})

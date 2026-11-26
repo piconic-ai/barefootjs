@@ -32,10 +32,20 @@ export const BOOLEAN_ATTRS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * An alias table keyed by user-written names: a null-prototype object, so
+ * only its own entries are aliases. On an ordinary object `table.toString`,
+ * `table.constructor` or `table.__proto__` would return an inherited member
+ * for a prop of that name.
+ */
+function aliasTable(entries: Record<string, string>): Readonly<Record<string, string>> {
+  return Object.freeze(Object.assign(Object.create(null) as Record<string, string>, entries))
+}
+
+/**
  * SVG presentation attributes written camelCase in JSX that MUST be emitted
  * as kebab-case in the DOM (`strokeWidth` → `stroke-width`).
  */
-const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
+const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = aliasTable({
   // stroke
   strokeWidth: 'stroke-width',
   strokeLinecap: 'stroke-linecap',
@@ -70,7 +80,7 @@ const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
   markerStart: 'marker-start',
   markerMid: 'marker-mid',
   markerEnd: 'marker-end',
-}
+})
 
 /**
  * HTML attributes written in React-style camelCase in JSX that map to a
@@ -87,7 +97,7 @@ const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
  * table pass through unchanged, so `data-*`, `aria-*`, and custom-element
  * attributes are never rewritten.
  */
-const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = {
+const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = aliasTable({
   acceptCharset: 'accept-charset',
   accessKey: 'accesskey',
   allowFullScreen: 'allowfullscreen',
@@ -143,7 +153,7 @@ const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = {
   srcSet: 'srcset',
   tabIndex: 'tabindex',
   useMap: 'usemap',
-}
+})
 
 /**
  * SVG XML attribute names that are case-sensitive and MUST stay in camelCase.
@@ -262,7 +272,7 @@ export function toHTMLAttrName(key: string): string {
  * template runtimes' `spread_attrs` helpers for an open bag. The shared
  * `spread-*-attr-names` fixtures pin both to the reference.
  */
-export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
+export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = aliasTable({
   className: 'class',
   htmlFor: 'for',
   crossOrigin: 'crossorigin',
@@ -271,7 +281,7 @@ export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
   fetchPriority: 'fetchpriority',
   noModule: 'nomodule',
   formAction: 'formaction',
-}
+})
 
 /**
  * The attribute name a spread bag key renders as ({@link SPREAD_KEY_ATTR_NAMES}).
@@ -279,7 +289,7 @@ export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
  * already normalized (`class`, `tabindex`) is left as it is.
  */
 export function toSpreadAttrName(key: string): string {
-  return Object.prototype.hasOwnProperty.call(SPREAD_KEY_ATTR_NAMES, key) ? SPREAD_KEY_ATTR_NAMES[key] : key
+  return SPREAD_KEY_ATTR_NAMES[key] ?? key
 }
 
 /**
@@ -335,7 +345,7 @@ export function spreadKeysInOtherCase(attrName: string): string[] {
   return [...Object.keys(HTML_CAMEL_ALIASES), ...SVG_XML_CAMEL_ATTRS].filter(key =>
     key !== attrName
     && foldAttrName(key) === folded
-    && !Object.prototype.hasOwnProperty.call(SPREAD_KEY_ATTR_NAMES, key))
+    && SPREAD_KEY_ATTR_NAMES[key] === undefined)
 }
 
 /**

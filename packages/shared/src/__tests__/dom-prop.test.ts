@@ -335,3 +335,15 @@ describe('foldAttrName', () => {
     expect(foldAttrName('\u212A')).toBe('\u212A')
   })
 })
+
+describe('alias tables read only their own entries', () => {
+  for (const key of ['toString', 'constructor', 'hasOwnProperty', '__proto__', 'valueOf']) {
+    test(`${key} has no alias`, () => {
+      expect(toHTMLAttrName(key)).toBe(key)
+      expect(toHTMLAttrNameRuntime(key)).toBe(key)
+      expect(toSpreadAttrName(key)).toBe(key)
+      expect(spreadKeysInOtherCase(foldAttrName(key))).toEqual([])
+      expect(classifyDOMProp(key)).toEqual({ kind: 'attr', attrName: key })
+    })
+  }
+})

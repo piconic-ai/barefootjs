@@ -614,6 +614,7 @@ import { fixture as spreadClosedRestLiteralCaseAlias } from './spread-closed-res
 import { fixture as spreadClosedRestNonAsciiKey } from './spread-closed-rest-non-ascii-key'
 import { fixture as spreadClosedRestSvgCaseKeys } from './spread-closed-rest-svg-case-keys'
 import { fixture as spreadClosedRestBooleanCaseKeys } from './spread-closed-rest-boolean-case-keys'
+import { fixture as spreadClosedRestObjectMemberKeys } from './spread-closed-rest-object-member-keys'
 import { fixture as spreadClosedRestBothCasesLaterWrite } from './spread-closed-rest-both-cases-later-write'
 import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
 import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
@@ -2227,6 +2228,7 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestNonAsciiKey,
   spreadClosedRestSvgCaseKeys,
   spreadClosedRestBooleanCaseKeys,
+  spreadClosedRestObjectMemberKeys,
   spreadClosedRestBothCasesLaterWrite,
   spreadClosedRestClientLiteralAfter,
   spreadClosedRestRepeated,

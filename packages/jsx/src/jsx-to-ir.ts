@@ -7513,7 +7513,7 @@ function closedRestFallbacks(
     } else if (source === null) {
       lastWrite.clear()
     } else {
-      const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
+      const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx, writeTokens === elementWriteTokens)
       if (keyFallbacks.size > 0) fallbacks.set(attr, keyFallbacks)
     }
   }
@@ -7595,12 +7595,14 @@ function closedRestKeyFallbacks(
   lastWrite: LastKeyWrites,
   dropped: Set<ts.JsxAttributeLike>,
   ctx: TransformContext,
+  attrNames: boolean,
 ): Map<string, RestKeyFallback> {
   const keyFallbacks = new Map<string, RestKeyFallback>()
   // Two keys of this rest that are one attribute to a browser (`tabIndex`,
   // `tabindex`) are both emitted, so neither may be the other's earlier
   // write: they keep matching by their exact name only.
-  const sameAttr = restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys)
+  // Component props match by their exact name: no attribute is involved.
+  const sameAttr = attrNames ? restKeysSharingAttr(ctx.analyzer.restPropsExpandedKeys) : new Set<string>()
   for (const key of ctx.analyzer.restPropsExpandedKeys) {
     const read = `${source}.${key}`
     const kind = sameAttr.has(key) ? 'exact' : 'bag'

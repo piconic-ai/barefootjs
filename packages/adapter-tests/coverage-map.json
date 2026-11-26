@@ -20307,6 +20307,17 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-object-member-keys": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "spread-closed-rest-repeated": {
       "kinds": [
         "identifier",
