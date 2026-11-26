@@ -1484,6 +1484,8 @@ import { fixture as destructureDefaultParamInlinedConstPositions } from './destr
 import { fixture as destructureDefaultParamInlinedConstReactive } from './destructure-default-param-inlined-const-reactive'
 import { fixture as destructureDefaultBodyInlinedConst } from './destructure-default-body-inlined-const'
 import { fixture as destructureDefaultParamInlinedConstDefaultText } from './destructure-default-param-inlined-const-default-text'
+import { fixture as destructureDefaultParamInlinedConstScope } from './destructure-default-param-inlined-const-scope'
+import { fixture as destructureDefaultParamInlinedConstIdentity } from './destructure-default-param-inlined-const-identity'
 import { fixture as destructureDefaultArrayLiteral } from './destructure-default-array-literal'
 import { fixture as destructureDefaultArrayLiteralBody } from './destructure-default-array-literal-body'
 import { fixture as destructureDefaultNumberArrayLiteral } from './destructure-default-number-array-literal'
@@ -2828,6 +2830,8 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultParamInlinedConstReactive,
   destructureDefaultBodyInlinedConst,
   destructureDefaultParamInlinedConstDefaultText,
+  destructureDefaultParamInlinedConstScope,
+  destructureDefaultParamInlinedConstIdentity,
   destructureDefaultArrayLiteral,
   destructureDefaultArrayLiteralBody,
   destructureDefaultNumberArrayLiteral,

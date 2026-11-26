@@ -6192,27 +6192,9 @@
       "props": {
         "s": "日本語"
       }
-    },
-    {
-      "name": "gen:t:empty",
-      "props": {
-        "t": ""
-      }
-    },
-    {
-      "name": "gen:t:markup",
-      "props": {
-        "t": "<b>&\"'</b>"
-      }
-    },
-    {
-      "name": "gen:t:multibyte",
-      "props": {
-        "t": "日本語"
-      }
     }
   ],
-  "destructure-default-param-inlined-const-positions": [
+  "destructure-default-param-inlined-const-identity": [
     {
       "name": "gen:b:empty",
       "props": {
@@ -6220,9 +6202,71 @@
       }
     },
     {
-      "name": "gen:bb:empty",
+      "name": "gen:a:empty",
       "props": {
-        "bb": []
+        "a": []
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "c": []
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-positions": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    },
+    {
+      "name": "gen:k:empty",
+      "props": {
+        "k": ""
+      }
+    },
+    {
+      "name": "gen:k:markup",
+      "props": {
+        "k": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:k:multibyte",
+      "props": {
+        "k": "日本語"
+      }
+    },
+    {
+      "name": "gen:m:zero",
+      "props": {
+        "m": 0
+      }
+    },
+    {
+      "name": "gen:m:negative",
+      "props": {
+        "m": -7
+      }
+    },
+    {
+      "name": "gen:m:large",
+      "props": {
+        "m": 1234567890
       }
     },
     {
@@ -6266,7 +6310,39 @@
     {
       "name": "gen:b:empty",
       "props": {
-        "b": []
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-scope": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
       }
     }
   ],

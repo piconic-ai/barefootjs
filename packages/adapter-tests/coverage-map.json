@@ -5804,29 +5804,45 @@
         "member:computed"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
     "destructure-default-param-inlined-const-default-text": {
       "kinds": [
         "array-literal",
-        "array-method",
-        "arrow",
         "binary",
         "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-identity": {
+      "kinds": [
+        "array-literal",
+        "binary",
         "identifier",
         "literal",
         "logical",
         "member"
       ],
       "axes": [
-        "array-method:join",
-        "binary:+",
+        "binary:===",
         "literal:string",
         "logical:??",
         "member:computed"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -5838,7 +5854,8 @@
         "literal",
         "logical",
         "member",
-        "object-literal"
+        "object-literal",
+        "unary"
       ],
       "axes": [
         "binary:+",
@@ -5846,7 +5863,8 @@
         "literal:number",
         "literal:string",
         "logical:??",
-        "member:computed"
+        "member:computed",
+        "unary:-"
       ],
       "contexts": [
         "attribute",
@@ -5867,6 +5885,23 @@
         "binary:+",
         "literal:number",
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-scope": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
       ],
       "contexts": [
         "text"

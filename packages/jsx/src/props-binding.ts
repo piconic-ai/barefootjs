@@ -207,20 +207,46 @@ export function templatePropReadParams(b: TemplatePropReadBindings): ParamInfo[]
 
 /**
  * Each props binding a client `template:` reads live
- * ({@link templatePropReadParams}) → that read (`livePropReadExpr`,
- * destructure default included). The one answer to "how does the template
- * spell a bare props binding" every Phase-1 template text (a markup
- * expression, a signal seed, a memo body, an inlined constant) and the
- * Phase-2 relocation into template scope share, so `{ b = ['y'] }` reads its
- * default wherever the template reaches `b`. A rest binding is left out: it
- * is no single prop.
+ * ({@link templatePropReadParams}) whose destructure default is copy-safe
+ * ({@link hasCopySafeDefault}) → that read (`livePropReadExpr`, default
+ * included). The spelling an inlined constant's template text and its
+ * relocation into template scope share (#3980). A binding left out reads as
+ * `_p.<key>`: its default is source text that would be re-evaluated at every
+ * read (a fresh `[]` each time) and resolved against the template's scope
+ * instead of the parameter list's. A rest binding is left out: it is no
+ * single prop.
  */
 export function templatePropReads(b: TemplatePropReadBindings): Map<string, string> {
+  const params = templatePropReadParams(b)
+  const byName = new Map(params.map(p => [p.name, p]))
   const reads = new Map<string, string>()
-  for (const p of templatePropReadParams(b)) {
-    if (!p.isRest) reads.set(p.name, livePropReadExpr(p, undefined, false))
+  for (const p of params) {
+    if (!p.isRest && hasCopySafeDefault(p, byName)) reads.set(p.name, livePropReadExpr(p, undefined, false))
   }
   return reads
+}
+
+/**
+ * Whether copying `p`'s destructure default into each read gives the value
+ * JS binds once in parameter scope: no default, a primitive literal (`'d'`,
+ * `1`, `-1`, `true`, `null`), or exactly an earlier binding whose own default
+ * is copy-safe (`{ a = 'A', c = a }`, read as `_p.a`'s live read). Anything
+ * else allocates (`[]`, `{}`, a call, an arrow) or names a binding the
+ * template could resolve differently (`fallback`, an import, a global).
+ */
+function hasCopySafeDefault(p: ParamInfo, byName: ReadonlyMap<string, ParamInfo>, seen: ReadonlySet<string> = EMPTY_SET): boolean {
+  if (p.defaultValue === undefined) return true
+  if (!p.defaultParts) return isPrimitiveLiteral(p.parsed)
+  const parts = p.defaultParts.filter(part => part.kind === 'param' || part.text.trim() !== '')
+  const only = parts.length === 1 ? parts[0] : undefined
+  const earlier = only?.kind === 'param' ? byName.get(only.param.name) : undefined
+  if (!earlier || seen.has(earlier.name)) return false
+  return hasCopySafeDefault(earlier, byName, new Set([...seen, p.name]))
+}
+
+function isPrimitiveLiteral(expr: ParsedExpr | undefined): boolean {
+  if (expr?.kind === 'literal') return true
+  return expr?.kind === 'unary' && (expr.op === '-' || expr.op === '+') && expr.argument.kind === 'literal' && expr.argument.literalType === 'number'
 }
 
 /**

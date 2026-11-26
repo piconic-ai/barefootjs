@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // `===` between arrays read through a const: each read of the array
+  // default is a separate copy, so one binding read twice is unequal.
+  'destructure-default-param-inlined-const-identity': { limitation: 'array-equality-through-inlined-const' },
   // A key an open spread and another attribute or spread both write renders
   // twice (an expression or template value before the spread, an attribute
   // after it, two spreads), and an explicit `null` bag value renders the
