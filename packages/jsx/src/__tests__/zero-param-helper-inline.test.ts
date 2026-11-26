@@ -126,6 +126,16 @@ describe('two reads of a const built by a module helper call (#3975)', () => {
     expect(template).not.toContain('Math.random')
   })
 
+  test('a deep chain of helpers compiles in linear time and renders the value', () => {
+    // Each helper calls the previous one, so the spliced form nests 30 applied
+    // arrows; the template-safety walk visits each of them once.
+    const helpers = ['const h0 = () => V', ...Array.from({ length: 30 }, (_, i) => `const h${i + 1} = () => h${i}()`)]
+    const started = performance.now()
+    const template = compileModule(`const V = 'v'\n${helpers.join('\n')}\nconst B = h30()`, '<p title={B}>{B}</p>')
+    expect(performance.now() - started).toBeLessThan(3000)
+    expect(renderSampled(template)).toBe('<p title="v">v</p>')
+  })
+
   test.each([
     ['Date.now()', 'Date.now()'],
     ['a constructor', 'new Date(0).getTime()'],

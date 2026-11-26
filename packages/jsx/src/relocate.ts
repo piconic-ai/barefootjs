@@ -787,21 +787,43 @@ function isTemplateSafeCall(call: ts.CallExpression, env: RelocateEnv): boolean 
  * two reads where the server evaluated `mk()` once; such a call stays refused.
  */
 function isAppliedZeroParamArrow(call: ts.CallExpression): boolean {
-  if (call.arguments.length !== 0) return false
+  const cached = appliedArrowVerdicts.get(call)
+  if (cached !== undefined) return cached
+  const body = appliedZeroParamArrowBody(call)
+  const verdict = body !== null && isRepeatableBody(body)
+  appliedArrowVerdicts.set(call, verdict)
+  return verdict
+}
+
+/**
+ * Verdicts per call node. The walks that ask (`hasZeroArgCall`,
+ * `hasCallWithBridgedArg`) also descend into an accepted call's body and ask
+ * again for each nested applied arrow, so without this a chain of helpers
+ * spliced into one another (`h2 = () => h1()`, …) re-walked every inner body
+ * once per enclosing call. Keyed weakly by the parsed node: a fresh parse
+ * starts fresh.
+ */
+const appliedArrowVerdicts = new WeakMap<ts.CallExpression, boolean>()
+
+/** The expression body of `call` when it is `(() => body)()` with a synchronous arrow, else null. */
+function appliedZeroParamArrowBody(call: ts.CallExpression): ts.Expression | null {
+  if (call.arguments.length !== 0) return null
   const callee = unwrapParens(call.expression)
-  if (!ts.isArrowFunction(callee) || callee.parameters.length !== 0 || ts.isBlock(callee.body)) return false
-  if (callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return false
-  return isRepeatableBody(callee.body)
+  if (!ts.isArrowFunction(callee) || callee.parameters.length !== 0 || ts.isBlock(callee.body)) return null
+  if (callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return null
+  return callee.body
 }
 
 /**
  * Whether evaluating `node` again yields the same value: it calls nothing but
  * another applied zero-param arrow of the same kind, constructs nothing
  * (`new`) and runs no tag function. Reads, operators and literals repeat.
+ * Each node is visited once: an accepted call's verdict already covers its
+ * body, so the walk does not descend into it again.
  */
 function isRepeatableBody(node: ts.Node): boolean {
   if (ts.isNewExpression(node) || ts.isTaggedTemplateExpression(node)) return false
-  if (ts.isCallExpression(node) && !isAppliedZeroParamArrow(node)) return false
+  if (ts.isCallExpression(node)) return isAppliedZeroParamArrow(node)
   return ts.forEachChild(node, child => (isRepeatableBody(child) ? undefined : true)) !== true
 }
 
