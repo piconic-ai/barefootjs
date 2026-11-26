@@ -80,7 +80,7 @@ export function expandModuleArraySpreads(
 ): void {
   if (spreads.length === 0) return
   const moduleConsts = constants.filter(c => c.isModule)
-  const budget: ExpandBudget = { weight: MAX_EXPANDED_WEIGHT, sizes: new WeakMap() }
+  const budget: ExpandBudget = { weight: MAX_EXPANDED_WEIGHT, sizes: new WeakMap(), weights: new WeakMap(), inline: new Map() }
   for (const { constant, literal } of spreads) {
     if (constant.parsed?.kind !== 'array-literal') continue
     const declaredBefore = moduleConsts.slice(0, moduleConsts.indexOf(constant))
@@ -89,10 +89,15 @@ export function expandModuleArraySpreads(
   }
 }
 
-/** What the expansions of one module may still copy, in parsed nodes, with each node's measured size. */
+/** What the expansions of one module may still copy, in parsed nodes, with the measures taken so far. */
 interface ExpandBudget {
   weight: number
+  /** Each parsed node's size, measured once. */
   sizes: WeakMap<object, number>
+  /** Each known const's elements' total size, measured once. */
+  weights: WeakMap<readonly ParsedExpr[], number>
+  /** Each inline array literal's parse, done once. */
+  inline: Map<ts.Node, ParsedExpr>
 }
 
 interface ExpandContext {
@@ -103,11 +108,28 @@ interface ExpandContext {
 }
 
 /**
+ * What a spread would contribute if it were copied: its element count and
+ * its weight in parsed nodes. Measuring copies nothing and takes nothing
+ * from the budget, so looking at a spread the expansion then leaves alone
+ * costs the module nothing.
+ */
+interface SpreadMeasure {
+  count: number
+  weight: number
+}
+
+/**
  * `parsed` (the elements `literal` parses to, one per element) with each
  * spread this can resolve replaced by the source's elements. `null` when
- * the two do not line up, so the caller keeps the tree it has. A spread whose
- * elements the budget cannot take keeps its `unsupported` element, so the
- * array is read as one with an unexpanded spread.
+ * the two do not line up, so the caller keeps the tree it has.
+ *
+ * Every spread is measured first. A spread is copied only when the array
+ * stays within {@link MAX_EXPANDED_ELEMENTS}, counting the elements before it
+ * and the ones after it as many as they contribute (a known spread its
+ * count, anything else one), and its weight fits what the module has left;
+ * only then is the weight taken. A spread that does not fit keeps its
+ * `unsupported` element, so the array is read as one with an unexpanded
+ * spread.
  */
 function expandElements(
   literal: ts.ArrayLiteralExpression,
@@ -116,16 +138,16 @@ function expandElements(
   depth: number,
 ): ParsedExpr[] | null {
   if (parsed.length !== literal.elements.length) return null
-  // What each element contributes: a known spread its source's elements,
-  // anything else (a plain element, an unknown spread) one element.
-  const sources = literal.elements.map(element => ts.isSpreadElement(element) ? spreadElements(element.expression, ctx, depth) : null)
-  let rest = sources.reduce((n, source) => n + (source ? source.length : 1), 0)
+  const measures = literal.elements.map(element => ts.isSpreadElement(element) ? measureSpread(element.expression, ctx, depth) : null)
+  let rest = measures.reduce((n, m) => n + (m ? m.count : 1), 0)
   const out: ParsedExpr[] = []
-  sources.forEach((source, i) => {
+  literal.elements.forEach((element, i) => {
+    const m = measures[i]
     // The elements after this one, as many as they contribute.
-    rest -= source ? source.length : 1
-    if (source && takeFromBudget(source, out.length + rest, ctx.budget)) {
-      for (const e of source) out.push(e)
+    rest -= m ? m.count : 1
+    if (m && ts.isSpreadElement(element) && out.length + rest + m.count <= MAX_EXPANDED_ELEMENTS && m.weight <= ctx.budget.weight) {
+      ctx.budget.weight -= m.weight
+      copySpread(element.expression, ctx, out)
     } else {
       out.push(parsed[i])
     }
@@ -134,20 +156,85 @@ function expandElements(
 }
 
 /**
- * Whether `source` can be copied into an array that holds `others` other
- * elements (those before it, and those after it as many as they contribute),
- * within the element bound and the module's remaining weight;
- * the weight is taken when it can. Checked before anything is copied.
+ * The count and weight a spread of `expr` would contribute, or `null` when
+ * its elements are not known at compile time. A known const's elements are
+ * already expanded (or left with an `unsupported` element), so it is read,
+ * not walked again; an inline array literal is walked once per element,
+ * and a count past the bound stops the walk.
  */
-function takeFromBudget(source: readonly ParsedExpr[], others: number, budget: ExpandBudget): boolean {
-  if (others + source.length > MAX_EXPANDED_ELEMENTS) return false
-  let weight = 0
-  for (const e of source) {
-    weight += nodeSize(e, budget.sizes)
-    if (weight > budget.weight) return false
+function measureSpread(expr: ts.Expression, ctx: ExpandContext, depth: number): SpreadMeasure | null {
+  const source = unwrap(expr)
+  if (ts.isIdentifier(source)) {
+    const elements = constElements(source, ctx)
+    return elements ? { count: elements.length, weight: elementsWeight(elements, ctx.budget) } : null
   }
-  budget.weight -= weight
-  return true
+  const literal = inlineLiteral(source, ctx, depth)
+  if (!literal) return null
+  const total: SpreadMeasure = { count: 0, weight: 0 }
+  for (let i = 0; i < literal.node.elements.length; i++) {
+    const element = literal.node.elements[i]
+    const m = ts.isSpreadElement(element)
+      ? measureSpread(element.expression, ctx, depth + 1)
+      : knownElement(literal.parsed[i], ctx.budget)
+    if (!m) return null
+    total.count += m.count
+    total.weight += m.weight
+    if (total.count > MAX_EXPANDED_ELEMENTS) return total
+  }
+  return total
+}
+
+/** Append the elements a spread of `expr` contributes to `out`; `measureSpread` has found them known. */
+function copySpread(expr: ts.Expression, ctx: ExpandContext, out: ParsedExpr[]): void {
+  const source = unwrap(expr)
+  if (ts.isIdentifier(source)) {
+    for (const e of constElements(source, ctx) ?? []) out.push(e)
+    return
+  }
+  const literal = ts.isArrayLiteralExpression(source) ? ctx.budget.inline.get(source) : undefined
+  if (!literal || literal.kind !== 'array-literal' || !ts.isArrayLiteralExpression(source)) return
+  source.elements.forEach((element, i) => {
+    if (ts.isSpreadElement(element)) copySpread(element.expression, ctx, out)
+    else out.push(literal.elements[i])
+  })
+}
+
+/** The known elements of the const `name` reads, when it is one a spread of it can expand. */
+function constElements(name: ts.Identifier, ctx: ExpandContext): readonly ParsedExpr[] | null {
+  const constant = ctx.declaredBefore.find(c => c.name === name.text)
+  if (!constant || constant.declarationKind !== 'const' || constant.mutatedAfterDeclaration) return null
+  return knownElements(constant.parsed)
+}
+
+/** `source` as an inline array literal with its parse (one element per element), or `null`. */
+function inlineLiteral(
+  source: ts.Expression,
+  ctx: ExpandContext,
+  depth: number,
+): { node: ts.ArrayLiteralExpression; parsed: readonly ParsedExpr[] } | null {
+  if (!ts.isArrayLiteralExpression(source) || depth >= MAX_INLINE_DEPTH) return null
+  let parsed = ctx.budget.inline.get(source)
+  if (!parsed) {
+    parsed = parseExpression(`(${ctx.getJS(source)})`)
+    ctx.budget.inline.set(source, parsed)
+  }
+  if (parsed.kind !== 'array-literal' || parsed.elements.length !== source.elements.length) return null
+  return { node: source, parsed: parsed.elements }
+}
+
+/** A plain element of an inline literal measured as one element, or `null` for a hole. */
+function knownElement(element: ParsedExpr, budget: ExpandBudget): SpreadMeasure | null {
+  return element.kind === 'unsupported' ? null : { count: 1, weight: nodeSize(element, budget.sizes) }
+}
+
+/** The total size of `elements`, measured once per array. */
+function elementsWeight(elements: readonly ParsedExpr[], budget: ExpandBudget): number {
+  const known = budget.weights.get(elements)
+  if (known !== undefined) return known
+  let weight = 0
+  for (const e of elements) weight += nodeSize(e, budget.sizes)
+  budget.weights.set(elements, weight)
+  return weight
 }
 
 /** The number of parsed nodes under `node` (itself included), measured once per node object. */
@@ -162,22 +249,6 @@ function nodeSize(node: unknown, sizes: WeakMap<object, number>): number {
   }
   sizes.set(node, size)
   return size
-}
-
-/** The elements a spread of `expr` contributes, or `null` when they are not known at compile time. */
-function spreadElements(expr: ts.Expression, ctx: ExpandContext, depth: number): readonly ParsedExpr[] | null {
-  const source = unwrap(expr)
-  if (ts.isIdentifier(source)) {
-    const constant = ctx.declaredBefore.find(c => c.name === source.text)
-    if (!constant || constant.declarationKind !== 'const' || constant.mutatedAfterDeclaration) return null
-    return knownElements(constant.parsed)
-  }
-  if (ts.isArrayLiteralExpression(source) && depth < MAX_INLINE_DEPTH) {
-    const parsed = parseExpression(`(${ctx.getJS(source)})`)
-    if (parsed.kind !== 'array-literal') return null
-    return knownElements({ kind: 'array-literal', elements: expandElements(source, parsed.elements, ctx, depth + 1) ?? parsed.elements })
-  }
-  return null
 }
 
 /** The elements of an array literal whose every element is known (no spread or hole left). */

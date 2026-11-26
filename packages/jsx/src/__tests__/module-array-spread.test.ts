@@ -182,5 +182,32 @@ describe('expandModuleArraySpreads (#3979)', () => {
       expect(kinds(`const ALL = [...A${levels}, ...new Set([1])]`)).toEqual(['unsupported', 'unsupported'])
     })
   })
+
+  describe('looking at a spread the expansion leaves alone takes nothing from the budget', () => {
+    // FIRST: 600 literals (600 nodes). SECOND: 620 arrays of 12 literals (13 nodes each, 8060 in all).
+    const FIRST = `const FIRST = [${Array(600).fill('0').join(', ')}]`
+    const SECOND = `const SECOND = [${Array(620).fill(`[${Array(12).fill('0').join(', ')}]`).join(', ')}]`
+    const lengthOf = (decls: string, name: string) => {
+      const source = `${FIRST}\n${SECOND}\n${decls}\nexport function C() { return <p>{${name}.length}</p> }`
+      const elements = elementsOf(source, name)
+      return elements.some(e => e.kind === 'unsupported') ? null : elements.length
+    }
+
+    test('a spread refused for the element bound leaves the budget for a later declaration', () => {
+      expect(lengthOf(`const UNUSED = [...FIRST, ...[...SECOND]]\nconst ALL = [...FIRST]`, 'ALL')).toBe(600)
+      expect(lengthOf(`const UNUSED = [...FIRST, ...[...SECOND], ...[...SECOND]]\nconst ALL = [...FIRST]`, 'ALL')).toBe(600)
+      expect(lengthOf(`const UNUSED = [...FIRST, ...SECOND]\nconst ALL = [...FIRST]`, 'ALL')).toBe(600)
+    })
+
+    test('an inline literal spread is charged once, however deeply it nests', () => {
+      // 8060 nodes, taken once: a second 8060-node copy still fits in 16384.
+      expect(lengthOf(`const UNUSED = [...[...[...SECOND]]]\nconst ALL = [...SECOND]`, 'ALL')).toBe(620)
+      expect(lengthOf(`const UNUSED = [...[...[...SECOND]]]\nconst ALL = [...SECOND]`, 'UNUSED')).toBe(620)
+    })
+
+    test('a copy that does not fit what is left is refused', () => {
+      expect(lengthOf(`const A = [...SECOND]\nconst B = [...SECOND]\nconst ALL = [...SECOND]`, 'ALL')).toBeNull()
+    })
+  })
 })
 
