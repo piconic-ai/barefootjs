@@ -9206,6 +9206,62 @@
           }
         }
       },
+      "module-const-iife-reads-module-const": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "module-const-iife-reads-module-const"
+          ]
+        }
+      },
       "module-const-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -18685,6 +18741,10 @@
         "description": "a module const spreading a module helper call (`{ ...mk('v') }`) renders on a client mount (#3952)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-spread-inlined.ts"
       },
+      "module-const-iife-reads-module-const": {
+        "description": "a module const initialized by an immediately invoked arrow that reads another module const renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-reads-module-const.ts"
+      },
       "module-const-inherited-key": {
         "description": "a module const read with a key only its prototype has reads the inherited function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key.ts"
@@ -20158,28 +20218,6 @@
         "BF101"
       ]
     },
-    "csr-template-module-declaration-reads-module-const": {
-      "title": "CSR template reading a module const whose initializer runs a module declaration that reads another module const",
-      "kind": "silent",
-      "given": "a module const whose initializer runs code that reads another module value const (`const V = 'v'`) in a form the client template does not splice: an immediately invoked arrow (`const B = (() => ({ k: V }))()`), a call of a module helper with parameters (`mk('a')`), or a call of a module `function` declaration; read in markup (`{B.k}`) and rendered client-side. The helper-call repros (`module-helper-param-reads-module-const`, `module-function-reads-module-const`) are refused server-side as module-scope helper calls, so they are listed under that entry",
-      "expected": "the value the initializer computes (`'v'`)",
-      "actual": "renders empty: the client template has no form for the const once its initializer reads a module value const, so the read has nothing to resolve",
-      "fixtures": [
-        "module-const-iife-reads-module-const"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "csr-template-object-const-function-property": {
       "title": "CSR template reading an object const that holds a function",
       "kind": "silent",
@@ -20622,6 +20660,28 @@
         "module-const-array-method-call"
       ],
       "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "module-const-iife-reads-module-const": {
+      "title": "Module const initialized by an immediately invoked arrow that reads another module const",
+      "kind": "silent",
+      "given": "a module const whose initializer is an immediately invoked arrow reading another module value const (`const V = 'v'; const B = (() => ({ k: V }))()`), read in markup (`{B.k}`)",
+      "expected": "the value the arrow returns (`'v'`)",
+      "actual": "renders empty, in the server HTML of a template adapter and on a client mount",
+      "fixtures": [
+        "module-const-iife-reads-module-const"
+      ],
+      "adapters": [
+        "hono",
         "blade",
         "erb",
         "go-template",

@@ -4017,6 +4017,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4258,6 +4264,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -4529,6 +4541,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4788,6 +4806,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -5053,6 +5077,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5300,6 +5330,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -5565,6 +5601,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5827,6 +5869,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-iife",
               "limitations": [
                 "const-literal-inherited-key"
@@ -6080,6 +6128,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -8375,6 +8429,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8988,6 +9048,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -9721,6 +9787,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -10451,6 +10523,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -11079,6 +11157,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -11692,6 +11776,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -12317,6 +12407,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function",
               "limitations": [
                 "const-literal-inherited-key"
@@ -12924,6 +13020,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -13546,6 +13648,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -15421,6 +15529,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -16280,6 +16394,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -17316,6 +17436,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -18361,6 +18487,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19229,6 +19361,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -20088,6 +20226,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -20959,6 +21103,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -21788,6 +21938,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -22656,6 +22812,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -24012,6 +24174,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24733,6 +24901,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -25559,6 +25733,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -26436,6 +26616,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27163,6 +27349,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -27899,6 +28091,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -28644,6 +28842,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -29347,6 +29551,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -30071,6 +30281,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -32431,6 +32647,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -33110,6 +33332,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -33951,6 +34179,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -34711,6 +34945,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -35399,6 +35639,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -36078,6 +36324,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -36775,6 +37027,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -37442,6 +37700,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -38133,6 +38397,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -38678,6 +38948,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -39045,6 +39321,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -39433,6 +39715,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -39830,6 +40118,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -40197,6 +40491,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -40573,6 +40873,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -40958,6 +41264,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -41307,6 +41619,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -41677,6 +41995,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -51283,6 +51607,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -51890,6 +52220,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -52584,6 +52920,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -53341,6 +53683,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -53957,6 +54305,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -54570,6 +54924,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -55201,6 +55561,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -55796,6 +56162,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -56406,6 +56778,12 @@
               "fixture": "module-const-helper-call-spread-inlined",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-reads-module-const",
+              "limitations": [
+                "module-const-iife-reads-module-const"
               ]
             },
             {

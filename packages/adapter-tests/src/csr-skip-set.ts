@@ -276,11 +276,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // const built by a module helper with parameters (`mk('a')`) or by a
   // `function` declaration, either reading another module const. The CSR
   // template has no form for the helper, so `{B.k}` renders empty in
-  // production too (`csr-template-module-declaration-reads-module-const`,
-  // whose executable repro is `module-const-iife-reads-module-const`).
-  // The template adapters refuse the call (BF101, `module-scope-helper-call`,
-  // the entry that lists these two), so neither can sit in
-  // `CSR_RENDER_DIVERGENCES` as well.
+  // production too. The template adapters refuse the call (BF101), and
+  // `module-scope-helper-call` lists both fixtures, so neither can cite a
+  // silent entry in `CSR_RENDER_DIVERGENCES` as well.
   'module-helper-param-reads-module-const',
   'module-function-reads-module-const',
   // Same harness-configuration artifact: whether the CSR template may
@@ -393,5 +391,5 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
   // A module const whose immediately invoked arrow reads another module
   // const: the CSR template has no form for it, so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'csr-template-module-declaration-reads-module-const' },
+  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
 }

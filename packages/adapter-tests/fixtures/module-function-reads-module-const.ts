@@ -3,10 +3,9 @@ import { createFixture } from '../src/types'
 /**
  * #3975, the `function` sibling of `module-helper-reads-module-const`: `mk`
  * is a `function` declaration, which the CSR template cannot splice, so it
- * renders `B.k` as `''` on a client mount (described by
- * `csr-template-module-declaration-reads-module-const`; CSR-skipped, since
- * the server-side refusal entry lists this fixture). A template adapter
- * refuses the read (BF101).
+ * renders `B.k` as `''` on a client mount (CSR-skipped: the server-side
+ * refusal entry lists this fixture). A template adapter refuses the read
+ * (BF101).
  */
 export const fixture = createFixture({
   id: 'module-function-reads-module-const',
