@@ -765,3 +765,71 @@ describe('a parenthesized type lowers like the type it wraps (#3973)', () => {
     expect(loop(items)).toHaveLength(1)
   })
 })
+
+describe('a catalogued Date call on a loop row (#3972)', () => {
+  function refusals(src: string): { message: string; suggestion: string }[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors
+      .filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+      .map((e) => ({ message: e.message, suggestion: e.suggestion?.message ?? '' }))
+  }
+  const rowLoop = (element: string, body = '{r.at.getUTCFullYear()}', param = 'r') => `
+    type A = { at: Date }
+    type B = { id: string }
+    type Row = { id: string; at: Date }
+    export function Foo(props: { rows: ${element}[] }) {
+      return <ul>{props.rows.map((${param}) => <li key="k">${body}</li>)}</ul>
+    }`
+
+  test.each(['Row', '{ id: string; at: Date }', '(A & B)'])('a row typed %s names the loop row, not a missing lowering', (element) => {
+    const errs = refusals(rowLoop(element))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'.getUTCFullYear()' is a catalogued Date method")
+    expect(errs[0].message).toContain("'r.at' is read through the loop row binding 'r'")
+    expect(errs[0].message).not.toContain('no catalogued lowering')
+    expect(errs[0].suggestion).toContain('{/* @client */ new Date(r.at).getUTCFullYear()}')
+  })
+
+  test('a destructured row is refused like the member read, instead of reaching the template as a plain call', () => {
+    const errs = refusals(rowLoop('Row', '{at.getUTCFullYear()}', '{ at }'))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'at' is a loop row binding")
+    expect(refusals(rowLoop('{ meta: { at: Date } }', '{at.getTime()}', '{ meta: { at } }'))).toHaveLength(1)
+  })
+
+  test('a destructured binding with no member evidence stays unrefused', () => {
+    expect(refusals(rowLoop('[Date]', '{at.getTime()}', '[at]'))).toHaveLength(0)
+    expect(refusals(rowLoop('Row', '{rest.at.getTime()}', '{ id, ...rest }'))).toHaveLength(0)
+  })
+
+  test('a row that is itself a Date, and a nested row, name their own binding', () => {
+    expect(refusals(rowLoop('Date', '{r.getTime()}'))[0].message).toContain("'r' is a loop row binding")
+    const nested = refusals(`
+      type Row = { kids: { at: Date }[] }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.kids.map((k) => <b key="x">{k.at.toISOString()}</b>)}</li>)}</ul>
+      }`)
+    expect(nested).toHaveLength(1)
+    expect(nested[0].message).toContain("'k.at' is read through the loop row binding 'k'")
+  })
+
+  test('an explicit-input toLocaleDateString on a row names the loop row', () => {
+    const errs = refusals(rowLoop('Row', "{r.at.toLocaleDateString('en-US', { timeZone: 'UTC' })}"))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'.toLocaleDateString(...)' is a catalogued Date method")
+  })
+
+  test('an uncatalogued or ambient-locale call on a row keeps the uncatalogued message', () => {
+    expect(refusals(rowLoop('Row', '{r.at.getDay()}'))[0].message).toContain('no catalogued lowering')
+    expect(refusals(rowLoop('Row', '{r.at.toLocaleDateString()}'))[0].message).toContain('no catalogued lowering')
+  })
+
+  test('a prop read inside a loop row still lowers', () => {
+    expect(
+      refusals(`
+        export function Foo(props: { rows: { id: string }[]; at: Date }) {
+          return <ul>{props.rows.map((r) => <li key={r.id}>{props.at.getUTCFullYear()}</li>)}</ul>
+        }`),
+    ).toHaveLength(0)
+  })
+})

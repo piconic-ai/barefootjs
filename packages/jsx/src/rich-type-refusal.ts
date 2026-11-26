@@ -76,6 +76,7 @@ import {
   hasUnresolvedBase,
   inheritedMemberConflicts,
   receiverEvidenceLoss,
+  resolveLoopBindingType,
 } from './rich-type-evidence.ts'
 import { DATE_METHODS } from './date-lowering.ts'
 
@@ -260,11 +261,16 @@ function pushDiagnostic(
   receiverPath: string,
   isProp: boolean,
   typeName: string,
+  loopItem: string | null,
 ): void {
   const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${method}`
   if (seen.has(key)) return
   seen.add(key)
   const receiver = isProp ? `prop '${receiverPath}'` : `'${receiverPath}'`
+  if (loopItem !== null) {
+    pushLoopItemDiagnostic(errors, loc, method, receiverPath, loopItem)
+    return
+  }
   const suggestion = buildSuggestion(method, receiverPath, receiver, typeName)
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
@@ -272,6 +278,69 @@ function pushDiagnostic(
     message: `Expression cannot be compiled to marked template: method '.${method}()' on ${receiver} of host type '${typeName}' has no catalogued lowering.`,
     loc,
     suggestion,
+  })
+}
+
+/**
+ * The loop item a catalogued `Date` call's receiver is read through, or
+ * `null` when the receiver is prop-rooted or the call is not one the Date
+ * lowering catalogues (a zero-arg `DATE_METHODS` accessor, or
+ * `toLocaleDateString` with explicit arguments). The lowering plugins resolve
+ * a receiver through props only, with no loop-row types (`date-lowering.ts`'s
+ * module doc), so such a call on a loop item is refused even though the
+ * same call on a prop lowers. Naming that keeps the refusal from claiming
+ * the method has no catalogued lowering. A typed root that is not a prop is
+ * always a loop item: arrow and index parameters are bound without a type.
+ */
+function loopItemOfCataloguedDateCall(
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
+  args: readonly ParsedExpr[],
+  typeName: string,
+  bindings: Bindings,
+): string | null {
+  if (typeName !== 'Date') return null
+  const catalogued =
+    (DATE_METHODS.has(callee.property) && args.length === 0) || (callee.property === 'toLocaleDateString' && args.length > 0)
+  if (!catalogued) return null
+  let root = callee.object
+  while (root.kind === 'member' && !root.computed) root = root.object
+  return root.kind === 'identifier' && bindings.has(root.name) ? root.name : null
+}
+
+/**
+ * BF021 for a catalogued `Date` call on a loop item (`r.at.getUTCFullYear()`
+ * inside `rows.map(r => …)`): a capability gap of the lowering, not an
+ * uncatalogued method. The escapes are the same two as for a prop receiver:
+ * pre-compute per row, or revive the row field client-side (the row crosses
+ * the `bf-p` boundary as JSON, so a bare `/* @client *\/` call would throw).
+ */
+function pushLoopItemDiagnostic(
+  errors: CompilerError[],
+  loc: SourceLocation,
+  method: string,
+  receiverPath: string,
+  loopItem: string,
+): void {
+  const call = method === 'toLocaleDateString' ? `${method}(...)` : `${method}()`
+  const revival =
+    receiverPath === '<expression>'
+      ? `wrapping the receiver in new Date(...) before calling .${call}`
+      : `{/* @client */ new Date(${receiverPath}).${call}}`
+  const where =
+    receiverPath === loopItem
+      ? `'${receiverPath}' is a loop row binding`
+      : `'${receiverPath}' is read through the loop row binding '${loopItem}'`
+  errors.push({
+    code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+    severity: 'error',
+    message: `Expression cannot be compiled to marked template: '.${call}' is a catalogued Date method, but ${where}, and the Date lowering only resolves a receiver read through props.`,
+    loc,
+    suggestion: {
+      message:
+        `Pre-compute the value server-side for each row (for example, give each row a string or number field holding it) and read that field in the loop. ` +
+        `Alternatively, evaluate client-only by ${revival} — a bare /* @client */ crashes at hydrate because '${receiverPath}' crosses the bf-p boundary as JSON and arrives as a plain string, not a Date instance (#2636).`,
+      escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+    },
   })
 }
 
@@ -310,6 +379,7 @@ function checkExpr(
               describeReceiverPath(expr.callee.object),
               receiverRootIsProp(expr.callee.object, bindings),
               typeName,
+              loopItemOfCataloguedDateCall(expr.callee, expr.args, typeName, bindings),
             )
           }
         }
@@ -498,10 +568,7 @@ function walkNode(
     case 'loop': {
       if (node.clientOnly) break
       if (node.arrayParsed) checkExpr(node.arrayParsed, node.loc, meta, bindings, matchers, errors, seen)
-      const loopBindings = new Map(bindings)
-      const arrayType = node.arrayParsed ? resolveReceiverType(node.arrayParsed, meta, bindings) : null
-      loopBindings.set(node.param, arrayType?.kind === 'array' ? arrayType.elementType ?? null : null)
-      if (node.index) loopBindings.set(node.index, null)
+      const loopBindings = bindLoopItem(node, meta, bindings)
       for (const child of node.children) walkNode(child, meta, loopBindings, matchers, errors, seen)
       if (node.childComponent) {
         for (const child of node.childComponent.children) walkNode(child, meta, loopBindings, matchers, errors, seen)
@@ -531,4 +598,26 @@ function walkNode(
       if (node.alternate) walkNode(node.alternate, meta, bindings, matchers, errors, seen)
       break
   }
+}
+
+/**
+ * The bindings a loop's row sees: the item typed as the array's element type
+ * and the index with no evidence. A destructured item (`({ at }) => …`) binds
+ * each name to the member it reads, so a Date read through the pattern is
+ * refused like the same read through `r.at` (it would otherwise reach the
+ * template adapters as a plain method call on the row field).
+ */
+function bindLoopItem(node: Extract<IRNode, { type: 'loop' }>, meta: IRMetadata, bindings: Bindings): Bindings {
+  const loopBindings = new Map(bindings)
+  const arrayType = node.arrayParsed ? resolveReceiverType(node.arrayParsed, meta, bindings) : null
+  const elementType = arrayType?.kind === 'array' ? arrayType.elementType ?? null : null
+  if (node.paramBindings && node.paramBindings.length > 0) {
+    for (const b of node.paramBindings) {
+      loopBindings.set(b.name, b.rest ? null : resolveLoopBindingType(elementType, b.segments, meta))
+    }
+  } else {
+    loopBindings.set(node.param, elementType)
+  }
+  if (node.index) loopBindings.set(node.index, null)
+  return loopBindings
 }

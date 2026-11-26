@@ -744,7 +744,7 @@
         30
       ],
       "walkNode": [
-        75
+        68
       ]
     },
     "packages/jsx/src/scanner/js-scanner.ts": {

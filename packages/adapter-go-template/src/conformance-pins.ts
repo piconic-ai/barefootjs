@@ -201,6 +201,7 @@ export const conformancePins: ConformancePins = {
     { code: 'BF101', severity: 'error', limitation: 'nested-callback-in-filter-predicate' },
   ],
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
+  'date-loop-row-member': [{ code: 'BF021', severity: 'error', limitation: 'date-loop-row-receiver' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of

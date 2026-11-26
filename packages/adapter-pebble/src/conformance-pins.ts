@@ -153,6 +153,7 @@ export const conformancePins: ConformancePins = {
   // same evaluator-JSON mechanism as `.filter`/`.some`. Only the nested form
   // above is refused.
   'date-method-uncatalogued': [{ code: 'BF021', severity: 'error', limitation: 'ambient-locale-date-formatting' }],
+  'date-loop-row-member': [{ code: 'BF021', severity: 'error', limitation: 'date-loop-row-receiver' }],
   'rich-prop-client-read': [{ code: 'BF049', severity: 'error', limitation: 'rich-typed-prop-hydration' }],
   // A ternary or array literal LITERALLY WRAPPING JSX at a non-children prop
   // position (e.g. `header={cond ? <a/> : <b/>}`) is refused ahead of

@@ -14,7 +14,9 @@
  * `rich-type-refusal.ts`'s own top-level walk. A loop item's `.toISOString()`
  * therefore stays BF021-refused rather than silently falling back to a
  * generic (and wrong) lowering — widening to loop bindings is a deliberate
- * future step, not an oversight.
+ * future step, not an oversight. The refusal says so: for a catalogued call
+ * on a loop row it names the row binding instead of claiming the method has
+ * no lowering (`rich-type-refusal.ts`'s `loopItemOfCataloguedDateCall`).
  */
 
 import type { IRMetadata, TypeInfo } from './types.ts'

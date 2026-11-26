@@ -4891,6 +4891,45 @@
         "text"
       ]
     },
+    "date-loop-row-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "date-loop-row-member-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "date-loop-row-member-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "date-method-uncatalogued": {
       "kinds": [
         "call",
