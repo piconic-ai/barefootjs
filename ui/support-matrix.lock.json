@@ -17583,9 +17583,27 @@
               ]
             },
             {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
               "fixture": "inline-object-prop-nullable-member",
               "limitations": [
                 "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-named-owner",
+              "limitations": [
+                "go-declined-intersection-nested-payload-keys"
               ]
             },
             {
@@ -34629,9 +34647,27 @@
               ]
             },
             {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
               "fixture": "inline-object-prop-nullable-member",
               "limitations": [
                 "go-nullable-anonymous-object-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-named-owner",
+              "limitations": [
+                "go-declined-intersection-nested-payload-keys"
               ]
             },
             {
@@ -60036,6 +60072,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "inline-object-prop-index-signature",
+              "limitations": [
+                "go-open-inline-object-key-read"
+              ]
+            },
+            {
+              "fixture": "intersection-member-index-signature-destructured",
+              "limitations": [
+                "go-declined-intersection-destructured-member"
               ]
             },
             {

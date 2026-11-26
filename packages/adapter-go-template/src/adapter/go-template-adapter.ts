@@ -195,7 +195,7 @@ import {
 import { numberLiteralTemplateGo, parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { optFieldElemType, propertyInfoToGo, typeInfoToGo, withoutNilMembers } from "./type/type-codegen.ts"
 import { declaredNilRead, isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
-import { isAnonymousObjectType, planSynthPropStructs } from "./type/synth-prop-structs.ts"
+import { isAnonymousObjectType, planSynthPropStructs, readsThroughBfGet } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
@@ -810,7 +810,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // through `bf_get` rather than an exact-case dot path (#2299).
     this.state.objectTypedPropNames = new Set(
       (ir.metadata.propsParams ?? [])
-        .filter(p => isAnonymousObjectType(p.type))
+        .filter(p => readsThroughBfGet(p.type, ir.metadata))
         .map(p => p.name),
     )
     // Object-literal signal seeds in an `interface{}` / map field bake as a
@@ -1514,7 +1514,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(
           p =>
             p.optional &&
-            (isAnonymousObjectType(p.type) ||
+            (isAnonymousObjectType(p.type, ir.metadata) ||
               (p.type.kind === 'interface' && !!p.type.raw)),
         )
         .map(p => p.sourceName ?? p.name),
@@ -1538,7 +1538,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const synthByType = new Map(synthPlan.map(e => [e.typeInfo, e]))
     const structTypedObjectParams = new Map<string, { goType: string; fields: ReadonlyMap<string, string> }>()
     for (const p of ir.metadata.propsParams ?? []) {
-      if (p.optional || !isAnonymousObjectType(p.type)) continue
+      if (p.optional || !isAnonymousObjectType(p.type, ir.metadata)) continue
       const key = p.sourceName ?? p.name
       const entry = synthByType.get(p.type)
       if (entry) {

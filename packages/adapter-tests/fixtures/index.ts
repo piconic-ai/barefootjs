@@ -1132,6 +1132,11 @@ import { fixture as dateIntersectionMemberDestructured } from './date-intersecti
 import { fixture as dateIntersectionMemberLiteralArm } from './date-intersection-member-literal-arm'
 import { fixture as intersectionMemberChildForward } from './intersection-member-child-forward'
 import { fixture as intersectionMemberIndexSignature } from './intersection-member-index-signature'
+import { fixture as inlineObjectPropIndexSignatureDestructured } from './inline-object-prop-index-signature-destructured'
+import { fixture as intersectionMemberIndexSignatureDestructured } from './intersection-member-index-signature-destructured'
+import { fixture as inlineObjectPropIndexSignatureNamedOwner } from './inline-object-prop-index-signature-named-owner'
+import { fixture as intersectionMemberIndexSignatureNamedOwner } from './intersection-member-index-signature-named-owner'
+import { fixture as intersectionMemberIndexSignatureArray } from './intersection-member-index-signature-array'
 import { fixture as intersectionMemberMappedArm } from './intersection-member-mapped-arm'
 import { fixture as intersectionMemberRecordArm } from './intersection-member-record-arm'
 import { fixture as intersectionMemberGenericArm } from './intersection-member-generic-arm'
@@ -2652,6 +2657,11 @@ export const jsxFixtures: JSXFixture[] = [
   dateIntersectionMemberLiteralArm,
   intersectionMemberChildForward,
   intersectionMemberIndexSignature,
+  inlineObjectPropIndexSignatureDestructured,
+  intersectionMemberIndexSignatureDestructured,
+  inlineObjectPropIndexSignatureNamedOwner,
+  intersectionMemberIndexSignatureNamedOwner,
+  intersectionMemberIndexSignatureArray,
   intersectionMemberMappedArm,
   intersectionMemberRecordArm,
   intersectionMemberGenericArm,

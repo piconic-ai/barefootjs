@@ -51,26 +51,33 @@ export function localTypeDefinitionNames(
  * The members of an anonymous object type a struct is synthesized for: an
  * inline object literal type's own members, or the merged members of a
  * nested inline intersection (`data: A & B`, `inlineIntersectionMembers`).
- * `null` for any other type, and for one whose properties are not its whole
- * key set (`openMembers`, or an intersection whose members are not all known
- * in this file), which keeps a source-keyed map (`typeInfoToGo`'s
- * `map[string]interface{}` / `interface{}`), so a key no property names
- * still reads.
+ * `null` for any other type, and for an intersection whose properties are
+ * not its whole key set or whose members are not all known in this file,
+ * which keeps its untyped `interface{}` field.
  */
 function anonymousObjectMembers(typeInfo: TypeInfo, metadata: Pick<IRMetadata, 'typeDefinitions'>): PropertyInfo[] | null {
-  if (typeInfo.kind === 'object') return typeInfo.openMembers ? null : typeInfo.properties ?? []
+  if (typeInfo.kind === 'object') return typeInfo.properties ?? []
   return inlineIntersectionMembers(typeInfo, metadata)
 }
 
 /**
- * Whether `typeInfo` is an anonymous object type: an inline object literal
- * type or a nested inline intersection, whether or not a struct is
- * synthesized for it (`anonymousObjectMembers`). Such a prop is a synthesized
- * struct or a source-keyed map, so its member reads go through the
- * case-tolerant `bf_get`, and an optional one is a map.
+ * Whether `typeInfo` is an anonymous object type a struct is synthesized for
+ * (`anonymousObjectMembers`): an inline object literal type, or a nested
+ * inline intersection whose members are all known. A synthesized struct when
+ * required and a source-keyed map when optional.
  */
-export function isAnonymousObjectType(typeInfo: TypeInfo): boolean {
-  return typeInfo.kind === 'object' || (typeInfo.kind === 'unknown' && typeInfo.inheritance === 'intersection')
+export function isAnonymousObjectType(typeInfo: TypeInfo, metadata: Pick<IRMetadata, 'typeDefinitions'>): boolean {
+  return anonymousObjectMembers(typeInfo, metadata) !== null
+}
+
+/**
+ * Whether a prop typed `typeInfo` holds an object read through the
+ * case-tolerant `bf_get`: an anonymous object type (`isAnonymousObjectType`),
+ * or any other nested inline intersection, which keeps its source-keyed map
+ * in an `interface{}` field, so an exact-case dot path finds nothing.
+ */
+export function readsThroughBfGet(typeInfo: TypeInfo, metadata: Pick<IRMetadata, 'typeDefinitions'>): boolean {
+  return isAnonymousObjectType(typeInfo, metadata) || (typeInfo.kind === 'unknown' && typeInfo.inheritance === 'intersection')
 }
 
 /**

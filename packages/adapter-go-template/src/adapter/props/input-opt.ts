@@ -28,11 +28,9 @@ function isNilMember(t: TypeInfo): boolean {
 /**
  * Whether `t` admits `null` or `undefined`: a union with a `null` /
  * `undefined` member, or a type Phase 1 does not narrow (`any`, `unknown`).
- * An inline intersection (`A & B`) admits nil only when every arm does.
  */
 export function typeAdmitsNil(t: TypeInfo | undefined): boolean {
   if (!t) return false
-  if (t.kind === 'unknown' && t.inheritance === 'intersection') return (t.inherits ?? []).every(typeAdmitsNil)
   if (t.kind === 'unknown' || isNilMember(t)) return true
   return t.kind === 'union' && (t.unionTypes ?? []).some(isNilMember)
 }

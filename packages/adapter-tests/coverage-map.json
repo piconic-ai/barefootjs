@@ -8351,6 +8351,26 @@
         "text"
       ]
     },
+    "inline-object-prop-index-signature-destructured": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-index-signature-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "inline-object-prop-nullable-member": {
       "kinds": [
         "identifier",
@@ -8418,6 +8438,40 @@
       "axes": [
         "member:computed"
       ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-destructured": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "text"
       ]

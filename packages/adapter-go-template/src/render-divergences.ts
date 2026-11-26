@@ -155,6 +155,15 @@ export const renderDivergences: RenderDivergences = {
   // A props member typed as a nullable inline object type: the Go field is
   // `interface{}` holding the source-keyed map, so a member read finds nothing.
   'inline-object-prop-nullable-member': { limitation: 'go-nullable-anonymous-object-member' },
+  // An inline object type with an index signature read by an undeclared
+  // key: its struct has no field for the key, so the program does not build.
+  'inline-object-prop-index-signature': { limitation: 'go-open-inline-object-key-read' },
+  // A destructured open inline intersection: the `interface{}` map is read
+  // by a capitalised dot path, so a declared member renders empty.
+  'intersection-member-index-signature-destructured': { limitation: 'go-declined-intersection-destructured-member' },
+  // An open inline intersection member on a named type: the hydration
+  // payload carries the member's keys capitalised.
+  'intersection-member-index-signature-named-owner': { limitation: 'go-declined-intersection-nested-payload-keys' },
   // A memo reading an element of an array literal by a literal index: the
   // runtime evaluator does not read an array element by a computed key.
   'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },
