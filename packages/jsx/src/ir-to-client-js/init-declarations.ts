@@ -29,7 +29,7 @@ import type {
 } from '../types.ts'
 import { computeDeclarationScopes } from './compute-scope.ts'
 import { graphUsedIdentifiers } from './build-references.ts'
-import { sharedStorageNames } from '../module-scope.ts'
+import { isModuleLevelReactive, sharedStorageNames } from '../module-scope.ts'
 import { getControlledPropName } from './prop-handling.ts'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort.ts'
 import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit.ts'
@@ -106,7 +106,7 @@ export function classifyLocalDeclarations(
   const moduleLevelSignals: SignalInfo[] = []
   const moduleLevelMemos: MemoInfo[] = []
   for (const signal of ctx.signals) {
-    if (signal.isModule) {
+    if (isModuleLevelReactive(signal)) {
       moduleLevelSignals.push(signal)
       continue
     }
@@ -116,7 +116,7 @@ export function classifyLocalDeclarations(
     }
   }
   for (const memo of ctx.memos) {
-    if (memo.isModule) {
+    if (isModuleLevelReactive(memo)) {
       moduleLevelMemos.push(memo)
     }
   }
@@ -161,7 +161,7 @@ export function emitSortedDeclarations(
   }
 
   for (const signal of ctx.signals) {
-    if (signal.isModule) continue
+    if (isModuleLevelReactive(signal)) continue
     const controlled = controlledSignals.find(c => c.signal === signal)
     declarations.push({
       kind: 'signal',
@@ -172,7 +172,7 @@ export function emitSortedDeclarations(
   }
 
   for (const memo of ctx.memos) {
-    if (memo.isModule) continue
+    if (isModuleLevelReactive(memo)) continue
     declarations.push({
       kind: 'memo',
       info: memo,
