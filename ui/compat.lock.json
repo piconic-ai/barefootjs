@@ -4466,6 +4466,38 @@
           }
         }
       },
+      "destructure-default-param-inlined-const-identity": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "array-equality-through-inlined-const"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "array-equality-through-inlined-const"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "array-equality-through-inlined-const"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "array-equality-through-inlined-const"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "array-equality-through-inlined-const"
+          ]
+        }
+      },
       "destructure-default-reads-signal": {
         "blade": {
           "kind": "refusal",
@@ -17369,6 +17401,10 @@
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
       },
+      "destructure-default-param-inlined-const-identity": {
+        "description": "An inlined const reading an allocating parameter default twice sees one value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-inlined-const-identity.ts"
+      },
       "destructure-default-reads-signal": {
         "description": "A destructure default reading a signal through a const is refused on the template adapters",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-reads-signal.ts"
@@ -18358,6 +18394,23 @@
       ],
       "reason": "The zero-argument form resolves against the runtime environment ambient locale (ICU/CLDR data, `LC_*`), which is not knowable at build time and differs across every backend language and between the server and the browser. Any lowering would be a silent SSR/CSR divergence; a Hono carve-out was tried and rejected because hydration re-evaluates the expression against a JSON-de-riched receiver. The literal-locale and named-timezone forms are lowered instead."
     },
+    "array-equality-through-inlined-const": {
+      "title": "Strict equality between arrays read through a component-scope const",
+      "kind": "silent",
+      "given": "`===` between arrays read through a component-scope const (`const local = [b, b]; local[0] === local[1]`), where the arrays are a parameter prop with an array default and a later default reading it (`{ a = [], c = a }`), passed or omitted",
+      "expected": "`===` compares by reference: one binding read twice is `true`, two distinct arrays with equal contents are `false`",
+      "actual": "renders the comparison by the arrays' contents, or with each copy of the default read as a distinct array",
+      "fixtures": [
+        "destructure-default-param-inlined-const-identity"
+      ],
+      "adapters": [
+        "blade",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "twig"
+      ]
+    },
     "array-fill": {
       "title": "Array.prototype.fill in a template expression",
       "kind": "refusal",
@@ -18957,28 +19010,6 @@
         "BF101"
       ]
     },
-    "const-alias-signature-default": {
-      "title": "A const reading a prop whose destructure has a default",
-      "kind": "silent",
-      "given": "a component-scope const aliasing (`const a = label`) a prop destructured with a default (`{ label = 'd' }`), rendered with the prop omitted",
-      "expected": "the read renders the default",
-      "actual": "renders empty: the read takes the passed prop without its default",
-      "fixtures": [
-        "const-alias-default-prop-loop-shadow"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "const-literal-inherited-key": {
       "title": "Literal const read with a key only its prototype has",
       "kind": "refusal",
@@ -19048,6 +19079,29 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "csr-template-inlined-const-param-default": {
+      "title": "A component-scope const reading a parameter prop whose default is not a primitive literal, in the client template",
+      "kind": "silent",
+      "given": "a component-scope const read in markup that reads a parameter-destructured prop whose default allocates or names a binding (`{ b = ['y'] }`, `{ b = fallback }` beside a body `const fallback`), client-mounted with the prop omitted",
+      "expected": "the read renders the default JS binds once in parameter scope (`y`, or the module binding `fallback` names)",
+      "actual": "renders empty: the client template reads the omitted prop without its default",
+      "fixtures": [
+        "destructure-default-param-inlined-array-const",
+        "destructure-default-param-inlined-const-scope"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "csr-template-object-const-function-property": {

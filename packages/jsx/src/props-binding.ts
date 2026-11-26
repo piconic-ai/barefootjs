@@ -206,6 +206,54 @@ export function templatePropReadParams(b: TemplatePropReadBindings): ParamInfo[]
 }
 
 /**
+ * Each props binding a client `template:` reads live
+ * ({@link templatePropReadParams}) whose destructure default is copy-safe
+ * ({@link hasCopySafeDefault}) → that read (`livePropReadExpr`, default
+ * included). The spelling an inlined constant's template text and its
+ * relocation into template scope share (#3980). A binding left out reads as
+ * `_p.<key>`: its default is source text that would be re-evaluated at every
+ * read (a fresh `[]` each time) and resolved against the template's scope
+ * instead of the parameter list's. A rest binding is left out: it is no
+ * single prop.
+ */
+export function templatePropReads(b: TemplatePropReadBindings): Map<string, string> {
+  const params = templatePropReadParams(b)
+  const byName = new Map(params.map(p => [p.name, p]))
+  const reads = new Map<string, string>()
+  for (const p of params) {
+    if (!p.isRest && hasCopySafeDefault(p, byName)) reads.set(p.name, livePropReadExpr(p, undefined, false))
+  }
+  return reads
+}
+
+/**
+ * Whether copying `p`'s destructure default into each read gives the value
+ * JS binds once in parameter scope, decided on the default's parsed tree
+ * (`ParamInfo.parsed`), so grouping parentheses never matter: no default, a
+ * primitive literal (`'d'`, `` `d` ``, `1_000`, `-1`, `true`, `null`), or a
+ * bare earlier binding of the same pattern (`{ a = 'A', c = a }`, `c = (a)`,
+ * which `defaultParts` confirms reads that binding) whose own default is
+ * copy-safe. Anything else allocates (`[]`, `{}`, a call, an arrow), names a
+ * binding the template could resolve differently (`fallback`, an import, a
+ * global, `undefined`), or is a form the parsed tree does not model (`void
+ * 0`, `as`, `satisfies`, `a!`), and is read as on main.
+ */
+function hasCopySafeDefault(p: ParamInfo, byName: ReadonlyMap<string, ParamInfo>, seen: ReadonlySet<string> = EMPTY_SET): boolean {
+  if (p.defaultValue === undefined) return true
+  const expr = p.parsed
+  if (expr?.kind !== 'identifier') return !p.defaultParts && isPrimitiveLiteral(expr)
+  const readsEarlier = p.defaultParts?.some(part => part.kind === 'param' && part.param.name === expr.name) === true
+  const earlier = readsEarlier ? byName.get(expr.name) : undefined
+  if (!earlier || seen.has(earlier.name)) return false
+  return hasCopySafeDefault(earlier, byName, new Set([...seen, p.name]))
+}
+
+function isPrimitiveLiteral(expr: ParsedExpr | undefined): boolean {
+  if (expr?.kind === 'literal') return true
+  return expr?.kind === 'unary' && (expr.op === '-' || expr.op === '+') && expr.argument.kind === 'literal' && expr.argument.literalType === 'number'
+}
+
+/**
  * Whether a `(props)`-arg component's body binding is the prop itself: an
  * alias (`const { b } = props`, `const b = props.b`) or a renamed body
  * binding with a default, which reads as its own prop entry like the
