@@ -19,7 +19,9 @@ export function initDeferredChildPhrasingParent(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const [name] = createSignal('a')
-  const read = () => name()
+  const read = () => {
+    return name()
+  }
   const label = read()
 
   const [_s0, _s1] = $c(__scope, 's0', 's1')

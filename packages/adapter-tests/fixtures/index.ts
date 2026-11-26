@@ -1694,6 +1694,19 @@ import { fixture as moduleConstHelperCallSpreadInlined } from './module-const-he
 import { fixture as moduleConstHelperCallClient } from './module-const-helper-call-client'
 import { fixture as moduleConstHelperCallChild } from './module-const-helper-call-child'
 import { fixture as moduleConstHelperCallRuntimeAlias } from './module-const-helper-call-runtime-alias'
+import { fixture as moduleHelperReadsModuleConst } from './module-helper-reads-module-const'
+import { fixture as moduleHelperReadsModuleConstChain } from './module-helper-reads-module-const-chain'
+import { fixture as moduleHelperReadsModuleConstValues } from './module-helper-reads-module-const-values'
+import { fixture as moduleHelperReadsModuleConstBranchLoop } from './module-helper-reads-module-const-branch-loop'
+import { fixture as moduleHelperReadsModuleConstInit } from './module-helper-reads-module-const-init'
+import { fixture as moduleHelperReadsModuleConstShadowed } from './module-helper-reads-module-const-shadowed'
+import { fixture as moduleHelperReadsModuleConstPropHidden } from './module-helper-reads-module-const-prop-hidden'
+import { fixture as moduleHelperParamReadsModuleConst } from './module-helper-param-reads-module-const'
+import { fixture as moduleFunctionReadsModuleConst } from './module-function-reads-module-const'
+import { fixture as moduleConstIifeReadsModuleConst } from './module-const-iife-reads-module-const'
+import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
+import { fixture as moduleHelperConstIdentity } from './module-helper-const-identity'
+import { fixture as moduleConstLiteralIdentity } from './module-const-literal-identity'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
@@ -3044,6 +3057,19 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstHelperCallClient,
   moduleConstHelperCallChild,
   moduleConstHelperCallRuntimeAlias,
+  moduleHelperReadsModuleConst,
+  moduleHelperReadsModuleConstChain,
+  moduleHelperReadsModuleConstValues,
+  moduleHelperReadsModuleConstBranchLoop,
+  moduleHelperReadsModuleConstInit,
+  moduleHelperReadsModuleConstShadowed,
+  moduleHelperReadsModuleConstPropHidden,
+  moduleHelperParamReadsModuleConst,
+  moduleFunctionReadsModuleConst,
+  moduleConstIifeReadsModuleConst,
+  componentHelperSignalChildProp,
+  moduleHelperConstIdentity,
+  moduleConstLiteralIdentity,
   moduleConstObjectSpreadUnresolvedComputedProps,
   moduleConstObjectSpreadUnresolvedComputedLocal,
   moduleConstObjectSpreadUnresolvedComputedOptional,

@@ -12,5 +12,6 @@ export default defineLimitation({
     'strict-equality-preamble-reference',
     'strict-equality-optional-array-element',
     'strict-equality-nullable-array-element',
+    'module-const-literal-identity',
   ],
 })

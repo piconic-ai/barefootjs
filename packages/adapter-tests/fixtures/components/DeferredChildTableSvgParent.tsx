@@ -28,7 +28,12 @@ function SvgDot(props: { label: string }) {
 
 export function DeferredChildTableSvgParent() {
   const [name] = createSignal('a')
-  const read = () => name()
+  // A block body keeps `label` init-only: the client template splices an
+  // expression-bodied zero-param helper's call as its body, which would
+  // render the child in place instead of deferring it.
+  const read = () => {
+    return name()
+  }
   const label = read()
   return (
     <div>

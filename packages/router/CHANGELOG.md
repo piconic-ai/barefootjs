@@ -1,5 +1,14 @@
 # @barefootjs/router
 
+## 0.41.4
+
+### Patch Changes
+
+- Updated dependencies [f057fd4]
+- Updated dependencies [16c1114]
+- Updated dependencies [c9bc3a6]
+  - @barefootjs/shared@0.41.4
+
 ## 0.41.3
 
 ### Patch Changes
