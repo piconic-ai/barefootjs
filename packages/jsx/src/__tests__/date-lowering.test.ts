@@ -8,7 +8,7 @@
  * still does.
  */
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test'
-import { compileJSX, type ComponentIR } from '../index'
+import { compileJSX, inlineIntersectionMembers, type ComponentIR } from '../index'
 import { TestAdapter } from '../adapters/test-adapter'
 import { parseExpression, type ParsedExpr } from '../expression-parser'
 import { datePlugin, DATE_METHODS } from '../date-lowering'
@@ -686,6 +686,84 @@ describe('Date members through an inline intersection member type (#3949)', () =
     `)
     expect(messages).toHaveLength(1)
     expect(messages[0]).toContain('cannot be reconciled')
+  })
+})
+
+describe('the members of a nested inline intersection (#3971)', () => {
+  test('a destructured member typed as an intersection of local object types carries the intersection, as the props-object form does', () => {
+    const src = (param: string) => `
+      type A = { at: Date }
+      interface B { label: string }
+      export function Foo(${param}) { return <p>x</p> }`
+    const destructured = metadata(src('{ data }: { data: A & B }')).propsParams.find((p) => p.name === 'data')
+    const object = metadata(src('props: { data: A & B }')).propsParams.find((p) => p.name === 'data')
+    expect(destructured?.type.inheritance).toBe('intersection')
+    expect(destructured?.type.raw).toBe(object?.type.raw)
+    expect(destructured?.declaredType).toBeUndefined()
+  })
+
+  test('a destructured member intersecting an imported type keeps the unresolved form', () => {
+    const meta = metadata(`
+      import type { A } from './a'
+      interface B { label: string }
+      export function Foo({ data }: { data: A & B }) { return <p>x</p> }`)
+    const data = meta.propsParams.find((p) => p.name === 'data')
+    expect(data?.type.kind).toBe('unknown')
+    expect(data?.type.inherits).toBeUndefined()
+    expect(data?.declaredType?.inheritance).toBe('intersection')
+  })
+
+  test('inlineIntersectionMembers merges every arm, and declines what it cannot know', () => {
+    const members = (decls: string, type: string) => {
+      const meta = metadata(`${decls}\nexport function Foo(props: { data: ${type} }) { return <p>x</p> }`)
+      const data = meta.propsParams.find((p) => p.name === 'data')!
+      return inlineIntersectionMembers(data.type, meta)?.map((p) => [p.name, p.type.raw]) ?? null
+    }
+    expect(members('type A = { at: Date }\ninterface B { label: string }', 'A & B')).toEqual([
+      ['at', 'Date'],
+      ['label', 'string'],
+    ])
+    expect(members('interface N { label: string }', '(N & { id: string }) & { at: Date }')).toEqual([
+      ['label', 'string'],
+      ['id', 'string'],
+      ['at', 'Date'],
+    ])
+    expect(members('type A = { at: Date | null }', 'A & { at: Date }')).toEqual([['at', 'Date']])
+    expect(members("import type { A } from './a'\ntype B = { label: string }", 'A & B')).toBeNull()
+    expect(members('type A = { at: Date }', 'A & { at: string }')).toBeNull()
+    expect(members('type A = { at: Date }', 'A')).toBeNull()
+  })
+
+  test.each([
+    ['an index signature', 'type A = { [key: string]: string }', 'A & { label: string }'],
+    ['an inline index signature', '', '{ [key: string]: string } & { label: string }'],
+    ['a method', 'interface A { label: string; describe(): string }', 'A & { id: string }'],
+    ['a mapped type', "type K = 'x'\ntype A = { [P in K]: string }", 'A & { label: string }'],
+    ['a generic', 'type Box<T> = { value: T }', 'Box<string> & { label: string }'],
+    ['a Record', '', 'Record<string, string> & { label: string }'],
+    ['a union alias', 'type U = { a: string } | { b: string }', 'U & { label: string }'],
+    ['an `any` arm', '', 'any & { label: string }'],
+    ['an open arm reached through an alias', 'type A = { [key: string]: string }\ntype AA = A & { id: string }', 'AA & { label: string }'],
+  ])('inlineIntersectionMembers declines a constituent whose keys are not all properties: %s', (_label, decls, type) => {
+    const meta = metadata(`${decls}\nexport function Foo(props: { data: ${type} }) { return <p>x</p> }`)
+    const data = meta.propsParams.find((p) => p.name === 'data')!
+    expect(inlineIntersectionMembers(data.type, meta)).toBeNull()
+  })
+
+  test('openMembers marks a type literal or definition with a non-property member or type parameters', () => {
+    const meta = metadata(`
+      type Open = { [key: string]: string }
+      interface WithMethod { describe(): string }
+      type Box<T> = { value: T }
+      type Closed = { label: string }
+      export function Foo(props: { a: { [key: string]: string }; b: { label: string } }) { return <p>x</p> }`)
+    const def = (name: string) => meta.typeDefinitions.find((d) => d.name === name)
+    expect(def('Open')?.openMembers).toBe(true)
+    expect(def('WithMethod')?.openMembers).toBe(true)
+    expect(def('Box')?.openMembers).toBe(true)
+    expect(def('Closed')?.openMembers).toBeUndefined()
+    expect(meta.propsParams.find((p) => p.name === 'a')?.type.openMembers).toBe(true)
+    expect(meta.propsParams.find((p) => p.name === 'b')?.type.openMembers).toBeUndefined()
   })
 })
 

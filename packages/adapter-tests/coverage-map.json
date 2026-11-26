@@ -8329,6 +8329,62 @@
         "text"
       ]
     },
+    "inline-object-prop-child-forward": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-index-signature": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-index-signature-destructured": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-index-signature-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-nullable-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "input": {
       "kinds": [
         "identifier",
@@ -8340,6 +8396,145 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "intersection-member-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "intersection-member-child-forward": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-generic-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-destructured": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-mapped-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-optional": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "intersection-member-record-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-scalars": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
       ]
     },
     "json-stringify-boolean-literal": {

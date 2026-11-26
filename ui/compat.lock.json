@@ -4150,38 +4150,6 @@
           ]
         }
       },
-      "date-intersection-member": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-inline-intersection-member"
-          ]
-        }
-      },
-      "date-intersection-member-destructured": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-inline-intersection-member"
-          ]
-        }
-      },
-      "date-intersection-member-interface": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-inline-intersection-member"
-          ]
-        }
-      },
-      "date-intersection-member-literal-arm": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-inline-intersection-member"
-          ]
-        }
-      },
       "date-intersection-nested-narrowing": {
         "go-template": {
           "kind": "render",
@@ -7450,6 +7418,38 @@
           "kind": "render",
           "limitations": [
             "index-read-capitalised-key-only"
+          ]
+        }
+      },
+      "inline-object-prop-index-signature": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-open-inline-object-key-read"
+          ]
+        }
+      },
+      "inline-object-prop-nullable-member": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-nullable-anonymous-object-member"
+          ]
+        }
+      },
+      "intersection-member-index-signature-destructured": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-declined-intersection-destructured-member"
+          ]
+        }
+      },
+      "intersection-member-index-signature-named-owner": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-declined-intersection-nested-payload-keys"
           ]
         }
       },
@@ -18795,22 +18795,6 @@
         "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-prop-identity-hydrate.ts"
       },
-      "date-intersection-member": {
-        "description": "Date reached through a props member typed as an inline intersection renders via the date helper",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member.ts"
-      },
-      "date-intersection-member-destructured": {
-        "description": "Date reached through a destructured prop typed as an inline intersection renders via the date helper",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-destructured.ts"
-      },
-      "date-intersection-member-interface": {
-        "description": "Date reached through an interface member typed as an inline intersection renders via the date helper",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-interface.ts"
-      },
-      "date-intersection-member-literal-arm": {
-        "description": "Date declared on the object literal arm of a member intersection renders via the date helper",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-member-literal-arm.ts"
-      },
       "date-intersection-nested-narrowing": {
         "description": "Nested Date member declared as Date & Date | null across intersection arms renders via the date…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-nested-narrowing.ts"
@@ -18970,6 +18954,22 @@
       "index-read-capitalised-key-only": {
         "description": "A lowercase index key does not read an object key that differs only by its capitalised first letter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-read-capitalised-key-only.ts"
+      },
+      "inline-object-prop-index-signature": {
+        "description": "A key read through an inline object prop type with an index signature renders its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/inline-object-prop-index-signature.ts"
+      },
+      "inline-object-prop-nullable-member": {
+        "description": "A props member typed as a nullable inline object type renders its member when present",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/inline-object-prop-nullable-member.ts"
+      },
+      "intersection-member-index-signature-destructured": {
+        "description": "Members of a destructured prop typed as an inline intersection with an index-signature constituent…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/intersection-member-index-signature-destructured.ts"
+      },
+      "intersection-member-index-signature-named-owner": {
+        "description": "A member typed as an inline intersection with an index-signature constituent, on a named type,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/intersection-member-index-signature-named-owner.ts"
       },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
@@ -20820,17 +20820,27 @@
         "BF029"
       ]
     },
-    "go-inline-intersection-member": {
-      "title": "A props member typed as an inline intersection",
+    "go-declined-intersection-destructured-member": {
+      "title": "A destructured prop typed as an inline intersection with an open constituent",
       "kind": "silent",
-      "given": "a prop or props-interface member whose type is an inline intersection (`data: A & B`), read through its members (`props.data.label`, `props.data.at.getUTCFullYear()`)",
-      "expected": "the member values (`y:2024`)",
-      "actual": "renders `:0`, since the member is generated as an `interface{}` field holding the source-keyed map, so a capitalised member read finds nothing and the Date accessor reads a zero time",
+      "given": "a destructured prop typed as an inline intersection whose constituent declares an index signature (`({ data }: { data: A & B })` with `type A = { [key: string]: string }`), read by a declared property (`data.label`)",
+      "expected": "the declared member value (`label:extra`)",
+      "actual": "renders an empty string for the declared member, since the prop is an `interface{}` field holding the source-keyed map and the read is a capitalised dot path",
       "fixtures": [
-        "date-intersection-member",
-        "date-intersection-member-destructured",
-        "date-intersection-member-interface",
-        "date-intersection-member-literal-arm"
+        "intersection-member-index-signature-destructured"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "go-declined-intersection-nested-payload-keys": {
+      "title": "The hydration payload of an open inline intersection member on a named type",
+      "kind": "silent",
+      "given": "a client component prop of a named object type whose member is an inline intersection with an index-signature constituent (`type Row = { data: A & B }`, `type A = { [key: string]: string }`)",
+      "expected": "the payload carries the member's keys as the caller wrote them (`{\"row\":{\"data\":{\"label\":\"label\"}}}`)",
+      "actual": "renders the payload with the member's keys capitalised (`\"Label\"`), the convention a map baked for an untyped nested field uses",
+      "fixtures": [
+        "intersection-member-index-signature-named-owner"
       ],
       "adapters": [
         "go-template"
@@ -20844,6 +20854,32 @@
       "actual": "renders `0`, since the generated Go struct for the nested named type is built from the type's own members only and the inherited `at` is not a `time.Time` field",
       "fixtures": [
         "date-intersection-nested-narrowing"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "go-nullable-anonymous-object-member": {
+      "title": "A props member typed as a nullable anonymous object type",
+      "kind": "silent",
+      "given": "a prop whose type is a union of an inline object type (or an inline intersection) and `null` (`data: { label: string } | null`), read through its members (`props.data.label`)",
+      "expected": "the member value (`y`)",
+      "actual": "renders an empty string, since the member is generated as an `interface{}` field holding the source-keyed map, so a capitalised member read finds nothing",
+      "fixtures": [
+        "inline-object-prop-nullable-member"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "go-open-inline-object-key-read": {
+      "title": "A key no property declares, read through an inline object type with an index signature",
+      "kind": "silent",
+      "given": "a prop typed as an inline object type that declares an index signature beside its properties (`data: { label: string; [key: string]: string }`), read by a key no property declares (`props.data['extra']`)",
+      "expected": "the value of that key (`label:extra`)",
+      "actual": "emits a program that does not build, since the struct generated for the type has a field for each declared property only, and the caller's value for the other key has none",
+      "fixtures": [
+        "inline-object-prop-index-signature"
       ],
       "adapters": [
         "go-template"

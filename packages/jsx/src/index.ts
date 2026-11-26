@@ -242,6 +242,7 @@ export type {
   SavedLoopBinding,
 } from './adapters/loop-plan.ts'
 export { evaluateStaticLiteral, foldStaticBindings, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
+export { inlineIntersectionMembers } from './rich-type-evidence.ts'
 export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,

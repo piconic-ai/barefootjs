@@ -159,13 +159,18 @@ export const renderDivergences: RenderDivergences = {
   // A Date member inherited or intersected on a nested named type: the Go
   // struct for that type has only its own members.
   'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },
-  // A props member typed as an inline intersection (`data: A & B`): the Go
-  // field is `interface{}` holding the source-keyed map, so a member read
-  // finds nothing.
-  'date-intersection-member': { limitation: 'go-inline-intersection-member' },
-  'date-intersection-member-interface': { limitation: 'go-inline-intersection-member' },
-  'date-intersection-member-destructured': { limitation: 'go-inline-intersection-member' },
-  'date-intersection-member-literal-arm': { limitation: 'go-inline-intersection-member' },
+  // A props member typed as a nullable inline object type: the Go field is
+  // `interface{}` holding the source-keyed map, so a member read finds nothing.
+  'inline-object-prop-nullable-member': { limitation: 'go-nullable-anonymous-object-member' },
+  // An inline object type with an index signature read by an undeclared
+  // key: its struct has no field for the key, so the program does not build.
+  'inline-object-prop-index-signature': { limitation: 'go-open-inline-object-key-read' },
+  // A destructured open inline intersection: the `interface{}` map is read
+  // by a capitalised dot path, so a declared member renders empty.
+  'intersection-member-index-signature-destructured': { limitation: 'go-declined-intersection-destructured-member' },
+  // An open inline intersection member on a named type: the hydration
+  // payload carries the member's keys capitalised.
+  'intersection-member-index-signature-named-owner': { limitation: 'go-declined-intersection-nested-payload-keys' },
   // A memo reading an element of an array literal by a literal index: the
   // runtime evaluator does not read an array element by a computed key.
   'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },

@@ -457,6 +457,16 @@ export function membersToProperties(
 }
 
 /**
+ * `{ openMembers: true }` when `members` include anything but a plain property
+ * signature (an index signature, a method, a call or construct signature),
+ * so the properties `membersToProperties` keeps are not the type's whole key
+ * set (`TypeInfo.openMembers` / `TypeDefinition.openMembers`).
+ */
+export function openMembersField(members: ts.NodeArray<ts.TypeElement>): { openMembers?: true } {
+  return members.every(ts.isPropertySignature) ? {} : { openMembers: true }
+}
+
+/**
  * The source-level name of an object/interface member. String- and numeric-
  * literal keys are returned unquoted (`{ "id": ... }` → `id`), so consumers see
  * the same name whether the key was written as an identifier or a string —
@@ -540,7 +550,7 @@ export function typeNodeToTypeInfo(
       raw,
       // Synthetic members have no source positions for membersToProperties'
       // getText(); emit a property-less object in that mode.
-      ...(synthetic ? {} : { properties: membersToProperties(typeNode.members, sourceFile) }),
+      ...(synthetic ? {} : { properties: membersToProperties(typeNode.members, sourceFile), ...openMembersField(typeNode.members) }),
     }
   }
 

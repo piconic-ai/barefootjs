@@ -25,6 +25,7 @@ import {
   typeNodeToTypeInfo,
   tsTypeToTypeInfo,
   membersToProperties,
+  openMembersField,
   constituentTypeInfo,
   intersectionConstituents,
   unwrapParenthesizedType,
@@ -2758,6 +2759,7 @@ function collectInterfaceDefinition(
     definition: node.getText(ctx.sourceFile),
     properties: membersToProperties(node.members, ctx.sourceFile),
     ...inheritsField(interfaceBaseTypes(node, ctx.sourceFile), 'extends'),
+    ...definitionOpenMembers(node, node.members),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -2787,6 +2789,15 @@ function inheritsField(types: TypeInfo[], inheritance: 'extends' | 'intersection
   return types.length > 0 ? { inherits: types, inheritance } : {}
 }
 
+/** `TypeDefinition.openMembers` for a declaration with type parameters or a non-property member. */
+function definitionOpenMembers(
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration,
+  members: ts.NodeArray<ts.TypeElement> | null,
+): { openMembers?: true } {
+  if (node.typeParameters?.length) return { openMembers: true }
+  return members ? openMembersField(members) : {}
+}
+
 function collectTypeAliasDefinition(
   node: ts.TypeAliasDeclaration,
   ctx: AnalyzerContext
@@ -2803,6 +2814,7 @@ function collectTypeAliasDefinition(
     properties,
     ...inheritsField(aliasInheritedTypes(node.type, ctx.sourceFile), 'intersection'),
     ...(stringLiteralUnion ? { stringLiteralUnion } : {}),
+    ...definitionOpenMembers(node, literalMembers),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -4845,7 +4857,12 @@ function isResolvableMemberType(
       // a reader still sees that it may be nil. A top-level member typed
       // with a union still declines.
       return nested && isNilUnionOfResolvable(info, recurse)
-    // Functions, other unions and `unknown` all decline — see docstring.
+    case 'unknown':
+      // An inline intersection (`data: A & B`) whose every arm resolves: the
+      // same type the `props`-object form (`props: { data: A & B }`) carries,
+      // which a backend synthesizes from the arms' merged members.
+      return info.inheritance === 'intersection' && !!info.inherits?.length && info.inherits.every(recurse)
+    // Functions, other unions and other `unknown`s all decline — see docstring.
     default:
       return false
   }
