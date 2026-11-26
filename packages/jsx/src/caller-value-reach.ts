@@ -38,7 +38,7 @@
  */
 
 import ts from 'typescript'
-import type { AnalyzerContext } from './analyzer-context.ts'
+import { type AnalyzerContext, typeLiteralMembers } from './analyzer-context.ts'
 import { unwrapJsxTransparent } from './analyzer.ts'
 import type { ParamInfo, TypeInfo } from './types.ts'
 import { isValueReferenceIdentifier } from './value-references.ts'
@@ -57,17 +57,17 @@ function hasCompleteMembers(source: string): boolean {
   const file = ts.createSourceFile('__members__.ts', source, ts.ScriptTarget.Latest, false)
   const declaration = file.statements[0]
   if (!declaration || file.statements.length !== 1) return false
-  let members: ts.NodeArray<ts.TypeElement>
+  let members: ts.NodeArray<ts.TypeElement> | null
   if (ts.isInterfaceDeclaration(declaration)) {
     if (declaration.heritageClauses?.length || declaration.typeParameters?.length) return false
     members = declaration.members
-  } else if (ts.isTypeAliasDeclaration(declaration) && ts.isTypeLiteralNode(declaration.type)) {
+  } else if (ts.isTypeAliasDeclaration(declaration)) {
     if (declaration.typeParameters?.length) return false
-    members = declaration.type.members
+    members = typeLiteralMembers(declaration.type)
   } else {
     return false
   }
-  return members.every(ts.isPropertySignature)
+  return members?.every(ts.isPropertySignature) ?? false
 }
 
 /**

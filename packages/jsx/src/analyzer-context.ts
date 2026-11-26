@@ -474,6 +474,11 @@ export function typeNodeToTypeInfo(
   rawOf?: (node: ts.TypeNode) => string
 ): TypeInfo | null {
   if (!typeNode) return null
+  // `(T)` is `T`: the parentheses only group, so lower the inner node,
+  // `raw` included. Every position reaches this one door — a member type,
+  // an array element (`(A | B)[]`), a union arm, a generic argument
+  // (`Array<(T)>`) — so no consumer has to know parentheses exist (#3973).
+  if (ts.isParenthesizedTypeNode(typeNode)) return typeNodeToTypeInfo(typeNode.type, sourceFile, rawOf)
 
   const synthetic = rawOf !== undefined
   const raw = rawOf ? rawOf(typeNode) : typeNode.getText(sourceFile)
@@ -616,6 +621,18 @@ function opaqueTypeInfo(typeNode: ts.TypeNode, raw: string, sourceFile: ts.Sourc
 /** Strip any number of enclosing parentheses: `((Base))` -> `Base`. */
 export function unwrapParenthesizedType(type: ts.TypeNode): ts.TypeNode {
   return ts.isParenthesizedTypeNode(type) ? unwrapParenthesizedType(type.type) : type
+}
+
+/**
+ * The members of `type` when it is an object type literal, through any
+ * enclosing parentheses (`type Props = ({ a: string })`), else null. The one
+ * answer every "is this annotation / alias body an object literal" site
+ * reads, so a parenthesized body declares the same members as a bare one
+ * (#3973).
+ */
+export function typeLiteralMembers(type: ts.TypeNode): ts.NodeArray<ts.TypeElement> | null {
+  const inner = unwrapParenthesizedType(type)
+  return ts.isTypeLiteralNode(inner) ? inner.members : null
 }
 
 /** The leaf arms of an intersection, parentheses and nested intersections flattened. */

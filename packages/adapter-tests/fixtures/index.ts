@@ -1130,6 +1130,15 @@ import { fixture as dateIntersectionMember } from './date-intersection-member'
 import { fixture as dateIntersectionMemberInterface } from './date-intersection-member-interface'
 import { fixture as dateIntersectionMemberDestructured } from './date-intersection-member-destructured'
 import { fixture as dateIntersectionMemberLiteralArm } from './date-intersection-member-literal-arm'
+import { fixture as dateParenthesizedMember } from './date-parenthesized-member'
+import { fixture as dateParenthesizedMemberNested } from './date-parenthesized-member-nested'
+import { fixture as dateParenthesizedMemberDestructured } from './date-parenthesized-member-destructured'
+import { fixture as parenthesizedMemberArray } from './parenthesized-member-array'
+import { fixture as parenthesizedMemberGenericArray } from './parenthesized-member-generic-array'
+import { fixture as dateParenthesizedMemberNullable } from './date-parenthesized-member-nullable'
+import { fixture as dateParenthesizedAliasBody } from './date-parenthesized-alias-body'
+import { fixture as dateParenthesizedPropsType } from './date-parenthesized-props-type'
+import { fixture as dateParenthesizedPropsAlias } from './date-parenthesized-props-alias'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2608,6 +2617,15 @@ export const jsxFixtures: JSXFixture[] = [
   dateIntersectionMemberInterface,
   dateIntersectionMemberDestructured,
   dateIntersectionMemberLiteralArm,
+  dateParenthesizedMember,
+  dateParenthesizedMemberNested,
+  dateParenthesizedMemberDestructured,
+  parenthesizedMemberArray,
+  parenthesizedMemberGenericArray,
+  dateParenthesizedMemberNullable,
+  dateParenthesizedAliasBody,
+  dateParenthesizedPropsType,
+  dateParenthesizedPropsAlias,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,
