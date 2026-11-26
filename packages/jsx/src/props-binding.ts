@@ -228,18 +228,22 @@ export function templatePropReads(b: TemplatePropReadBindings): Map<string, stri
 
 /**
  * Whether copying `p`'s destructure default into each read gives the value
- * JS binds once in parameter scope: no default, a primitive literal (`'d'`,
- * `1`, `-1`, `true`, `null`), or exactly an earlier binding whose own default
- * is copy-safe (`{ a = 'A', c = a }`, read as `_p.a`'s live read). Anything
- * else allocates (`[]`, `{}`, a call, an arrow) or names a binding the
- * template could resolve differently (`fallback`, an import, a global).
+ * JS binds once in parameter scope, decided on the default's parsed tree
+ * (`ParamInfo.parsed`), so grouping parentheses never matter: no default, a
+ * primitive literal (`'d'`, `` `d` ``, `1_000`, `-1`, `true`, `null`), or a
+ * bare earlier binding of the same pattern (`{ a = 'A', c = a }`, `c = (a)`,
+ * which `defaultParts` confirms reads that binding) whose own default is
+ * copy-safe. Anything else allocates (`[]`, `{}`, a call, an arrow), names a
+ * binding the template could resolve differently (`fallback`, an import, a
+ * global, `undefined`), or is a form the parsed tree does not model (`void
+ * 0`, `as`, `satisfies`, `a!`), and is read as on main.
  */
 function hasCopySafeDefault(p: ParamInfo, byName: ReadonlyMap<string, ParamInfo>, seen: ReadonlySet<string> = EMPTY_SET): boolean {
   if (p.defaultValue === undefined) return true
-  if (!p.defaultParts) return isPrimitiveLiteral(p.parsed)
-  const parts = p.defaultParts.filter(part => part.kind === 'param' || part.text.trim() !== '')
-  const only = parts.length === 1 ? parts[0] : undefined
-  const earlier = only?.kind === 'param' ? byName.get(only.param.name) : undefined
+  const expr = p.parsed
+  if (expr?.kind !== 'identifier') return !p.defaultParts && isPrimitiveLiteral(expr)
+  const readsEarlier = p.defaultParts?.some(part => part.kind === 'param' && part.param.name === expr.name) === true
+  const earlier = readsEarlier ? byName.get(expr.name) : undefined
   if (!earlier || seen.has(earlier.name)) return false
   return hasCopySafeDefault(earlier, byName, new Set([...seen, p.name]))
 }
