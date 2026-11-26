@@ -521,7 +521,7 @@ export function typeNodeToTypeInfo(
 
   // Union types
   if (ts.isUnionTypeNode(typeNode)) {
-    return { kind: 'union', raw, unionTypes: typeNode.types.map(recurse) }
+    return { kind: 'union', raw, unionTypes: typeNode.types.flatMap((arm) => unionArms(recurse(arm))) }
   }
 
   // Type literal (object type)
@@ -574,6 +574,16 @@ export function typeNodeToTypeInfo(
   }
 
   return opaqueTypeInfo(typeNode, raw, sourceFile, synthetic)
+}
+
+/**
+ * The arms one lowered union member contributes to the enclosing union: a
+ * grouped union (`('a' | 'b') | 'c'`, the only way the parser nests one)
+ * spreads into its arms, so it lowers exactly like the flat `'a' | 'b' | 'c'`
+ * while the enclosing node keeps its own `raw` spelling (#3973).
+ */
+function unionArms(info: TypeInfo): TypeInfo[] {
+  return info.kind === 'union' && info.unionTypes ? info.unionTypes : [info]
 }
 
 /** `typeNodeToTypeInfo` for a literal type node: a primitive of the literal's family carrying its value. */

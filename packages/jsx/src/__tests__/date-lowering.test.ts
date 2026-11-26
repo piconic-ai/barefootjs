@@ -716,6 +716,11 @@ describe('a parenthesized type lowers like the type it wraps (#3973)', () => {
     ['Array<(AB)>', 'Array<AB>'],
     ['(AB) | null', 'AB | null'],
     ['({ at: Date })', '{ at: Date }'],
+    ["('x' | 'y') | 'z'", "'x' | 'y' | 'z'"],
+    ["'x' | ('y' | ('z'))", "'x' | 'y' | 'z'"],
+    ['(AB | null) | undefined', 'AB | null | undefined'],
+    ['(AB | null)[]', '(AB | null)[]'],
+    ['Array<(AB | null)>', 'Array<AB | null>'],
   ])('member type %s has the same TypeInfo as %s, raw included', (parenthesized, bare) => {
     // `raw` of the outer node keeps its own spelling; compare the structure below it.
     const strip = (info: unknown): unknown => JSON.parse(JSON.stringify(info, (k, v) => (k === 'raw' ? undefined : v)))

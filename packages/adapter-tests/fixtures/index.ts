@@ -1139,6 +1139,7 @@ import { fixture as dateParenthesizedMemberNullable } from './date-parenthesized
 import { fixture as dateParenthesizedAliasBody } from './date-parenthesized-alias-body'
 import { fixture as dateParenthesizedPropsType } from './date-parenthesized-props-type'
 import { fixture as dateParenthesizedPropsAlias } from './date-parenthesized-props-alias'
+import { fixture as dateTolocaleUnionGrouped } from './date-tolocale-union-grouped'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2626,6 +2627,7 @@ export const jsxFixtures: JSXFixture[] = [
   dateParenthesizedAliasBody,
   dateParenthesizedPropsType,
   dateParenthesizedPropsAlias,
+  dateTolocaleUnionGrouped,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,

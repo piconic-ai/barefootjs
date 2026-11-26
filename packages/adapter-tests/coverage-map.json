@@ -5060,6 +5060,22 @@
         "text"
       ]
     },
+    "date-tolocale-union-grouped": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "lowering:toLocaleDateString"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "deep-nesting": {
       "kinds": [
         "call",
