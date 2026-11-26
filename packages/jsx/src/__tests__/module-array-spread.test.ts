@@ -4,6 +4,7 @@ import { buildMetadata } from '../compiler.ts'
 import { compileJSX } from '../compiler.ts'
 import { stringifyParsedExpr } from '../expression-parser.ts'
 import { TestAdapter } from '../adapters/test-adapter.ts'
+import { MAX_EXPANDED_ELEMENTS, MAX_EXPANDED_WEIGHT } from '../module-array-spread.ts'
 
 /** The parsed tree of module const `name` in `source`, spelled back as JS. */
 function parsedOf(source: string, name: string): string | undefined {
@@ -89,4 +90,66 @@ describe('expandModuleArraySpreads (#3979)', () => {
     const clientJs = result.files.find(f => f.type === 'clientJs')?.content ?? ''
     expect(clientJs).toContain('...BASE')
   })
+
+  /** `const A0 = [0]` and each `Ai` spreading the previous one twice, through `A<levels>`. */
+  const doublingChain = (levels: number) => {
+    const lines = ['const A0 = [0]']
+    for (let i = 1; i <= levels; i++) lines.push(`const A${i} = [...A${i - 1}, ...A${i - 1}]`)
+    return lines.join('\n')
+  }
+  const elementsOf = (source: string, name: string) => {
+    const constants = buildMetadata(analyzeComponent(source, 'c.tsx')).localConstants
+    const parsed = constants.find(c => c.isModule && c.name === name)?.parsed
+    return parsed?.kind === 'array-literal' ? parsed.elements : []
+  }
+
+  test('a chain that doubles the elements per declaration stops at the bound, fast', () => {
+    // No component reads the chain. Phase 1 expands every recorded
+    // declaration, so the bound, not the reads, keeps this small.
+    const source = `${doublingChain(24)}\nexport function C() { return <p>ok</p> }`
+    const started = performance.now()
+    const constants = buildMetadata(analyzeComponent(source, 'c.tsx')).localConstants
+    expect(performance.now() - started).toBeLessThan(2000)
+    const elements = (name: string) => {
+      const parsed = constants.find(c => c.isModule && c.name === name)?.parsed
+      return parsed?.kind === 'array-literal' ? parsed.elements : []
+    }
+    expect(elements('A10')).toHaveLength(MAX_EXPANDED_ELEMENTS)
+    // Past the bound the spreads stay unexpanded, as a non-literal source's do.
+    expect(elements('A11').map(e => e.kind)).toEqual(['unsupported', 'unsupported'])
+    expect(elements('A24').map(e => e.kind)).toEqual(['unsupported', 'unsupported'])
+  })
+
+  test('doubling through inline array literal spreads is bounded the same way', () => {
+    const lines = ['const A0 = [0]']
+    for (let i = 1; i <= 24; i++) lines.push(`const A${i} = [...[...A${i - 1}, ...A${i - 1}], ...[...A${i - 1}]]`)
+    const source = `${lines.join('\n')}\nexport function C() { return <p>ok</p> }`
+    const started = performance.now()
+    const constants = buildMetadata(analyzeComponent(source, 'c.tsx')).localConstants
+    expect(performance.now() - started).toBeLessThan(2000)
+    const last = constants.find(c => c.isModule && c.name === 'A24')?.parsed
+    expect(last?.kind === 'array-literal' && last.elements.some(e => e.kind === 'unsupported')).toBe(true)
+    for (const c of constants) {
+      if (c.parsed?.kind === 'array-literal') expect(c.parsed.elements.length).toBeLessThanOrEqual(MAX_EXPANDED_ELEMENTS)
+    }
+  })
+
+  test('a chain just within the bound still expands', () => {
+    const levels = Math.log2(MAX_EXPANDED_ELEMENTS)
+    const source = `${doublingChain(levels)}\n${component.replace('ALL', `A${levels}`)}`
+    const elements = elementsOf(source, `A${levels}`)
+    expect(elements).toHaveLength(MAX_EXPANDED_ELEMENTS)
+    expect(elements.every(e => e.kind === 'literal')).toBe(true)
+  })
+
+  test('the module-wide weight bounds wide elements copied many times', () => {
+    // One element of about 2 * 600 nodes, copied by doubling: the weight runs
+    // out long before the element bound.
+    const wide = `[${Array.from({ length: 600 }, (_, i) => `'${i}'`).join(', ')}]`
+    const source = `const A0 = [${wide}]\n${doublingChain(6).replace('const A0 = [0]\n', '')}\n${component}`
+    const last = elementsOf(source, 'A6')
+    expect(last.some(e => e.kind === 'unsupported')).toBe(true)
+    expect(MAX_EXPANDED_WEIGHT).toBeLessThan(600 * 64)
+  })
 })
+
