@@ -4497,3 +4497,36 @@ function convertCallExpression(node: ts.CallExpression, raw: string, callee: Par
 
   return { kind: 'call', callee, args }
 }
+
+/**
+ * The call a nullish guard protects, when `expr` has the shape
+ * `convertNode`'s optional-call arm lowers `recv?.method(args)` to (`recv ===
+ * null || recv === undefined ? undefined : recv.method(args)`), or `null`.
+ * Matched on structure, with `recv` an identifier / non-computed member
+ * chain: the same ternary written by hand is the same guard, and later IR
+ * rewrites copy nodes, so identity with the parser's own `recv` node is not
+ * kept.
+ */
+export function optionalCallGuardTarget(expr: ParsedExpr): Extract<ParsedExpr, { kind: 'call' }> | null {
+  if (expr.kind !== 'conditional' || expr.alternate.kind !== 'call') return null
+  if (expr.consequent.kind !== 'identifier' || expr.consequent.name !== 'undefined') return null
+  const call = expr.alternate
+  if (call.callee.kind !== 'member') return null
+  const recv = call.callee.object
+  const test = expr.test
+  if (test.kind !== 'logical' || test.op !== '||') return null
+  const isNullishCheck = (e: ParsedExpr, isRight: (r: ParsedExpr) => boolean) =>
+    e.kind === 'binary' && e.op === '===' && sameReceiverChain(e.left, recv) && isRight(e.right)
+  const nullCheck = isNullishCheck(test.left, (r) => r.kind === 'literal' && r.value === null)
+  const undefinedCheck = isNullishCheck(test.right, (r) => r.kind === 'identifier' && r.name === 'undefined')
+  return nullCheck && undefinedCheck ? call : null
+}
+
+/** Structural equality of two identifier / non-computed member chains (`r.meta.at`); anything else is unequal. */
+function sameReceiverChain(a: ParsedExpr, b: ParsedExpr): boolean {
+  if (a.kind === 'identifier' && b.kind === 'identifier') return a.name === b.name
+  if (a.kind === 'member' && b.kind === 'member' && !a.computed && !b.computed) {
+    return a.property === b.property && sameReceiverChain(a.object, b.object)
+  }
+  return false
+}

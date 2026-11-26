@@ -62,7 +62,7 @@ import type {
   EscapeKind,
 } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
-import { parseExpression } from './expression-parser.ts'
+import { parseExpression, optionalCallGuardTarget } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { ErrorCodes } from './errors.ts'
 import { isHydrationPayloadPropName } from './event-handler-name.ts'
@@ -76,8 +76,10 @@ import {
   hasUnresolvedBase,
   inheritedMemberConflicts,
   receiverEvidenceLoss,
+  resolveLoopBindingType,
 } from './rich-type-evidence.ts'
-import { DATE_METHODS } from './date-lowering.ts'
+import { DATE_METHODS, lowerDateAccessorOnDate } from './date-lowering.ts'
+import { lowerToLocaleDateStringOnDate } from './to-locale-date-lowering.ts'
 
 type Bindings = ReadonlyMap<string, TypeInfo | null>
 const EMPTY_BINDINGS: Bindings = new Map()
@@ -256,16 +258,29 @@ function pushDiagnostic(
   errors: CompilerError[],
   seen: Set<string>,
   loc: SourceLocation,
-  method: string,
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
   receiverPath: string,
   isProp: boolean,
   typeName: string,
+  row: LoopRowRead | null,
+  cataloguedOnRow: boolean,
 ): void {
+  const method = callee.property
   const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${method}`
   if (seen.has(key)) return
   seen.add(key)
   const receiver = isProp ? `prop '${receiverPath}'` : `'${receiverPath}'`
-  const suggestion = buildSuggestion(method, receiverPath, receiver, typeName)
+  if (row !== null && cataloguedOnRow) {
+    pushLoopItemDiagnostic(errors, loc, method, receiverPath, row)
+    return
+  }
+  // A row receiver whose call would not lower on a prop either keeps the
+  // uncatalogued message, but never the prop-only advice (a literal timeZone
+  // rewrite, "pass it as a prop"): no argument change compiles a call on a row.
+  const suggestion =
+    row !== null
+      ? buildRowSuggestion(`${method}(...)`, receiverPath, typeName, row)
+      : buildSuggestion(method, receiverPath, receiver, typeName)
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
@@ -273,6 +288,157 @@ function pushDiagnostic(
     loc,
     suggestion,
   })
+}
+
+/**
+ * The loop row binding a call's receiver is read through, or `null` when the
+ * receiver is prop-rooted. A typed root that is not a prop is always a loop
+ * item: arrow and index parameters are bound without a type. Decides the
+ * receiver SCOPE only; whether the call's shape lowers is
+ * `lowersOnDateProp`. `nullGuarded` says the source reads the receiver
+ * through `?.`.
+ */
+function loopRowReadOf(
+  call: Extract<ParsedExpr, { kind: 'call' }>,
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
+  bindings: Bindings,
+): LoopRowRead | null {
+  let root = callee.object
+  while (root.kind === 'member' && !root.computed) root = root.object
+  if (root.kind !== 'identifier' || !bindings.has(root.name)) return null
+  return { name: root.name, nullGuarded: NULL_GUARDED_CALLS.has(call) || readsThroughOptionalChain(callee) }
+}
+
+/**
+ * Whether a call would lower on a proven `Date` receiver: the lowering
+ * plugins' own rule (`lowerDateAccessorOnDate`,
+ * `lowerToLocaleDateStringOnDate`), so a `toLocaleDateString` without an
+ * explicit literal `timeZone` does not count. The plugins resolve a receiver
+ * through props only, with no loop-row types (`date-lowering.ts`'s module
+ * doc), so such a call on a loop row is refused even though the same call on
+ * a prop lowers.
+ */
+function lowersOnDateProp(call: Extract<ParsedExpr, { kind: 'call' }>, callee: Extract<ParsedExpr, { kind: 'member' }>, meta: IRMetadata, typeName: string): boolean {
+  if (typeName !== 'Date') return false
+  return (lowerDateAccessorOnDate(callee, call.args) ?? lowerToLocaleDateStringOnDate(callee, call.args, meta)) !== null
+}
+
+interface LoopRowRead {
+  /** The loop row binding the receiver roots at. */
+  name: string
+  /** The receiver is read through `?.` (`r.at?.getTime()`, `r.meta?.at.getTime()`). */
+  nullGuarded: boolean
+}
+
+/**
+ * Calls written `recv?.method()`: the parser lowers them to a guard
+ * conditional around a plain call (`optionalCallGuardTarget`), so the call
+ * node itself no longer says it was optional. `checkExpr` marks the call when
+ * it visits the guard, before it reaches the call. Keyed by node identity, so
+ * a mark is a fact about that parse tree and never leaks to another one.
+ */
+const NULL_GUARDED_CALLS = new WeakSet<ParsedExpr>()
+
+function markNullGuardedCall(expr: ParsedExpr): void {
+  const call = optionalCallGuardTarget(expr)
+  if (call) NULL_GUARDED_CALLS.add(call)
+}
+
+/** Whether the receiver chain has a `?.` hop (`r.meta?.at.getTime()`). */
+function readsThroughOptionalChain(callee: Extract<ParsedExpr, { kind: 'member' }>): boolean {
+  let e: ParsedExpr = callee
+  while (e.kind === 'member') {
+    if (e.optional) return true
+    e = e.object
+  }
+  return false
+}
+
+/**
+ * BF021 for a catalogued `Date` call on a loop item (`r.at.getUTCFullYear()`
+ * inside `rows.map(r => …)`): a capability gap of the lowering, not an
+ * uncatalogued method. The escapes are the same two as for a prop receiver:
+ * pre-compute per row, or revive the row field client-side (the row crosses
+ * the `bf-p` boundary as JSON, so a bare `/* @client *\/` call would throw).
+ * For a receiver read through `?.` no copy-paste rewrite is offered, since
+ * `describeReceiverPath` drops the `?.` and `new Date(null)` is the epoch:
+ * the advice says to keep the null guard instead.
+ */
+function pushLoopItemDiagnostic(
+  errors: CompilerError[],
+  loc: SourceLocation,
+  method: string,
+  receiverPath: string,
+  loopItem: LoopRowRead,
+): void {
+  const call = method === 'toLocaleDateString' ? `${method}(...)` : `${method}()`
+  const where =
+    receiverPath === loopItem.name
+      ? `'${receiverPath}' is a loop row binding`
+      : `'${receiverPath}' is read through the loop row binding '${loopItem.name}'`
+  errors.push({
+    code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+    severity: 'error',
+    message: `Expression cannot be compiled to marked template: '.${call}' is a catalogued Date method, but ${where}, and the Date lowering only resolves a receiver read through props.`,
+    loc,
+    suggestion: buildRowSuggestion(call, receiverPath, 'Date', loopItem),
+  })
+}
+
+/**
+ * The escape advice for a host rich-type call read through a loop row. Only
+ * escapes that hold for a row are offered: a per-row pre-computed field, and
+ * for `Date` / `URL` a `/* @client *\/` revival of the row field (the row
+ * crosses the `bf-p` boundary as JSON, so a bare `/* @client *\/` call would
+ * throw). Never a prop-only fix — a literal `timeZone` rewrite compiles a
+ * prop's `toLocaleDateString` but not a row's, since the lowering resolves
+ * receivers through props only. For a receiver read through `?.` no
+ * copy-paste rewrite is offered, since `describeReceiverPath` drops the `?.`
+ * and `new Date(null)` is the epoch: the advice says to keep the null guard.
+ */
+const ROW_PRECOMPUTE_ADVICE = `Pre-compute the value server-side for each row (for example, give each row a string or number field holding it) and read that field in the loop.`
+
+/**
+ * The escape advice for a row field whose type is unknown (#3914: its
+ * evidence is hidden behind an undeclared base or lost to an intersection
+ * conflict). Only the per-row pre-computed field is offered: a revival names
+ * a constructor, and `new Date(r.at)` on a field that turns out to be some
+ * other class with its own `getTime()` turns a working read into `NaN`.
+ */
+function buildUnresolvedRowSuggestion(receiverPath: string): { message: string; escape: ReadonlyArray<{ kind: EscapeKind }> } {
+  return {
+    message:
+      `${ROW_PRECOMPUTE_ADVICE} No /* @client */ escape is suggested: the type of '${receiverPath}' is unknown here, so neither how to revive it after it crosses the bf-p boundary as JSON nor whether a bare call on the JSON value works can be decided.`,
+    escape: [{ kind: 'prop-precompute' }],
+  }
+}
+
+function buildRowSuggestion(
+  call: string,
+  receiverPath: string,
+  typeName: string,
+  row: LoopRowRead,
+): { message: string; escape: ReadonlyArray<{ kind: EscapeKind }> } {
+  const precompute = ROW_PRECOMPUTE_ADVICE
+  if (!JSON_REVIVABLE_RICH_TYPE_NAMES.has(typeName)) {
+    return {
+      message:
+        `${precompute} /* @client */ is NOT a safe escape here: '${receiverPath}' cannot cross the bf-p hydration boundary as JSON — it arrives de-riched ` +
+        `(e.g. a Map or Set serializes to {}), so the call throws or silently returns the wrong result at hydrate (#2636).`,
+      escape: [{ kind: 'prop-precompute' }],
+    }
+  }
+  const revival = row.nullGuarded
+    ? `reviving the row field with new ${typeName}(...) under the same null check the optional chain makes (reading a member of a missing value throws${typeName === 'Date' ? ', and new Date(null) is the epoch' : ''})`
+    : receiverPath === '<expression>'
+      ? `wrapping the receiver in new ${typeName}(...) before calling .${call}`
+      : `{/* @client */ new ${typeName}(${receiverPath}).${call}}`
+  return {
+    message:
+      `${precompute} ` +
+      `Alternatively, evaluate client-only by ${revival} — a bare /* @client */ crashes at hydrate because '${receiverPath}' crosses the bf-p boundary as JSON and arrives as a plain string, not a ${typeName} instance (#2636).`,
+    escape: [{ kind: 'prop-precompute' }, { kind: 'client-directive' }],
+  }
 }
 
 /**
@@ -297,7 +463,7 @@ function checkExpr(
     case 'call': {
       if (expr.callee.kind === 'member') {
         const receiverType = resolveReceiverType(expr.callee.object, meta, bindings)
-        checkUnresolvedInheritedReceiver(expr.callee, expr.args, loc, meta, bindings, matchers, errors, seen)
+        checkUnresolvedInheritedReceiver(expr, expr.callee, loc, meta, bindings, matchers, errors, seen)
         if (receiverType && receiverType.kind === 'interface') {
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
@@ -306,10 +472,12 @@ function checkExpr(
               errors,
               seen,
               loc,
-              expr.callee.property,
+              expr.callee,
               describeReceiverPath(expr.callee.object),
               receiverRootIsProp(expr.callee.object, bindings),
               typeName,
+              loopRowReadOf(expr, expr.callee, bindings),
+              lowersOnDateProp(expr, expr.callee, meta, typeName),
             )
           }
         }
@@ -333,6 +501,7 @@ function checkExpr(
       recurse(expr.argument)
       break
     case 'conditional':
+      markNullGuardedCall(expr)
       recurse(expr.test)
       recurse(expr.consequent)
       recurse(expr.alternate)
@@ -382,8 +551,8 @@ function checkExpr(
  * resolved type is a different receiver and stays untouched.
  */
 function checkUnresolvedInheritedReceiver(
+  call: Extract<ParsedExpr, { kind: 'call' }>,
   callee: Extract<ParsedExpr, { kind: 'member' }>,
-  args: readonly ParsedExpr[],
   loc: SourceLocation,
   meta: IRMetadata,
   bindings: Bindings,
@@ -391,6 +560,7 @@ function checkUnresolvedInheritedReceiver(
   errors: CompilerError[],
   seen: Set<string>,
 ): void {
+  const args = call.args
   if (callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
   const loss = receiverEvidenceLoss(callee.object, meta, bindings)
   if (!loss) return
@@ -401,18 +571,26 @@ function checkUnresolvedInheritedReceiver(
   const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:inherited`
   if (seen.has(key)) return
   seen.add(key)
+  // Read through a loop row, the member is a row field, not a prop, and
+  // declaring its type would not compile the call either (the Date lowering
+  // resolves receivers through props only). Its type is unknown, so only the
+  // per-row pre-computed field is offered, never a Date revival.
+  const row = loopRowReadOf(call, callee, bindings)
+  const member = row ? 'field' : 'prop'
   const why = conflicting
-    ? `prop '${propName}' is declared with types that cannot be reconciled across the intersection arms of its containing type`
-    : `prop '${propName}' is not declared on its containing type in this file, and that type inherits from a base type that is not declared here, so the prop may be a Date declared on that base`
+    ? `${member} '${propName}' is declared with types that cannot be reconciled across the intersection arms of its containing type`
+    : `${member} '${propName}' is not declared on its containing type in this file, and that type inherits from a base type that is not declared here, so the ${member} may be a Date declared on that base`
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
     message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. ${why[0].toUpperCase()}${why.slice(1)}.`,
     loc,
-    suggestion: {
-      message: `Declare '${propName}' (for example '${propName}: Date') with one type on its containing type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
-      escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
-    },
+    suggestion: row
+      ? buildUnresolvedRowSuggestion(receiverPath)
+      : {
+          message: `Declare '${propName}' (for example '${propName}: Date') with one type on its containing type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
+          escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
+        },
   })
 }
 
@@ -498,10 +676,7 @@ function walkNode(
     case 'loop': {
       if (node.clientOnly) break
       if (node.arrayParsed) checkExpr(node.arrayParsed, node.loc, meta, bindings, matchers, errors, seen)
-      const loopBindings = new Map(bindings)
-      const arrayType = node.arrayParsed ? resolveReceiverType(node.arrayParsed, meta, bindings) : null
-      loopBindings.set(node.param, arrayType?.kind === 'array' ? arrayType.elementType ?? null : null)
-      if (node.index) loopBindings.set(node.index, null)
+      const loopBindings = bindLoopItem(node, meta, bindings)
       for (const child of node.children) walkNode(child, meta, loopBindings, matchers, errors, seen)
       if (node.childComponent) {
         for (const child of node.childComponent.children) walkNode(child, meta, loopBindings, matchers, errors, seen)
@@ -531,4 +706,26 @@ function walkNode(
       if (node.alternate) walkNode(node.alternate, meta, bindings, matchers, errors, seen)
       break
   }
+}
+
+/**
+ * The bindings a loop's row sees: the item typed as the array's element type
+ * and the index with no evidence. A destructured item (`({ at }) => …`) binds
+ * each name to the member it reads, so a Date read through the pattern is
+ * refused like the same read through `r.at` (it would otherwise reach the
+ * template adapters as a plain method call on the row field).
+ */
+function bindLoopItem(node: Extract<IRNode, { type: 'loop' }>, meta: IRMetadata, bindings: Bindings): Bindings {
+  const loopBindings = new Map(bindings)
+  const arrayType = node.arrayParsed ? resolveReceiverType(node.arrayParsed, meta, bindings) : null
+  const elementType = arrayType?.kind === 'array' ? arrayType.elementType ?? null : null
+  if (node.paramBindings && node.paramBindings.length > 0) {
+    for (const b of node.paramBindings) {
+      loopBindings.set(b.name, b.rest ? null : resolveLoopBindingType(elementType, b.segments, meta))
+    }
+  } else {
+    loopBindings.set(node.param, elementType)
+  }
+  if (node.index) loopBindings.set(node.index, null)
+  return loopBindings
 }

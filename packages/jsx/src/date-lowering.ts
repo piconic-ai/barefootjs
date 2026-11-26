@@ -14,7 +14,9 @@
  * `rich-type-refusal.ts`'s own top-level walk. A loop item's `.toISOString()`
  * therefore stays BF021-refused rather than silently falling back to a
  * generic (and wrong) lowering — widening to loop bindings is a deliberate
- * future step, not an oversight.
+ * future step, not an oversight. The refusal says so: for a catalogued call
+ * on a loop row it names the row binding instead of claiming the method has
+ * no lowering (`rich-type-refusal.ts`'s `loopItemOfCataloguedDateCall`).
  */
 
 import type { IRMetadata, TypeInfo } from './types.ts'
@@ -109,6 +111,20 @@ function matchDateCall(callee: ParsedExpr, args: readonly ParsedExpr[], metadata
   const typeName = baseTypeName(receiverType.raw)
   if (typeName !== 'Date') return null
   if (metadata.typeDefinitions.some((d) => d.name === typeName)) return null
+  return lowerDateAccessorOnDate(callee, args)
+}
+
+/**
+ * The `date` helper node for a call whose receiver is already known to be a
+ * `Date`, or `null` when the call shape is not catalogued (not a zero-arg
+ * `DATE_METHODS` accessor). `matchDateCall` applies it after proving the
+ * receiver type through props; `rich-type-refusal.ts` applies it to a
+ * receiver read through a loop row, to tell "would lower on a prop" from
+ * "not catalogued at all" without a second copy of the rule.
+ */
+export function lowerDateAccessorOnDate(callee: ParsedExpr, args: readonly ParsedExpr[]): LoweringNode | null {
+  if (callee.kind !== 'member' || callee.computed) return null
+  if (args.length !== 0 || !DATE_METHODS.has(callee.property)) return null
   return {
     kind: 'helper-call',
     helper: 'date',

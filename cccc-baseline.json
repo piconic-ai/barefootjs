@@ -739,7 +739,7 @@
         30
       ],
       "walkNode": [
-        75
+        68
       ]
     },
     "packages/jsx/src/scanner/js-scanner.ts": {
@@ -776,9 +776,6 @@
     "packages/jsx/src/to-locale-date-lowering.ts": {
       "deriveFormat": [
         52
-      ],
-      "matchToLocaleDateStringCall": [
-        32
       ]
     },
     "packages/jsx/src/value-references.ts": {

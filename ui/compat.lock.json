@@ -4158,6 +4158,98 @@
           ]
         }
       },
+      "date-loop-row-member": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -18799,6 +18891,10 @@
         "description": "Nested Date member declared as Date & Date | null across intersection arms renders via the date…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-nested-narrowing.ts"
       },
+      "date-loop-row-member": {
+        "description": "A catalogued Date accessor on a loop row member refuses with BF021 naming the loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-loop-row-member.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -20648,6 +20744,31 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "date-loop-row-receiver": {
+      "title": "A catalogued Date method on a loop row",
+      "kind": "refusal",
+      "given": "a catalogued `Date` accessor called on a value read through a `.map()` row (`props.rows.map(r => r.at.getUTCFullYear())`, with `rows: { at: Date }[]`)",
+      "expected": "each row renders the accessor result (`2024`, `2025`)",
+      "actual": "the compiler refuses with BF021",
+      "fixtures": [
+        "date-loop-row-member"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021"
       ]
     },
     "derived-object-literal-signal": {

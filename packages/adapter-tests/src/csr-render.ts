@@ -15,6 +15,7 @@ import {
   listComponentFunctions,
   decideClientOnlyElision,
   checkStatementWrites,
+  checkRichTypeMethodCalls,
   type ComponentIR,
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -60,12 +61,17 @@ function throwIfErrors(ctx: { errors: Array<{ severity: string; message: string 
 }
 
 /**
- * Mirror `compiler.ts`'s `checkStatementWrites` call: this harness bypasses
- * `compileJSX`, so without it a component the production pipeline refuses
- * (a body statement's write the client reads too early) would compile here.
+ * Mirror `compiler.ts`'s refusal checks that run after the IR is built: this
+ * harness bypasses `compileJSX`, so without them a component the production
+ * pipeline refuses would compile here. `checkStatementWrites` covers a body
+ * statement's write the client reads too early; `checkRichTypeMethodCalls`
+ * covers a host rich-type method call with no lowering (BF021), which
+ * otherwise reaches the client JS verbatim and throws on the JSON-revived
+ * value (`r.at.getUTCFullYear()` on a loop row's ISO string).
  */
-function throwIfStatementWrites(componentIR: ComponentIR, filePath: string): void {
+function throwIfProductionRefusals(componentIR: ComponentIR, filePath: string): void {
   const errors: Parameters<typeof checkStatementWrites>[1] = []
+  checkRichTypeMethodCalls(componentIR.root, componentIR.metadata, errors)
   checkStatementWrites(componentIR, errors)
   throwIfErrors({ errors }, filePath)
 }
@@ -104,7 +110,7 @@ function compileToClientJs(source: string, filePath: string): string {
       errors: [],
     }
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
-    throwIfStatementWrites(componentIR, filePath)
+    throwIfProductionRefusals(componentIR, filePath)
     return generateClientJs(componentIR)
   }
 
@@ -127,7 +133,7 @@ function compileToClientJs(source: string, filePath: string): string {
       errors: [],
     }
     componentIR.metadata.clientAnalysis = analyzeClientNeeds(componentIR)
-    throwIfStatementWrites(componentIR, filePath)
+    throwIfProductionRefusals(componentIR, filePath)
     const js = generateClientJs(componentIR, componentNames)
     if (js) outputs.push(js)
   }

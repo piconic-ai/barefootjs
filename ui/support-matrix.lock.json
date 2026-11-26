@@ -8413,6 +8413,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -8510,6 +8516,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -9171,6 +9183,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -9820,6 +9838,12 @@
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -10649,6 +10673,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -11298,6 +11328,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -11959,6 +11995,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -12593,6 +12635,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -13218,6 +13266,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -13870,6 +13924,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -15531,6 +15591,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -15700,6 +15766,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -16613,6 +16685,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -17490,6 +17568,12 @@
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -18739,6 +18823,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -19634,6 +19724,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -20547,6 +20643,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -21427,6 +21529,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -22274,6 +22382,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -23178,6 +23292,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -33177,6 +33297,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -33304,6 +33430,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -34025,6 +34157,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -34710,6 +34848,12 @@
               "fixture": "date-intersection-nested-narrowing",
               "limitations": [
                 "go-nested-inherited-date-member"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -35647,6 +35791,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -36350,6 +36500,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -37071,6 +37227,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -37759,6 +37921,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -38438,6 +38606,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -39150,6 +39324,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {

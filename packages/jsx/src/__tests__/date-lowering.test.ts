@@ -843,3 +843,186 @@ describe('a parenthesized type lowers like the type it wraps (#3973)', () => {
     expect(loop(items)).toHaveLength(1)
   })
 })
+
+describe('a catalogued Date call on a loop row (#3972)', () => {
+  function refusals(src: string): { message: string; suggestion: string }[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors
+      .filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+      .map((e) => ({ message: e.message, suggestion: e.suggestion?.message ?? '' }))
+  }
+  const rowLoop = (element: string, body = '{r.at.getUTCFullYear()}', param = 'r') => `
+    type A = { at: Date }
+    type B = { id: string }
+    type Row = { id: string; at: Date }
+    export function Foo(props: { rows: ${element}[] }) {
+      return <ul>{props.rows.map((${param}) => <li key="k">${body}</li>)}</ul>
+    }`
+
+  test.each(['Row', '{ id: string; at: Date }', '(A & B)'])('a row typed %s names the loop row, not a missing lowering', (element) => {
+    const errs = refusals(rowLoop(element))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'.getUTCFullYear()' is a catalogued Date method")
+    expect(errs[0].message).toContain("'r.at' is read through the loop row binding 'r'")
+    expect(errs[0].message).not.toContain('no catalogued lowering')
+    expect(errs[0].suggestion).toContain('{/* @client */ new Date(r.at).getUTCFullYear()}')
+  })
+
+  test('a destructured row is refused like the member read, instead of reaching the template as a plain call', () => {
+    const errs = refusals(rowLoop('Row', '{at.getUTCFullYear()}', '{ at }'))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'at' is a loop row binding")
+    expect(refusals(rowLoop('{ meta: { at: Date } }', '{at.getTime()}', '{ meta: { at } }'))).toHaveLength(1)
+  })
+
+  test('a destructured binding with no member evidence stays unrefused', () => {
+    expect(refusals(rowLoop('[Date]', '{at.getTime()}', '[at]'))).toHaveLength(0)
+    expect(refusals(rowLoop('Row', '{rest.at.getTime()}', '{ id, ...rest }'))).toHaveLength(0)
+  })
+
+  test('a row that is itself a Date, and a nested row, name their own binding', () => {
+    expect(refusals(rowLoop('Date', '{r.getTime()}'))[0].message).toContain("'r' is a loop row binding")
+    const nested = refusals(`
+      type Row = { kids: { at: Date }[] }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.kids.map((k) => <b key="x">{k.at.toISOString()}</b>)}</li>)}</ul>
+      }`)
+    expect(nested).toHaveLength(1)
+    expect(nested[0].message).toContain("'k.at' is read through the loop row binding 'k'")
+  })
+
+  test('an explicit-input toLocaleDateString on a row names the loop row', () => {
+    const errs = refusals(rowLoop('Row', "{r.at.toLocaleDateString('en-US', { timeZone: 'UTC' })}"))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("'.toLocaleDateString(...)' is a catalogued Date method")
+  })
+
+  test.each([
+    ["'en-US'", 'a locale only'],
+    ["'en-US', {}", 'a locale and an empty options bag'],
+    ["'en-US', { month: 'long' }", 'options without a timeZone'],
+  ])('toLocaleDateString(%s) on a row (%s) keeps the uncatalogued message, as on a prop', (args) => {
+    const row = refusals(rowLoop('Row', `{r.at.toLocaleDateString(${args})}`))
+    expect(row).toHaveLength(1)
+    expect(row[0].message).toContain('no catalogued lowering')
+    // A literal timeZone does not compile a row's call, so the row advice is
+    // per-row precompute or client revival only; the prop keeps the rewrite.
+    expect(row[0].suggestion).not.toContain('timeZone')
+    expect(row[0].suggestion).not.toContain('format_date')
+    expect(row[0].suggestion).not.toContain('as a prop')
+    expect(row[0].suggestion).toContain('for each row')
+    expect(row[0].suggestion).toContain('{/* @client */ new Date(r.at).toLocaleDateString(...)}')
+    const prop = refusals(`
+      export function Foo(props: { at: Date }) { return <p>{props.at.toLocaleDateString(${args})}</p> }`)
+    expect(prop).toHaveLength(1)
+    expect(prop[0].message).toContain('no catalogued lowering')
+    expect(prop[0].suggestion).toContain('explicit literal timeZone')
+    expect(prop[0].suggestion).toContain('format_date')
+  })
+
+  test('the suggested literal timeZone really does not compile a row call', () => {
+    const errs = refusals(rowLoop('Row', "{r.at.toLocaleDateString('en-US', { timeZone: 'UTC' })}"))
+    expect(errs).toHaveLength(1)
+    expect(errs[0].suggestion).not.toContain('timeZone')
+  })
+
+  test('an uncatalogued call on a nullable row keeps the null-guard advice', () => {
+    const errs = refusals(`
+      type Row = { at?: Date | null }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.at?.toLocaleDateString('en-US')}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain('no catalogued lowering')
+    expect(errs[0].suggestion).toContain('under the same null check the optional chain makes')
+    expect(errs[0].suggestion).not.toContain('new Date(r.')
+    expect(errs[0].suggestion).not.toContain('timeZone')
+  })
+
+  test('a field of unknown inherited type read through a row gets per-row advice only, no prop fix or Date revival', () => {
+    const errs = refusals(`
+      import type { Base } from './base'
+      interface Row extends Base { id: string }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.at.getTime()}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("Field 'at' is not declared")
+    expect(errs[0].message).not.toContain("rop 'at'")
+    expect(errs[0].suggestion).not.toContain('Declare')
+    expect(errs[0].suggestion).toContain('for each row')
+    expect(errs[0].suggestion).not.toContain('as a prop')
+    // The field may be another class with its own getTime(); reviving it as
+    // a Date would turn a working read into NaN.
+    expect(errs[0].suggestion).not.toContain('new Date(')
+    expect(errs[0].suggestion).toContain("the type of 'r.at' is unknown here")
+  })
+
+  test('a row field whose type is lost to an intersection conflict gets no Date revival either', () => {
+    const errs = refusals(`
+      interface Base { at: string }
+      type Row = Base & { at: Date }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.at.getTime()}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("Field 'at' is declared with types that cannot be reconciled")
+    expect(errs[0].suggestion).toContain('for each row')
+    expect(errs[0].suggestion).not.toContain('new Date(')
+  })
+
+  test('an unresolved PROP keeps its declare-the-type advice', () => {
+    const errs = refusals(`
+      import type { Base } from './base'
+      interface Props extends Base { id: string }
+      export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("Prop 'at' is not declared")
+    expect(errs[0].suggestion).toContain("Declare 'at'")
+    expect(errs[0].suggestion).not.toContain('new Date(')
+  })
+
+  test.each([
+    ['Map<string, string>', "{r.m.get('k')}", false],
+    ['URL', '{r.m.toString()}', true],
+  ])('a %s row field gets the per-row escapes', (type, body, revivable) => {
+    const errs = refusals(`
+      export function Foo(props: { rows: { m: ${type} }[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">${body}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain('no catalogued lowering')
+    expect(errs[0].suggestion).toContain('for each row')
+    expect(errs[0].suggestion).not.toContain('as a prop')
+    expect(errs[0].suggestion.includes('{/* @client */ new URL(r.m)')).toBe(revivable)
+  })
+
+  test.each([
+    ['{r.at?.getTime()}', "'r.at'"],
+    ['{r.meta?.at.getTime()}', "'r.meta.at'"],
+  ])('a nullable row read %s keeps its null guard in the advice instead of an unguarded rewrite', (body, path) => {
+    const errs = refusals(`
+      type Row = { at?: Date | null; meta?: { at: Date } }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">${body}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain(`${path} is read through the loop row binding 'r'`)
+    expect(errs[0].suggestion).toContain('under the same null check the optional chain makes')
+    expect(errs[0].suggestion).not.toContain('new Date(r.')
+  })
+
+  test('an uncatalogued or ambient-locale call on a row keeps the uncatalogued message', () => {
+    expect(refusals(rowLoop('Row', '{r.at.getDay()}'))[0].message).toContain('no catalogued lowering')
+    expect(refusals(rowLoop('Row', '{r.at.toLocaleDateString()}'))[0].message).toContain('no catalogued lowering')
+  })
+
+  test('a prop read inside a loop row still lowers', () => {
+    expect(
+      refusals(`
+        export function Foo(props: { rows: { id: string }[]; at: Date }) {
+          return <ul>{props.rows.map((r) => <li key={r.id}>{props.at.getUTCFullYear()}</li>)}</ul>
+        }`),
+    ).toHaveLength(0)
+  })
+})
