@@ -810,7 +810,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // through `bf_get` rather than an exact-case dot path (#2299).
     this.state.objectTypedPropNames = new Set(
       (ir.metadata.propsParams ?? [])
-        .filter(p => isAnonymousObjectType(p.type, ir.metadata))
+        .filter(p => isAnonymousObjectType(p.type))
         .map(p => p.name),
     )
     // Object-literal signal seeds in an `interface{}` / map field bake as a
@@ -1514,7 +1514,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(
           p =>
             p.optional &&
-            (isAnonymousObjectType(p.type, ir.metadata) ||
+            (isAnonymousObjectType(p.type) ||
               (p.type.kind === 'interface' && !!p.type.raw)),
         )
         .map(p => p.sourceName ?? p.name),
@@ -1538,7 +1538,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const synthByType = new Map(synthPlan.map(e => [e.typeInfo, e]))
     const structTypedObjectParams = new Map<string, { goType: string; fields: ReadonlyMap<string, string> }>()
     for (const p of ir.metadata.propsParams ?? []) {
-      if (p.optional || !isAnonymousObjectType(p.type, ir.metadata)) continue
+      if (p.optional || !isAnonymousObjectType(p.type)) continue
       const key = p.sourceName ?? p.name
       const entry = synthByType.get(p.type)
       if (entry) {

@@ -7421,14 +7421,6 @@
           ]
         }
       },
-      "inline-object-prop-child-forward": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "go-anonymous-object-child-prop"
-          ]
-        }
-      },
       "inline-object-prop-nullable-member": {
         "go-template": {
           "kind": "render",
@@ -17501,10 +17493,6 @@
         "description": "A lowercase index key does not read an object key that differs only by its capitalised first letter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-read-capitalised-key-only.ts"
       },
-      "inline-object-prop-child-forward": {
-        "description": "A prop typed as an inline object type forwarded to a child with the same inline type renders its…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/inline-object-prop-child-forward.ts"
-      },
       "inline-object-prop-nullable-member": {
         "description": "A props member typed as a nullable inline object type renders its member when present",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/inline-object-prop-nullable-member.ts"
@@ -19295,19 +19283,6 @@
       ],
       "diagnostics": [
         "BF029"
-      ]
-    },
-    "go-anonymous-object-child-prop": {
-      "title": "A prop typed as an anonymous object type forwarded to a child",
-      "kind": "silent",
-      "given": "a prop typed as an inline object type (or an inline intersection) passed whole to a child component whose own prop is typed by another inline object type of the same shape (`<Show data={props.data} />`)",
-      "expected": "the child's render of the members (`y:2`)",
-      "actual": "emits a program that does not build, since the parent's and the child's synthesized structs are distinct Go types and the parent assigns its own to the child's field",
-      "fixtures": [
-        "inline-object-prop-child-forward"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "go-nested-inherited-date-member": {

@@ -8768,6 +8768,16 @@
       }
     }
   ],
+  "inline-object-prop-index-signature": [
+    {
+      "name": "gen:data:object:minimal",
+      "props": {
+        "data": {
+          "label": ""
+        }
+      }
+    }
+  ],
   "inline-object-prop-nullable-member": [
     {
       "name": "gen:data:union:1",

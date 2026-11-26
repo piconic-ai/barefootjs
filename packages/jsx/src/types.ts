@@ -102,6 +102,13 @@ export interface TypeInfo {
   /** How `inherits` combines; present exactly when `inherits` is. */
   inheritance?: 'extends' | 'intersection'
 
+  /**
+   * Set on an object type literal that declares a member other than a plain
+   * property (an index signature, a method, a call or construct signature),
+   * so `properties` is not its whole key set. Absent otherwise.
+   */
+  openMembers?: true
+
   // For arrays
   elementType?: TypeInfo
 
@@ -2698,6 +2705,14 @@ export interface TypeDefinition {
    * non-string member included, so adapters need not re-read `definition`.
    */
   stringLiteralUnion?: string[]
+  /**
+   * Set when `properties` (with `inherits`) is not the definition's whole,
+   * concrete key set: it declares a member other than a plain property (an
+   * index signature, a method, a call or construct signature), or it has
+   * type parameters, whose members' types depend on the arguments. Absent
+   * otherwise.
+   */
+  openMembers?: true
   loc: SourceLocation
 }
 

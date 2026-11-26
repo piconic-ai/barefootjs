@@ -1130,6 +1130,12 @@ import { fixture as dateIntersectionMember } from './date-intersection-member'
 import { fixture as dateIntersectionMemberInterface } from './date-intersection-member-interface'
 import { fixture as dateIntersectionMemberDestructured } from './date-intersection-member-destructured'
 import { fixture as dateIntersectionMemberLiteralArm } from './date-intersection-member-literal-arm'
+import { fixture as intersectionMemberChildForward } from './intersection-member-child-forward'
+import { fixture as intersectionMemberIndexSignature } from './intersection-member-index-signature'
+import { fixture as intersectionMemberMappedArm } from './intersection-member-mapped-arm'
+import { fixture as intersectionMemberRecordArm } from './intersection-member-record-arm'
+import { fixture as intersectionMemberGenericArm } from './intersection-member-generic-arm'
+import { fixture as inlineObjectPropIndexSignature } from './inline-object-prop-index-signature'
 import { fixture as intersectionMemberScalars } from './intersection-member-scalars'
 import { fixture as intersectionMemberOptional } from './intersection-member-optional'
 import { fixture as intersectionMemberArray } from './intersection-member-array'
@@ -2631,6 +2637,12 @@ export const jsxFixtures: JSXFixture[] = [
   dateIntersectionMemberInterface,
   dateIntersectionMemberDestructured,
   dateIntersectionMemberLiteralArm,
+  intersectionMemberChildForward,
+  intersectionMemberIndexSignature,
+  intersectionMemberMappedArm,
+  intersectionMemberRecordArm,
+  intersectionMemberGenericArm,
+  inlineObjectPropIndexSignature,
   intersectionMemberScalars,
   intersectionMemberOptional,
   intersectionMemberArray,

@@ -151,9 +151,6 @@ export const renderDivergences: RenderDivergences = {
   // A props member typed as a nullable inline object type: the Go field is
   // `interface{}` holding the source-keyed map, so a member read finds nothing.
   'inline-object-prop-nullable-member': { limitation: 'go-nullable-anonymous-object-member' },
-  // An inline-object-typed prop forwarded to a child with its own inline
-  // type: the two synthesized structs are distinct Go types, so it does not build.
-  'inline-object-prop-child-forward': { limitation: 'go-anonymous-object-child-prop' },
   // A memo reading an element of an array literal by a literal index: the
   // runtime evaluator does not read an array element by a computed key.
   'memo-over-array-const-index': { limitation: 'memo-array-literal-element-read' },

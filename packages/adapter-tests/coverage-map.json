@@ -8324,6 +8324,18 @@
         "text"
       ]
     },
+    "inline-object-prop-index-signature": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "inline-object-prop-nullable-member": {
       "kinds": [
         "identifier",
@@ -8363,6 +8375,48 @@
         "text"
       ]
     },
+    "intersection-member-child-forward": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-generic-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-index-signature": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-mapped-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "intersection-member-named-owner": {
       "kinds": [
         "identifier",
@@ -8384,6 +8438,18 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "intersection-member-record-arm": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:computed"
+      ],
+      "contexts": [
         "text"
       ]
     },
