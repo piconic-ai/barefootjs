@@ -151,5 +151,36 @@ describe('expandModuleArraySpreads (#3979)', () => {
     expect(last.some(e => e.kind === 'unsupported')).toBe(true)
     expect(MAX_EXPANDED_WEIGHT).toBeLessThan(600 * 64)
   })
+
+  describe('the element bound counts what later elements contribute', () => {
+    const levels = Math.log2(MAX_EXPANDED_ELEMENTS)
+    const kinds = (decls: string) => {
+      const source = `${doublingChain(levels)}\nconst EMPTY: number[] = []\nconst ONE = [1]\n${decls}\n${component}`
+      return elementsOf(source, 'ALL').map(e => e.kind)
+    }
+    const full = Array(MAX_EXPANDED_ELEMENTS).fill('literal')
+
+    test('a known empty spread after a full source takes no slot, in either order', () => {
+      expect(kinds(`const ALL = [...A${levels}, ...EMPTY]`)).toEqual(full)
+      expect(kinds(`const ALL = [...EMPTY, ...A${levels}]`)).toEqual(full)
+      expect(kinds(`const ALL = [...A${levels}, ...EMPTY, ...EMPTY]`)).toEqual(full)
+      expect(kinds(`const ALL = [...EMPTY, ...A${levels}, ...EMPTY]`)).toEqual(full)
+    })
+
+    test('an inline empty array literal spread takes no slot either', () => {
+      expect(kinds(`const ALL = [...A${levels}, ...[]]`)).toEqual(full)
+      expect(kinds(`const ALL = [...A${levels}, ...[...EMPTY]]`)).toEqual(full)
+    })
+
+    test('a later element that does add one still overflows the bound, before anything is copied', () => {
+      expect(kinds(`const ALL = [...A${levels}, ...EMPTY, 'x']`)).toEqual(['unsupported', 'literal'])
+      expect(kinds(`const ALL = [...A${levels}, ...ONE]`)).toEqual(['unsupported', 'literal'])
+      expect(kinds(`const ALL = [...A${levels}, ...[1]]`)).toEqual(['unsupported', 'literal'])
+    })
+
+    test('an unknown later spread still reserves one slot', () => {
+      expect(kinds(`const ALL = [...A${levels}, ...new Set([1])]`)).toEqual(['unsupported', 'unsupported'])
+    })
+  })
 })
 

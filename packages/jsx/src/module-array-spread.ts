@@ -116,10 +116,15 @@ function expandElements(
   depth: number,
 ): ParsedExpr[] | null {
   if (parsed.length !== literal.elements.length) return null
+  // What each element contributes: a known spread its source's elements,
+  // anything else (a plain element, an unknown spread) one element.
+  const sources = literal.elements.map(element => ts.isSpreadElement(element) ? spreadElements(element.expression, ctx, depth) : null)
+  let rest = sources.reduce((n, source) => n + (source ? source.length : 1), 0)
   const out: ParsedExpr[] = []
-  literal.elements.forEach((element, i) => {
-    const source = ts.isSpreadElement(element) ? spreadElements(element.expression, ctx, depth) : null
-    if (source && takeFromBudget(source, out.length + literal.elements.length - i - 1, ctx.budget)) {
+  sources.forEach((source, i) => {
+    // The elements after this one, as many as they contribute.
+    rest -= source ? source.length : 1
+    if (source && takeFromBudget(source, out.length + rest, ctx.budget)) {
       for (const e of source) out.push(e)
     } else {
       out.push(parsed[i])
@@ -130,7 +135,8 @@ function expandElements(
 
 /**
  * Whether `source` can be copied into an array that holds `others` other
- * elements, within the element bound and the module's remaining weight;
+ * elements (those before it, and those after it as many as they contribute),
+ * within the element bound and the module's remaining weight;
  * the weight is taken when it can. Checked before anything is copied.
  */
 function takeFromBudget(source: readonly ParsedExpr[], others: number, budget: ExpandBudget): boolean {
