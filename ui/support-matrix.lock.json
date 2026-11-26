@@ -54851,10 +54851,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "module-const-array-child-prop-forwarded",
-        "description": "a module array const passed whole in a loop row and through a forwarding child reaches the child",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-child-prop-forwarded.ts",
-        "code": "xs[1]"
+        "fixture": "destructure-default-param-inlined-array-const",
+        "description": "An inlined array const reading a parameter-destructured prop with a default applies the default when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-inlined-array-const.ts",
+        "code": "local[0]"
       }
     },
     "member:optional": {

@@ -5261,6 +5261,24 @@
         "text"
       ]
     },
+    "destructure-default-body-inlined-const": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-body-mutated-memo": {
       "kinds": [
         "array-literal",
@@ -5769,6 +5787,86 @@
         "array-method:slice",
         "literal:number",
         "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-array-const": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-default-text": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-positions": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-reactive": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "text"

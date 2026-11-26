@@ -346,10 +346,6 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   'destructure-default-spread-stored-method': { limitation: 'csr-template-object-const-function-property' },
   // A boolean text child: the CSR template prints `true` / `false`; JSX
   // renders nothing.
-  // `{ label = 'd' }` read through `const a = label`: the CSR template reads
-  // `_p.label` without the default, so an omitted prop renders empty (the
-  // init body's `const a` keeps the default).
-  'const-alias-default-prop-loop-shadow': { limitation: 'const-alias-signature-default' },
   // A JSX prop holding a nested component, read in a conditional arm or
   // forwarded to a grandchild: the CSR template stringifies the branded prop
   // in the arm (`[object Object]`) and resolves the forwarded element's scope

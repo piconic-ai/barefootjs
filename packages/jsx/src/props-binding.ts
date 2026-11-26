@@ -206,6 +206,24 @@ export function templatePropReadParams(b: TemplatePropReadBindings): ParamInfo[]
 }
 
 /**
+ * Each props binding a client `template:` reads live
+ * ({@link templatePropReadParams}) → that read (`livePropReadExpr`,
+ * destructure default included). The one answer to "how does the template
+ * spell a bare props binding" every Phase-1 template text (a markup
+ * expression, a signal seed, a memo body, an inlined constant) and the
+ * Phase-2 relocation into template scope share, so `{ b = ['y'] }` reads its
+ * default wherever the template reaches `b`. A rest binding is left out: it
+ * is no single prop.
+ */
+export function templatePropReads(b: TemplatePropReadBindings): Map<string, string> {
+  const reads = new Map<string, string>()
+  for (const p of templatePropReadParams(b)) {
+    if (!p.isRest) reads.set(p.name, livePropReadExpr(p, undefined, false))
+  }
+  return reads
+}
+
+/**
  * Whether a `(props)`-arg component's body binding is the prop itself: an
  * alias (`const { b } = props`, `const b = props.b`) or a renamed body
  * binding with a default, which reads as its own prop entry like the

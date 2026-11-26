@@ -5242,6 +5242,32 @@
       }
     }
   ],
+  "destructure-default-body-inlined-const": [
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語"
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "destructure-default-body-mutated-memo": [
     {
       "name": "gen:b:empty",
@@ -6118,6 +6144,128 @@
           "x",
           "y"
         ],
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-param-inlined-array-const": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-default-text": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語"
+      }
+    },
+    {
+      "name": "gen:t:empty",
+      "props": {
+        "t": ""
+      }
+    },
+    {
+      "name": "gen:t:markup",
+      "props": {
+        "t": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:t:multibyte",
+      "props": {
+        "t": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-positions": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    },
+    {
+      "name": "gen:bb:empty",
+      "props": {
+        "bb": []
+      }
+    },
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": ""
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語"
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "c": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-reactive": [
+    {
+      "name": "gen:b:empty",
+      "props": {
         "b": []
       }
     }

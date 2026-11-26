@@ -15,7 +15,7 @@ import type { Scope, BindingKind, IRMetadata } from './types.ts'
 import { isVisibleIn } from './types.ts'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
-import { buildPropAliasMap, isPropsAliasConst } from './props-binding.ts'
+import { buildPropAliasMap, isPropsAliasConst, templatePropReads } from './props-binding.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
@@ -53,6 +53,16 @@ export interface RelocateEnv {
    * `propSourceNames.get(name) ?? name` degrades to an identity there.
    */
   propSourceNames: ReadonlyMap<string, string>
+  /**
+   * Prop binding name → the read a client `template:` makes of it
+   * (`livePropReadExpr`, destructure default included), for the props
+   * bindings the template reads live (`templatePropReads`). The
+   * `lift-to-prop` action spells a name found here this way, so a const
+   * inlined into the template applies `{ b = ['y'] }`'s default exactly as
+   * a direct `{b.length}` read does. A name absent from it lifts to
+   * `_p.<caller-facing key>`.
+   */
+  propTemplateReads?: ReadonlyMap<string, string>
   /**
    * Name of the props parameter (e.g. `props`). Used to detect
    * `props.X` member access at lift sites — those are not free refs
@@ -181,6 +191,21 @@ function collectFreeRefs(node: ts.Node): Map<string, ts.Identifier[]> {
 }
 
 /**
+ * How a props binding `name` reads inside the client `template:` lambda.
+ * The props *object* itself (e.g. bare `props` in `makeStore(props)`) lifts
+ * to the whole `_p` parameter. Lifting to `_p.props` would be a
+ * non-existent property: the template lambda receives `_p` directly, not an
+ * object that wraps it. A props binding the template reads live takes that
+ * read, destructure default included (`propTemplateReads`). Any other
+ * destructured name lifts to `_p.<caller-facing key>` — `_p` is always keyed
+ * by the caller-facing name (#2524 CSR half), not the local binding.
+ */
+function propTemplateSpelling(env: RelocateEnv, name: string): string {
+  if (env.propsObjectName !== null && name === env.propsObjectName) return PROPS_PARAM
+  return env.propTemplateReads?.get(name) ?? `${PROPS_PARAM}.${env.propSourceNames.get(name) ?? name}`
+}
+
+/**
  * Decide the action for a single free reference based on the
  * (fromScope, toScope, kind) tuple. Mirrors the §2.2 decision matrix.
  */
@@ -197,18 +222,7 @@ function decideAction(
 
   // Not reachable bare. Decide how to bridge:
   if (kind === 'prop' && toScope === 'template') {
-    // The props *object* itself (e.g. bare `props` in `makeStore(props)`)
-    // lifts to the whole `_p` parameter. Lifting to `_p.props` would be a
-    // non-existent property: the template lambda receives `_p` directly,
-    // not an object that wraps it. Destructured prop names (`config`,
-    // `name`, etc.) keep the per-key `_p.name` form.
-    if (env.propsObjectName !== null && name === env.propsObjectName) {
-      return { action: 'lift-to-prop', rewrittenAs: PROPS_PARAM }
-    }
-    // Lift `name` → `_p.<caller-facing key>` — `_p` is always keyed by
-    // the caller-facing name (#2524 CSR half), not the local binding.
-    const callerKey = env.propSourceNames.get(name) ?? name
-    return { action: 'lift-to-prop', rewrittenAs: `${PROPS_PARAM}.${callerKey}` }
+    return { action: 'lift-to-prop', rewrittenAs: propTemplateSpelling(env, name) }
   }
 
   if ((kind === 'init-local' || kind === 'sub-init-local') && toScope === 'template') {
@@ -1094,11 +1108,25 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     inlinable: new Map(), // populated by compute-inlinability after analyzer runs
     propsForLift,
     propSourceNames,
+    propTemplateReads: propTemplateReadsFor(src, bindings),
     propsObjectName,
     allowFallback: true,
     aliasTargets,
     envGetters: new Set(src.signals.filter(s => s.envReader).map(s => s.getter)),
   }
+}
+
+/**
+ * `RelocateEnv.propTemplateReads`: the template's read of each props
+ * binding (`templatePropReads`) whose name the final binding table still
+ * classifies as a prop.
+ */
+function propTemplateReadsFor(src: EnvFields, bindings: ReadonlyMap<string, BindingKind>): Map<string, string> {
+  const reads = templatePropReads(src)
+  for (const name of reads.keys()) {
+    if (bindings.get(name) !== 'prop') reads.delete(name)
+  }
+  return reads
 }
 
 /**

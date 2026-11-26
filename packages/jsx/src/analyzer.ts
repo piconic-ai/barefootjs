@@ -15,7 +15,7 @@ import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToE
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
-import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed, templatePropReadParams } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, propReadBase, signalPropSeed, templatePropReadParams, templatePropReads } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -3695,8 +3695,8 @@ function getSystemConstructKind(node: ts.Node): 'createContext' | 'weakMap' | un
  * (`{ off = false, on = off }` → `(_p.on ?? (_p.off ?? false))`, #3531).
  */
 function destructuredPropTemplateRead(ctx: AnalyzerContext): (localName: string, callerKey: string) => string {
-  const byName = new Map(ctx.propsParams.filter(p => !p.isRest).map(p => [p.name, p]))
-  return (localName, callerKey) => livePropReadExpr(byName.get(localName) ?? { name: localName, sourceName: callerKey }, undefined, false)
+  const reads = templatePropReads(ctx)
+  return (localName, callerKey) => reads.get(localName) ?? propReadBase({ name: localName, sourceName: callerKey })
 }
 
 /**
@@ -4498,10 +4498,15 @@ function collectConstant(
     // the destructured-from-`props.X` local name, which by its own
     // `isPureAlias` construction always equals the source key.
     let propAliases: Map<string, string> | undefined
+    // The template's read of each prop: a destructured-arg component reads
+    // its destructure default (`{ b = ['y'] }`) as a markup read does; a
+    // `(props)`-arg alias here is a default-free `props.X`.
+    let templateRead: ((localName: string, callerKey: string) => string) | undefined
     if (!ctx.propsObjectName) {
       // Case 1: destructured-arg — all propsParams are bare locals.
       propNames = new Set(ctx.propsParams.map(p => p.name))
       propAliases = buildPropAliasMap(ctx.propsParams)
+      templateRead = destructuredPropTemplateRead(ctx)
     } else {
       // Case 2: `(props)`-arg — restrict to body-destructured pure aliases
       // of `props.X` (entries pushed by the body-destructure expansion at
@@ -4528,7 +4533,7 @@ function collectConstant(
       )
     }
     if (propNames.size > 0) {
-      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames, undefined, propAliases)
+      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames, undefined, propAliases, templateRead)
       if (rewritten !== undefined) {
         templateValue = rewritten
         // For the body-destructure case, also rewrite the init-body

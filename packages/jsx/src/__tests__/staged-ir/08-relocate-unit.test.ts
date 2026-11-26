@@ -7,7 +7,7 @@
 
 import { describe, test, expect } from 'bun:test'
 import type { RelocateEnv } from '../../relocate'
-import { relocate } from '../../relocate'
+import { isInlinableInTemplate, relocate } from '../../relocate'
 import type { BindingKind } from '../../types'
 
 function envWith(
@@ -23,6 +23,7 @@ function envWith(
     propSourceNames: options?.propSourceNames ?? new Map(),
     propsObjectName: options?.propsObjectName ?? 'props',
     allowFallback: options?.allowFallback ?? true,
+    ...(options?.propTemplateReads && { propTemplateReads: options.propTemplateReads }),
   }
 }
 
@@ -259,5 +260,27 @@ describe('relocate: usedExternals tracking for import preservation (#1133)', () 
     })
     const r = relocate('yjs.id', null, 'init', 'template', env)
     expect(r.usedExternals.has('useYjs')).toBe(true)
+  })
+})
+
+describe('relocate: a prop the template reads live takes that read (#3980)', () => {
+  test('a lifted prop applies its destructure default', () => {
+    const env = envWith([['b', 'prop']], {
+      propsObjectName: null,
+      propTemplateReads: new Map([['b', "(_p.b === undefined ? ['y'] : _p.b)"]]),
+    })
+    const r = isInlinableInTemplate("[b.length, 'z']", env)
+    expect(r.ok).toBe(true)
+    expect(r.rewrittenValue).toBe("[(_p.b === undefined ? ['y'] : _p.b).length, 'z']")
+  })
+
+  test('a spliced default is not rewritten again for another lifted name', () => {
+    // `'x a'` spells the prop `a`; only the reference itself is rewritten.
+    const env = envWith([['a', 'prop'], ['s', 'prop']], {
+      propsObjectName: null,
+      propTemplateReads: new Map([['s', "(_p.s === undefined ? 'x a' : _p.s)"]]),
+    })
+    const r = isInlinableInTemplate('[s, a]', env)
+    expect(r.rewrittenValue).toBe("[(_p.s === undefined ? 'x a' : _p.s), _p.a]")
   })
 })
