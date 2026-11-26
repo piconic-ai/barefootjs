@@ -316,6 +316,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -605,6 +617,18 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -942,6 +966,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -1270,6 +1306,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1574,6 +1622,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1869,6 +1929,18 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -2182,6 +2254,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2480,6 +2564,18 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2775,6 +2871,18 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3927,6 +4035,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4120,6 +4276,54 @@
               "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4343,6 +4547,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4554,6 +4806,54 @@
               "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4771,6 +5071,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -4970,6 +5318,54 @@
               "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5187,6 +5583,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5401,6 +5845,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5609,6 +6101,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5659,9 +6199,9 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L190"
       },
       "example": {
-        "fixture": "deferred-child-phrasing-parent",
-        "description": "A child deferred to init under a <p> (and a <span> in a <p>) mounts inside its parent",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/deferred-child-phrasing-parent.ts",
+        "fixture": "component-helper-signal-child-prop",
+        "description": "a child prop reading a const built by a zero-param component helper over a signal renders the child on a client mount (#3975)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-helper-signal-child-prop.ts",
         "code": "() => name()"
       }
     },
@@ -5773,6 +6313,24 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5939,6 +6497,24 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -6174,6 +6750,24 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -6394,6 +6988,24 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -6566,6 +7178,24 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -6723,6 +7353,24 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -6904,6 +7552,24 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7067,6 +7733,24 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -7245,6 +7929,24 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -7805,7 +8507,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -8367,7 +9123,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -9043,7 +9853,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -9719,7 +10583,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -10293,7 +11211,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -10855,7 +11827,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -11423,7 +12449,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -11979,7 +13059,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -12547,7 +13681,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -14395,7 +15583,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -15203,7 +16445,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -16185,7 +17481,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -17173,7 +18523,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -17987,7 +19391,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -18795,7 +20253,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -19609,7 +21121,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -20387,7 +21953,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -21201,7 +22821,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -22500,7 +24174,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -23170,7 +24898,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -23942,7 +25724,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -24762,7 +26598,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -25438,7 +27328,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -26120,7 +28064,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -26808,7 +28806,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -27460,7 +29512,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -28130,7 +30236,61 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -30421,6 +32581,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -31046,6 +33260,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -31833,6 +34101,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "nested-loop-child-component-rest-own-child",
               "limitations": [
                 "nested-loop-row-child-own-child-no-rebuild"
@@ -32539,6 +34861,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -33173,6 +35549,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -33798,6 +36228,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -34441,6 +36925,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -35054,6 +37592,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -35691,6 +38283,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -36182,6 +38828,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -36501,6 +39195,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -36841,6 +39583,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -37190,6 +39980,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -37509,6 +40347,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -37837,6 +40723,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -38174,6 +41108,54 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -38475,6 +41457,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -38797,6 +41827,54 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43001,6 +46079,18 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -43044,6 +46134,18 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43108,6 +46210,18 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43199,6 +46313,18 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -43239,6 +46365,18 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -43276,6 +46414,18 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43325,6 +46475,18 @@
               ]
             },
             {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -43362,6 +46524,18 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43408,6 +46582,18 @@
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -43703,6 +46889,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -43792,6 +46984,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -43939,6 +47137,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -44051,6 +47255,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -44157,6 +47367,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -44246,6 +47462,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44357,6 +47579,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -44452,6 +47680,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44558,6 +47792,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44659,6 +47899,12 @@
               "limitations": [
                 "module-scope-helper-call"
               ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -44684,6 +47930,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44715,6 +47967,12 @@
               "limitations": [
                 "module-scope-helper-call"
               ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -44740,6 +47998,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44771,6 +48035,12 @@
               "limitations": [
                 "module-scope-helper-call"
               ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -44796,6 +48066,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -44827,6 +48103,12 @@
               "limitations": [
                 "module-scope-helper-call"
               ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -44855,6 +48137,12 @@
               "limitations": [
                 "module-scope-helper-call"
               ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -44880,6 +48168,12 @@
             },
             {
               "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -45852,6 +49146,24 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -46025,6 +49337,24 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -46244,6 +49574,24 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -46458,6 +49806,24 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -46631,6 +49997,24 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -46826,6 +50210,24 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -47016,6 +50418,24 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -47177,6 +50597,24 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -47355,6 +50793,24 @@
             },
             {
               "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -47983,6 +51439,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -48536,6 +52046,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -49176,6 +52740,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -49879,6 +53497,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -50441,6 +54113,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -51000,6 +54726,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -51577,6 +55357,60 @@
               ]
             },
             {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "object-prop-member-boolean-text-child",
               "limitations": [
                 "object-prop-member-boolean-text-child"
@@ -52118,6 +55952,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -52674,6 +56562,60 @@
               "fixture": "module-const-object-spread-unresolved-member",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-function-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-param-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-branch-loop",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-init",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-prop-hidden",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-shadowed",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -54649,6 +58591,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -54668,6 +58616,12 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -54705,6 +58659,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -54724,6 +58684,12 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -54749,6 +58715,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -54768,6 +58740,12 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -54793,6 +58771,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -54815,6 +58799,12 @@
               ]
             },
             {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -54834,6 +58824,12 @@
               "fixture": "module-const-object-spread-unresolved-array",
               "limitations": [
                 "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-helper-reads-module-const-values",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {

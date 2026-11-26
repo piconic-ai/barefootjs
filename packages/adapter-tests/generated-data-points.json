@@ -12147,6 +12147,26 @@
       }
     }
   ],
+  "module-helper-reads-module-const-prop-hidden": [
+    {
+      "name": "gen:V:empty",
+      "props": {
+        "V": ""
+      }
+    },
+    {
+      "name": "gen:V:markup",
+      "props": {
+        "V": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:V:multibyte",
+      "props": {
+        "V": "日本語"
+      }
+    }
+  ],
   "module-let-arrow-initializer-hidden-read": [
     {
       "name": "gen:base:empty",
