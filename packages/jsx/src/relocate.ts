@@ -715,11 +715,31 @@ function isCallAcceptedByAdapter(
 }
 
 /**
- * Whether a call may run at template scope: pure by construction
- * (`isPureBuiltinCall`), or accepted by the adapter.
+ * Whether a call may run at template scope: an applied arrow literal
+ * (`isAppliedZeroParamArrow`), pure by construction (`isPureBuiltinCall`),
+ * or accepted by the adapter.
  */
 function isTemplateSafeCall(call: ts.CallExpression, env: RelocateEnv): boolean {
-  return isPureBuiltinCall(call, env) || isCallAcceptedByAdapter(call, env)
+  return isAppliedZeroParamArrow(call) || isPureBuiltinCall(call, env) || isCallAcceptedByAdapter(call, env)
+}
+
+/**
+ * `(() => body)()`: a zero-param, synchronous arrow literal with an
+ * expression body, called with no arguments. The call evaluates `body` in
+ * the scope it is written in, so it is exactly as safe in template scope as
+ * `body` is. Accepting the call does not vouch for `body`: the walks that ask
+ * (`hasZeroArgCall`, `hasCallWithBridgedArg`) still descend into the callee
+ * and check the body's own calls, and `relocate` resolves its reads.
+ *
+ * CSR substitution produces this shape when it splices a zero-param helper
+ * (`zeroArgCallBody`) into a const that calls it: `const B = mk()` with a
+ * non-module `mk = () => ({ k: V })` reads `(() => ({ k: ('v') }))()` (#3975).
+ */
+function isAppliedZeroParamArrow(call: ts.CallExpression): boolean {
+  if (call.arguments.length !== 0) return false
+  const callee = unwrapParens(call.expression)
+  if (!ts.isArrowFunction(callee) || callee.parameters.length !== 0 || ts.isBlock(callee.body)) return false
+  return !callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)
 }
 
 /**

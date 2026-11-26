@@ -10,6 +10,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { HonoAdapter } from '../../../adapter-hono/src/adapter/hono-adapter'
+import { TestAdapter } from '../adapters/test-adapter'
 
 const PRELUDE = "'use client'\nimport { createSignal } from '@barefootjs/client'\n"
 
@@ -53,5 +54,37 @@ describe('zero-param helper in the CSR template (#3562)', () => {
   ])('%s is not spliced', (_label, decl) => {
     const { template } = compile(`${decl}\nconst [shown] = createSignal(helper() ? 'yes' : 'no')`, '<p data-shown={shown()}>x</p>')
     expect(template).not.toContain('_p.flag')
+  })
+})
+
+/**
+ * #3975: a const that CALLS such a helper (`const B = mk()`) is substituted
+ * too. Its CSR form applies the spliced arrow (`(() => body)()`), which the
+ * template-safety check accepts exactly as it would `body`: the body's own
+ * reads and calls are still checked.
+ */
+describe('a const built by a zero-param helper call in the CSR template (#3975)', () => {
+  test('the const reads the value the helper returns', () => {
+    const { template } = compile("const mk = () => ({ k: props.mode })\nconst B = mk()", '<p data-k={B.k}>x</p>')
+    expect(render(template, { mode: 'wide' })).toContain('data-k="wide"')
+  })
+
+  test('a helper the substitution leaves alone keeps the const out of the template', () => {
+    const { template } = compile(
+      "const mk = async () => ({ k: props.mode })\nconst B = mk()",
+      '<p data-k={String(B)}>x</p>',
+    )
+    expect(template).not.toContain('_p.mode')
+  })
+
+  test('a call inside the helper body is still checked', () => {
+    // `Date.now()` is a zero-arg call no template primitive vouches for on
+    // the test adapter; applying the arrow around it must not accept it.
+    const source = `'use client'\nconst mk = () => ({ t: Date.now() })\nconst B = mk()\nexport function S() {\nreturn <p data-t={B.t}>x</p>\n}`
+    const result = compileJSX(source, 'S.tsx', { adapter: new TestAdapter() })
+    const clientJs = result.files.find((f) => f.path.endsWith('.client.js'))?.content ?? ''
+    const template = clientJs.split('\n').find((l) => l.includes('hydrate(')) ?? ''
+    expect(template).toContain('template:')
+    expect(template).not.toContain('Date.now')
   })
 })
