@@ -15,7 +15,7 @@ import type { Scope, BindingKind, IRMetadata } from './types.ts'
 import { isVisibleIn } from './types.ts'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
-import { buildPropAliasMap, isPropsAliasConst } from './props-binding.ts'
+import { buildPropAliasMap, isPropsAliasConst, templatePropReads } from './props-binding.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
@@ -53,6 +53,16 @@ export interface RelocateEnv {
    * `propSourceNames.get(name) ?? name` degrades to an identity there.
    */
   propSourceNames: ReadonlyMap<string, string>
+  /**
+   * Prop binding name → the read a client `template:` makes of it
+   * (`livePropReadExpr`, destructure default included), for the props
+   * bindings the template reads live (`templatePropReads`). The
+   * `lift-to-prop` action spells a name found here this way, so a const
+   * inlined into the template applies `{ b = ['y'] }`'s default exactly as
+   * a direct `{b.length}` read does. A name absent from it lifts to
+   * `_p.<caller-facing key>`.
+   */
+  propTemplateReads?: ReadonlyMap<string, string>
   /**
    * Name of the props parameter (e.g. `props`). Used to detect
    * `props.X` member access at lift sites — those are not free refs
@@ -181,6 +191,21 @@ function collectFreeRefs(node: ts.Node): Map<string, ts.Identifier[]> {
 }
 
 /**
+ * How a props binding `name` reads inside the client `template:` lambda.
+ * The props *object* itself (e.g. bare `props` in `makeStore(props)`) lifts
+ * to the whole `_p` parameter. Lifting to `_p.props` would be a
+ * non-existent property: the template lambda receives `_p` directly, not an
+ * object that wraps it. A props binding the template reads live takes that
+ * read, destructure default included (`propTemplateReads`). Any other
+ * destructured name lifts to `_p.<caller-facing key>` — `_p` is always keyed
+ * by the caller-facing name (#2524 CSR half), not the local binding.
+ */
+function propTemplateSpelling(env: RelocateEnv, name: string): string {
+  if (env.propsObjectName !== null && name === env.propsObjectName) return PROPS_PARAM
+  return env.propTemplateReads?.get(name) ?? `${PROPS_PARAM}.${env.propSourceNames.get(name) ?? name}`
+}
+
+/**
  * Decide the action for a single free reference based on the
  * (fromScope, toScope, kind) tuple. Mirrors the §2.2 decision matrix.
  */
@@ -197,18 +222,7 @@ function decideAction(
 
   // Not reachable bare. Decide how to bridge:
   if (kind === 'prop' && toScope === 'template') {
-    // The props *object* itself (e.g. bare `props` in `makeStore(props)`)
-    // lifts to the whole `_p` parameter. Lifting to `_p.props` would be a
-    // non-existent property: the template lambda receives `_p` directly,
-    // not an object that wraps it. Destructured prop names (`config`,
-    // `name`, etc.) keep the per-key `_p.name` form.
-    if (env.propsObjectName !== null && name === env.propsObjectName) {
-      return { action: 'lift-to-prop', rewrittenAs: PROPS_PARAM }
-    }
-    // Lift `name` → `_p.<caller-facing key>` — `_p` is always keyed by
-    // the caller-facing name (#2524 CSR half), not the local binding.
-    const callerKey = env.propSourceNames.get(name) ?? name
-    return { action: 'lift-to-prop', rewrittenAs: `${PROPS_PARAM}.${callerKey}` }
+    return { action: 'lift-to-prop', rewrittenAs: propTemplateSpelling(env, name) }
   }
 
   if ((kind === 'init-local' || kind === 'sub-init-local') && toScope === 'template') {
@@ -292,9 +306,42 @@ function decideReference(
 }
 
 /**
+ * Apply all per-name rewrites to `expr` by splicing each decision's
+ * `rewrittenAs` over the identifier nodes `collectFreeRefs` found for it,
+ * in one pass. Spliced text is never scanned again, so a rewrite that
+ * carries source of its own (a prop's destructure default, an inlined
+ * form) keeps its string literals and nested parameters as written even
+ * when they spell another rewritten name. Null when `refs`' nodes are not
+ * positioned over `expr` as `parseExpressionNode` wraps it (a node the
+ * caller parsed some other way), so the caller takes `applyRewrites`.
+ */
+function spliceRewrites(
+  expr: string,
+  refs: ReadonlyMap<string, readonly ts.Identifier[]>,
+  decisions: readonly RelocateDecision[],
+): string | null {
+  const splices: Array<{ start: number; end: number; text: string }> = []
+  for (const d of decisions) {
+    if (d.action === 'pass-through' || d.rewrittenAs === d.name) continue
+    for (const id of refs.get(d.name) ?? []) {
+      const sf = id.getSourceFile()
+      if (sf?.text !== `(${expr});`) return null
+      // `- 1`: the `(` `parseExpressionNode` puts before `expr`.
+      splices.push({ start: id.getStart(sf) - 1, end: id.getEnd() - 1, text: d.rewrittenAs })
+    }
+  }
+  let result = expr
+  for (const s of splices.sort((a, b) => b.start - a.start)) {
+    result = result.slice(0, s.start) + s.text + result.slice(s.end)
+  }
+  return result
+}
+
+/**
  * Apply all per-name rewrites to the source text. Uses targeted
  * substitution (word-boundary regex) keyed by names that are AST-
  * confirmed free references. Pass-through decisions are skipped.
+ * The fallback for an expression `relocate` has no AST for.
  */
 function applyRewrites(
   text: string,
@@ -370,7 +417,7 @@ export function relocate(
     }
   }
 
-  const text = applyRewrites(expr, decisions)
+  const text = (exprNode ? spliceRewrites(expr, refs, decisions) : null) ?? applyRewrites(expr, decisions)
   return { text, ok, usedExternals, decisions }
 }
 
@@ -754,7 +801,8 @@ function parseExpressionNode(text: string): ts.Node | null {
       '__inline_check__.ts',
       `(${text});`,
       ts.ScriptTarget.Latest,
-      false,
+      // Parents let `spliceRewrites` position each identifier in `text`.
+      true,
       ts.ScriptKind.TS,
     )
     const stmt = sf.statements[0]
@@ -1080,11 +1128,25 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
     inlinable: new Map(), // populated by compute-inlinability after analyzer runs
     propsForLift,
     propSourceNames,
+    propTemplateReads: propTemplateReadsFor(src, bindings),
     propsObjectName,
     allowFallback: true,
     aliasTargets,
     envGetters: new Set(src.signals.filter(s => s.envReader).map(s => s.getter)),
   }
+}
+
+/**
+ * `RelocateEnv.propTemplateReads`: the template's read of each props
+ * binding (`templatePropReads`) whose name the final binding table still
+ * classifies as a prop.
+ */
+function propTemplateReadsFor(src: EnvFields, bindings: ReadonlyMap<string, BindingKind>): Map<string, string> {
+  const reads = templatePropReads(src)
+  for (const name of reads.keys()) {
+    if (bindings.get(name) !== 'prop') reads.delete(name)
+  }
+  return reads
 }
 
 /**

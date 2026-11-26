@@ -142,6 +142,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -756,6 +762,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -1132,6 +1144,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -1445,6 +1463,12 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -2387,6 +2411,12 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -6286,6 +6316,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -6684,6 +6720,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -6958,6 +7000,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -7145,6 +7193,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -7703,6 +7757,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -15283,6 +15343,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -17073,6 +17139,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -18241,6 +18313,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -19112,6 +19190,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -21692,6 +21776,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -23970,6 +24060,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -25466,6 +25562,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -26412,6 +26514,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -27145,6 +27253,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -29347,6 +29461,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -30781,6 +30901,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -31119,6 +31245,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -31309,6 +31441,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -31460,6 +31598,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -31916,6 +32060,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -32440,6 +32590,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -33873,6 +34029,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -34741,6 +34903,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -35432,6 +35600,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -37496,6 +37670,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -47165,6 +47345,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -47395,6 +47581,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -47531,6 +47723,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -47642,6 +47840,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -47960,6 +48164,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -51427,6 +51637,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -52683,6 +52899,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -53503,6 +53725,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -54122,6 +54350,12 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -55985,6 +56219,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -57420,6 +57660,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -57746,6 +57992,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -57930,6 +58182,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -58075,6 +58333,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -58507,6 +58771,12 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
               ]
             },
             {
@@ -58957,6 +59227,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -59013,6 +59289,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
@@ -59053,6 +59335,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -59080,6 +59368,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
             {
               "fixture": "module-const-inherited-key",
               "limitations": [
@@ -59165,6 +59459,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-param-inlined-const-identity",
+              "limitations": [
+                "array-equality-through-inlined-const"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -59225,10 +59525,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "module-const-array-child-prop-forwarded",
-        "description": "a module array const passed whole in a loop row and through a forwarding child reaches the child",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-child-prop-forwarded.ts",
-        "code": "xs[1]"
+        "fixture": "destructure-default-param-inlined-array-const",
+        "description": "An inlined array const reading a parameter-destructured prop with an array default applies the default when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-inlined-array-const.ts",
+        "code": "local[0]"
       }
     },
     "member:optional": {

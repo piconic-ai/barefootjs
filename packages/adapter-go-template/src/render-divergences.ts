@@ -121,6 +121,9 @@ export const renderDivergences: RenderDivergences = {
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
+  // `===` between arrays read through a const: each read of the array
+  // default is a separate copy, so one binding read twice is unequal.
+  'destructure-default-param-inlined-const-identity': { limitation: 'array-equality-through-inlined-const' },
   // A key an open spread and another attribute or spread both write renders
   // twice (an expression or template value before the spread, an attribute
   // after it, two spreads), and an explicit `null` bag value renders the

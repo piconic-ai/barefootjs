@@ -1489,6 +1489,13 @@ import { fixture as destructureDefaultLiteralSpelling } from './destructure-defa
 import { fixture as destructureDefaultLargeNumber } from './destructure-default-large-number'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
+import { fixture as destructureDefaultParamInlinedArrayConst } from './destructure-default-param-inlined-array-const'
+import { fixture as destructureDefaultParamInlinedConstPositions } from './destructure-default-param-inlined-const-positions'
+import { fixture as destructureDefaultParamInlinedConstReactive } from './destructure-default-param-inlined-const-reactive'
+import { fixture as destructureDefaultBodyInlinedConst } from './destructure-default-body-inlined-const'
+import { fixture as destructureDefaultParamInlinedConstDefaultText } from './destructure-default-param-inlined-const-default-text'
+import { fixture as destructureDefaultParamInlinedConstScope } from './destructure-default-param-inlined-const-scope'
+import { fixture as destructureDefaultParamInlinedConstIdentity } from './destructure-default-param-inlined-const-identity'
 import { fixture as destructureDefaultArrayLiteral } from './destructure-default-array-literal'
 import { fixture as destructureDefaultArrayLiteralBody } from './destructure-default-array-literal-body'
 import { fixture as destructureDefaultNumberArrayLiteral } from './destructure-default-number-array-literal'
@@ -2849,6 +2856,13 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultLargeNumber,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
+  destructureDefaultParamInlinedArrayConst,
+  destructureDefaultParamInlinedConstPositions,
+  destructureDefaultParamInlinedConstReactive,
+  destructureDefaultBodyInlinedConst,
+  destructureDefaultParamInlinedConstDefaultText,
+  destructureDefaultParamInlinedConstScope,
+  destructureDefaultParamInlinedConstIdentity,
   destructureDefaultArrayLiteral,
   destructureDefaultArrayLiteralBody,
   destructureDefaultNumberArrayLiteral,
