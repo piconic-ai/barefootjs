@@ -772,21 +772,37 @@ function isTemplateSafeCall(call: ts.CallExpression, env: RelocateEnv): boolean 
 
 /**
  * `(() => body)()`: a zero-param, synchronous arrow literal with an
- * expression body, called with no arguments. The call evaluates `body` in
- * the scope it is written in, so it is exactly as safe in template scope as
+ * expression body, called with no arguments, whose body evaluates to the
+ * same value each time (`isRepeatableBody`). The call evaluates `body` in the
+ * scope it is written in, so it is exactly as safe in template scope as
  * `body` is. Accepting the call does not vouch for `body`: the walks that ask
  * (`hasZeroArgCall`, `hasCallWithBridgedArg`) still descend into the callee
- * and check the body's own calls, and `relocate` resolves its reads.
+ * and check the body's own reads, and `relocate` resolves them.
  *
  * CSR substitution produces this shape when it splices a zero-param helper
  * (`zeroArgCallBody`) into a const that calls it: `const B = mk()` with a
  * non-module `mk = () => ({ k: V })` reads `(() => ({ k: ('v') }))()` (#3975).
+ * The template splices that form at every read of `B`, so a body that samples
+ * a value (`Math.random()`, `Date.now()`, `new Date()`) would differ between
+ * two reads where the server evaluated `mk()` once; such a call stays refused.
  */
 function isAppliedZeroParamArrow(call: ts.CallExpression): boolean {
   if (call.arguments.length !== 0) return false
   const callee = unwrapParens(call.expression)
   if (!ts.isArrowFunction(callee) || callee.parameters.length !== 0 || ts.isBlock(callee.body)) return false
-  return !callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)
+  if (callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return false
+  return isRepeatableBody(callee.body)
+}
+
+/**
+ * Whether evaluating `node` again yields the same value: it calls nothing but
+ * another applied zero-param arrow of the same kind, constructs nothing
+ * (`new`) and runs no tag function. Reads, operators and literals repeat.
+ */
+function isRepeatableBody(node: ts.Node): boolean {
+  if (ts.isNewExpression(node) || ts.isTaggedTemplateExpression(node)) return false
+  if (ts.isCallExpression(node) && !isAppliedZeroParamArrow(node)) return false
+  return ts.forEachChild(node, child => (isRepeatableBody(child) ? undefined : true)) !== true
 }
 
 /**
