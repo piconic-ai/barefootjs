@@ -46,6 +46,7 @@ import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
 import { isFunctionScope, isInvokedInPlace, runsInPlace } from './in-place-function.ts'
 import { classifyValueUses } from './value-uses.ts'
+import { expandModuleArraySpreads, recordModuleArraySpread } from './module-array-spread.ts'
 import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
 // =============================================================================
@@ -4604,6 +4605,7 @@ function collectConstant(
   }
   recordIdentityCandidate(constant, node.initializer, ctx.checker)
   ctx.localConstants.push(constant)
+  recordModuleArraySpread(constant, node.initializer, ctx.moduleArraySpreads)
 }
 
 // =============================================================================
@@ -5310,6 +5312,9 @@ function validateContext(ctx: AnalyzerContext): void {
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
   markWrittenBindings(ctx)
+  // A module const's spread of a literal array const reads as the elements
+  // it copies (#3979); after the marks above, which decide what is literal.
+  expandModuleArraySpreads(ctx.moduleArraySpreads, ctx.localConstants, node => ctx.getJS(node))
   // A const whose initializer allocates and reads nothing reactive is read
   // as the binding, never re-evaluated at a prop read (#3868).
   markIdentityBoundConstants(ctx)

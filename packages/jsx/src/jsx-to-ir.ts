@@ -7907,8 +7907,25 @@ function withStaticConstLiteral(value: AttrValue, attr: ts.JsxAttribute, ctx: Tr
   const init = staticConstInitializerOf(attr.initializer.expression, ctx)
   if (!init) return value
   const parsed = tsNodeToParsedExpr(init)
-  if (!isFullyStaticLiteral(parsed)) return value
-  return { ...value, staticConstLiteral: { expr: astText(init), parsed } }
+  if (isFullyStaticLiteral(parsed)) return { ...value, staticConstLiteral: { expr: astText(init), parsed } }
+  // A module array const whose spreads Phase 1 expanded (`[...BASE, 'z']`,
+  // #3979) passes its expanded elements, spelled from that tree.
+  const expanded = expandedArraySpread(attr.initializer.expression, ctx)
+  if (!expanded) return value
+  return { ...value, staticConstLiteral: { expr: stringifyParsedExpr(expanded), parsed: expanded } }
+}
+
+/**
+ * The parsed value of the const a bare-name read `expr` reaches, when it is
+ * an array literal `expandModuleArraySpreads` expanded to fully static
+ * elements; `null` otherwise.
+ */
+function expandedArraySpread(expr: ts.Expression, ctx: TransformContext): ParsedExpr | null {
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isIdentifier(expr)) return null
+  const constant = resolveStaticConstBinding(expr.text, ctx.analyzer.localConstants, n => ctx.scope.isBound(n))
+  const parsed = constant?.isModule ? constant.parsed : undefined
+  return parsed?.kind === 'array-literal' && isFullyStaticLiteral(parsed) ? parsed : null
 }
 
 /**

@@ -46,6 +46,9 @@ export const renderDivergences: RenderDivergences = {
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
+  // A module array const spreading a value no compile-time evaluator
+  // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
+  'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },
   // `===` between arrays read through a const: each read of the array
   // default is a separate copy, so one binding read twice is unequal.
   'destructure-default-param-inlined-const-identity': { limitation: 'array-equality-through-inlined-const' },
