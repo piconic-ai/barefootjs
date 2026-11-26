@@ -1693,6 +1693,8 @@ import { fixture as moduleHelperParamReadsModuleConst } from './module-helper-pa
 import { fixture as moduleFunctionReadsModuleConst } from './module-function-reads-module-const'
 import { fixture as moduleConstIifeReadsModuleConst } from './module-const-iife-reads-module-const'
 import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
+import { fixture as moduleHelperConstIdentity } from './module-helper-const-identity'
+import { fixture as moduleConstLiteralIdentity } from './module-const-literal-identity'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
@@ -3042,6 +3044,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleFunctionReadsModuleConst,
   moduleConstIifeReadsModuleConst,
   componentHelperSignalChildProp,
+  moduleHelperConstIdentity,
+  moduleConstLiteralIdentity,
   moduleConstObjectSpreadUnresolvedComputedProps,
   moduleConstObjectSpreadUnresolvedComputedLocal,
   moduleConstObjectSpreadUnresolvedComputedOptional,

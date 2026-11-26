@@ -13419,6 +13419,22 @@
         "text"
       ]
     },
+    "module-const-literal-identity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -14089,6 +14105,23 @@
       "contexts": [
         "condition",
         "text"
+      ]
+    },
+    "module-helper-const-identity": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "module-helper-param-reads-module-const": {
