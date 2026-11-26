@@ -40,6 +40,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // #3975: a module const initialized by an immediately invoked arrow that
+  // reads another module const: the template has no value for the const,
+  // so `{B.k}` renders empty.
+  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
   // `===` between arrays read through a const: each read of the array
   // default is a separate copy, so one binding read twice is unequal.
   'destructure-default-param-inlined-const-identity': { limitation: 'array-equality-through-inlined-const' },

@@ -264,6 +264,32 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // every DSL adapter refuses the shape (BF101). Its sibling with an
   // argument (`module-const-helper-call-spread-inlined`) is NOT skipped.
   'module-const-helper-call-inlined',
+  // The same harness-configuration artifact for a module helper the
+  // component hides a name of (#3975): the CSR template reads
+  // `(__bf_module_X.mk)()` from the module-scope replica, a call this
+  // harness's missing `acceptsTemplateCall` does not accept, so the text
+  // slot is emitted empty. Production CSR compiles with Hono's and renders
+  // `v`; every DSL adapter refuses the read (BF101).
+  'module-helper-reads-module-const-shadowed',
+  'module-helper-reads-module-const-prop-hidden',
+  // A REAL SSR/CSR divergence (#3975), not a harness artifact: a module
+  // const built by a module helper with parameters (`mk('a')`) or by a
+  // `function` declaration, either reading another module const. The CSR
+  // template has no form for the helper, so `{B.k}` renders empty in
+  // production too. The template adapters refuse the call (BF101), and
+  // `module-scope-helper-call` lists both fixtures, so neither can cite a
+  // silent entry in `CSR_RENDER_DIVERGENCES` as well.
+  'module-helper-param-reads-module-const',
+  'module-function-reads-module-const',
+  // A REAL SSR/CSR divergence: an object const compared with itself
+  // (`B === B`). The CSR template splices a const's value at each read, so
+  // each read is a separate object and the comparison renders `false` where
+  // the server renders `true`. That holds for a literal const on main as
+  // for one built by a zero-param helper call (#3975). The template adapters
+  // refuse the comparison (BF101), and the refusal entries list both, so
+  // neither can cite a silent entry in `CSR_RENDER_DIVERGENCES` as well.
+  'module-helper-const-identity',
+  'module-const-literal-identity',
   // Same harness-configuration artifact: whether the CSR template may
   // evaluate `Date.UTC()` through the computed const `stamp` is decided by
   // the adapter's `acceptsTemplateCall`, which this harness does not pass,
@@ -373,4 +399,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An element child a component reads into a signal: the CSR template
   // prints the signal's initial value as escaped text.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
+  // A module const whose immediately invoked arrow reads another module
+  // const: the CSR template has no form for it, so `{B.k}` renders empty.
+  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
 }
