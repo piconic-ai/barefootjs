@@ -4843,7 +4843,12 @@ function isResolvableMemberType(
       // a reader still sees that it may be nil. A top-level member typed
       // with a union still declines.
       return nested && isNilUnionOfResolvable(info, recurse)
-    // Functions, other unions and `unknown` all decline — see docstring.
+    case 'unknown':
+      // An inline intersection (`data: A & B`) whose every arm resolves: the
+      // same type the `props`-object form (`props: { data: A & B }`) carries,
+      // which a backend synthesizes from the arms' merged members.
+      return info.inheritance === 'intersection' && !!info.inherits?.length && info.inherits.every(recurse)
+    // Functions, other unions and other `unknown`s all decline — see docstring.
     default:
       return false
   }

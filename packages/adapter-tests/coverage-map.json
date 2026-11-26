@@ -8314,6 +8314,30 @@
         "text"
       ]
     },
+    "inline-object-prop-child-forward": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "inline-object-prop-nullable-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "input": {
       "kinds": [
         "identifier",
@@ -8325,6 +8349,57 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "intersection-member-array": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "intersection-member-named-owner": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "intersection-member-optional": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "intersection-member-scalars": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
       ]
     },
     "json-stringify-boolean-literal": {

@@ -19,7 +19,7 @@
  * `generateTypes(ir)` on that identical object).
  */
 
-import type { IRMetadata, PropertyInfo, TypeInfo } from '@barefootjs/jsx'
+import { inlineIntersectionMembers, type IRMetadata, type PropertyInfo, type TypeInfo } from '@barefootjs/jsx'
 
 import { goFieldNameForKey } from '../lib/go-naming.ts'
 
@@ -48,6 +48,27 @@ export function localTypeDefinitionNames(
 }
 
 /**
+ * The members of an anonymous object type a struct is synthesized for: an
+ * inline object literal type's own members, or the merged members of a
+ * nested inline intersection (`data: A & B`, `inlineIntersectionMembers`).
+ * `null` for any other type, and for an intersection whose members are not
+ * all known in this file, which keeps its untyped `interface{}` field.
+ */
+function anonymousObjectMembers(typeInfo: TypeInfo, metadata: Pick<IRMetadata, 'typeDefinitions'>): PropertyInfo[] | null {
+  if (typeInfo.kind === 'object') return typeInfo.properties ?? []
+  return inlineIntersectionMembers(typeInfo, metadata)
+}
+
+/**
+ * Whether `typeInfo` is an anonymous object type (`anonymousObjectMembers`):
+ * the shape a prop shares with an inline object literal type, a synthesized
+ * struct when required and a source-keyed map when optional.
+ */
+export function isAnonymousObjectType(typeInfo: TypeInfo, metadata: Pick<IRMetadata, 'typeDefinitions'>): boolean {
+  return anonymousObjectMembers(typeInfo, metadata) !== null
+}
+
+/**
  * Pure port of `emitSynthPropStructs`'s visit/visitObject/visitArrayElem walk
  * (both roots: named types' own properties, then inline prop types with no
  * backing `TypeDefinition`). Claims a deterministic name for each anonymous
@@ -68,32 +89,34 @@ export function planSynthPropStructs(
   const claimed = new Map<TypeInfo, string>()
   const order: SynthPropStructPlanEntry[] = []
 
-  const visitObject = (typeInfo: TypeInfo, desiredName: string): void => {
+  const visitObject = (typeInfo: TypeInfo, properties: PropertyInfo[], desiredName: string): void => {
     if (claimed.has(typeInfo)) return
     if (taken.has(desiredName)) return
     taken.add(desiredName)
     claimed.set(typeInfo, desiredName)
-    for (const prop of typeInfo.properties ?? []) {
+    for (const prop of properties) {
       visit(prop.type, desiredName, prop.name)
     }
-    order.push({ typeInfo, name: desiredName, properties: typeInfo.properties ?? [] })
+    order.push({ typeInfo, name: desiredName, properties })
   }
 
   const visitArrayElem = (elemType: TypeInfo | undefined, parentName: string, propName: string): void => {
     if (!elemType) return
     if (elemType.kind === 'array') {
       visitArrayElem(elemType.elementType, parentName, propName)
-    } else if (elemType.kind === 'object') {
-      visitObject(elemType, `${parentName}${goFieldNameForKey(propName)}Item`)
+      return
     }
+    const properties = anonymousObjectMembers(elemType, metadata)
+    if (properties) visitObject(elemType, properties, `${parentName}${goFieldNameForKey(propName)}Item`)
   }
 
   const visit = (typeInfo: TypeInfo, parentName: string, propName: string): void => {
     if (typeInfo.kind === 'array') {
       visitArrayElem(typeInfo.elementType, parentName, propName)
-    } else if (typeInfo.kind === 'object') {
-      visitObject(typeInfo, `${parentName}${goFieldNameForKey(propName)}`)
+      return
     }
+    const properties = anonymousObjectMembers(typeInfo, metadata)
+    if (properties) visitObject(typeInfo, properties, `${parentName}${goFieldNameForKey(propName)}`)
   }
 
   // Walk root 1: named types' own properties (closes `Row.user`).

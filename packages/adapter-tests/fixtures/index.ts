@@ -1130,6 +1130,12 @@ import { fixture as dateIntersectionMember } from './date-intersection-member'
 import { fixture as dateIntersectionMemberInterface } from './date-intersection-member-interface'
 import { fixture as dateIntersectionMemberDestructured } from './date-intersection-member-destructured'
 import { fixture as dateIntersectionMemberLiteralArm } from './date-intersection-member-literal-arm'
+import { fixture as intersectionMemberScalars } from './intersection-member-scalars'
+import { fixture as intersectionMemberOptional } from './intersection-member-optional'
+import { fixture as intersectionMemberArray } from './intersection-member-array'
+import { fixture as intersectionMemberNamedOwner } from './intersection-member-named-owner'
+import { fixture as inlineObjectPropNullableMember } from './inline-object-prop-nullable-member'
+import { fixture as inlineObjectPropChildForward } from './inline-object-prop-child-forward'
 import { fixture as dateParenthesizedMember } from './date-parenthesized-member'
 import { fixture as dateParenthesizedMemberNested } from './date-parenthesized-member-nested'
 import { fixture as dateParenthesizedMemberDestructured } from './date-parenthesized-member-destructured'
@@ -2625,6 +2631,12 @@ export const jsxFixtures: JSXFixture[] = [
   dateIntersectionMemberInterface,
   dateIntersectionMemberDestructured,
   dateIntersectionMemberLiteralArm,
+  intersectionMemberScalars,
+  intersectionMemberOptional,
+  intersectionMemberArray,
+  intersectionMemberNamedOwner,
+  inlineObjectPropNullableMember,
+  inlineObjectPropChildForward,
   dateParenthesizedMember,
   dateParenthesizedMemberNested,
   dateParenthesizedMemberDestructured,

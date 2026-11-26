@@ -93,8 +93,10 @@ export interface TypeInfo {
    * other intersection, except on a component's props type
    * (`props: Base & { label: string }`), where it is `'object'` (#3938). A
    * nested intersection (a member typed `A & B`, a union arm, an array
-   * element) keeps `'unknown'` so the adapters' type synthesis is unchanged
-   * (#3949). Absent on types from `tsTypeToTypeInfo` (synthetic nodes).
+   * element) keeps `'unknown'` so a `kind`-only type synthesis is unchanged
+   * (#3949); a backend that synthesizes an object type for it reads the
+   * merged members through `inlineIntersectionMembers`. Absent on types from
+   * `tsTypeToTypeInfo` (synthetic nodes).
    */
   inherits?: TypeInfo[]
   /** How `inherits` combines; present exactly when `inherits` is. */
