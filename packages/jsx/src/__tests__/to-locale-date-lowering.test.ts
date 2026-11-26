@@ -342,6 +342,51 @@ export { Foo }
     )
     expect(js).not.toContain('toLocaleDateString')
   })
+
+  test.each([
+    ["('en-US' | 'ja-JP') | 'en-GB'"],
+    ["'en-US' | ('ja-JP' | 'en-GB')"],
+    ["(('en-US') | ('ja-JP' | ('en-GB')))"],
+  ])('a grouped union %s lowers exactly like the flat one (#3973)', (grouped) => {
+    const lower = (locale: string) => {
+      const md = metadata(`
+function Foo({ createdAt, locale }: { createdAt: Date; locale: ${locale} }) {
+  return <div>{createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`)
+      const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+      return matchToLocaleDateStringCall(callee, args, md)
+    }
+    const flat = lower("'en-US' | 'ja-JP' | 'en-GB'")
+    expect(flat).not.toBeNull()
+    expect(lower(grouped)).toEqual(flat)
+    const errors = (locale: string) =>
+      compile(`
+function Foo({ createdAt, locale }: { createdAt: Date; locale: ${locale} }) {
+  return <div>{createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`).errors.map((e) => e.code)
+    expect(errors(grouped)).toEqual(errors("'en-US' | 'ja-JP' | 'en-GB'"))
+  })
+
+  test('a union arm that names an alias is not resolved, grouped or not (TypeInfo stays syntactic)', () => {
+    const lower = (locale: string) => {
+      const md = metadata(`
+type L = 'en-US' | 'ja-JP'
+function Foo({ createdAt, locale }: { createdAt: Date; locale: ${locale} }) {
+  return <div>{/* @client */ createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })}</div>
+}
+export { Foo }
+`)
+      const { callee, args } = callParts(`createdAt.toLocaleDateString(locale, { timeZone: 'UTC' })`)
+      return matchToLocaleDateStringCall(callee, args, md)
+    }
+    expect(lower('L')).toBeNull()
+    expect(lower("L | 'en-GB'")).toBeNull()
+    expect(lower("(L) | 'en-GB'")).toBeNull()
+  })
 })
 
 describe('BF021 exemption round trip (#2273 seam)', () => {

@@ -350,11 +350,6 @@
         47
       ]
     },
-    "packages/jsx/src/analyzer-context.ts": {
-      "typeNodeToTypeInfo": [
-        37
-      ]
-    },
     "packages/jsx/src/analyzer.ts": {
       "checkStatementsForReactiveFactoryArity": [
         73
