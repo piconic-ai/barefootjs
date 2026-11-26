@@ -8,6 +8,7 @@ import {
   type ComponentIR,
   type IRNode,
   type IRElement,
+  type IRAttribute,
   type IRText,
   type IRExpression,
   type IRConditional,
@@ -29,6 +30,7 @@ import {
   type EmitIRNode,
   type AttrValueEmitter,
   JsxAdapter,
+  codeSafeStringLiteral,
   isBooleanAttr,
   rewriteImportsForTemplate,
   rewriteDynamicImportsInSource,
@@ -50,7 +52,7 @@ type HonoRenderCtx = {
   isRootOfClientComponent?: boolean
   isLoopItemRoot?: boolean
 }
-import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, escapeHtml, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
+import { BF_SCOPE, BF_HOST, BF_AT, BF_ROOT, BF_PROPS, BF_REGION, BF_PORTAL_OWNER, BF_KEY, SPREAD_KEY_ATTR_NAMES, escapeHtml, isRawTextTag, jsxAttrKey, type RawTextTag } from '@barefootjs/shared'
 
 /**
  * True when an author attribute on a `.map()` row root has the same name as
@@ -224,6 +226,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
   name = 'hono'
   extension = '.tsx'
   clientShimSource = '@barefootjs/hono/client-shim'
+
+  /**
+   * `hono/jsx` renames all eight `SPREAD_KEY_ATTR_NAMES` bag keys
+   * (`crossOrigin` -> `crossorigin`) and writes every other key with the
+   * bag's spelling (`tabIndex`), so a literal before a spread is guarded
+   * against each key a browser takes for its attribute
+   * (`IRAttribute.spreadAliasOverriders`).
+   */
+  spreadKeyRenames: ReadonlySet<string> = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
+  spreadKeysVerbatim = true
 
   // The Hono SSR runtime is JavaScript (Node / Bun / CF Workers), so any
   // synchronous JS call the user writes can be rendered as-is at template
@@ -1560,8 +1572,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // whose vocabulary is those same lowercase HTML names with ONE
       // JSX-ism: `className` (`class?: never`, #773). Map it back at
       // emit — the JSX-language equivalent of Go emitting `{{.X}}`.
-      const jsxName = attr.name === 'class' ? 'className' : attr.name
-      const lowered = emitAttrValue(attr.value, this.elementAttrEmitter, jsxName)
+      const jsxName = jsxAttrKey(attr.name)
+      const guarded = this.renderAliasGuardedAttr(attr, jsxName)
+      const lowered = guarded ?? emitAttrValue(attr.value, this.elementAttrEmitter, jsxName)
       if (lowered) parts.push(lowered)
     }
 
@@ -1572,6 +1585,35 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     }
 
     return parts.length > 0 ? ' ' + parts.join(' ') : ''
+  }
+
+  /**
+   * A literal a later open spread may write under another key
+   * (`IRAttribute.spreadAliasOverriders`: `tabIndex` beside `tabindex`,
+   * `htmlFor` beside `for`): rendered only when every such bag lacks every
+   * such key, so the attribute appears once, with the spread's value. A key
+   * spelled as `jsxName` needs no guard: the props object merges it. Each
+   * bag is read through a cast to a record, so a bag typed without the key
+   * still type-checks, and nullish-safe, as JSX spreads a nullish bag as
+   * nothing. Null when no spread may.
+   */
+  private renderAliasGuardedAttr(attr: IRAttribute, jsxName: string): string | null {
+    const overriders = attr.spreadAliasOverriders
+    if (!overriders || overriders.length === 0) return null
+    const value = attr.value
+    // The cast is TypeScript only: the read adds no name to the author's
+    // scope, where a binding could shadow a global (`rows.map(Object => …)`).
+    const tests = overriders.flatMap(({ bag, keys }) =>
+      keys.map(key => `(${bag} as unknown as Record<string, unknown> | null | undefined)?.[${codeSafeStringLiteral(key)}] == null`)).join(' && ')
+    if (value.kind === 'literal' || value.kind === 'boolean-attr') {
+      return `${jsxName}={${tests} ? ${this.attrValueToJsExpr(value)} : undefined}`
+    }
+    // A closed rest key carrying an earlier write as its fallback: a later
+    // bag that writes the attribute replaces the rest's value and the fallback.
+    if (value.kind === 'expression' && attr.restRead !== undefined) {
+      return `${jsxName}={${tests} ? (${this.expressionValueToJs(value)}) : undefined}`
+    }
+    return null
   }
 
   private renderComponentProps(comp: IRComponent): string {

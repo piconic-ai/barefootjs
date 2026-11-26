@@ -335,6 +335,13 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    */
   spreadKeyRenames: ReadonlySet<string> = new Set(Object.keys(SPREAD_KEY_ATTR_NAMES))
 
+  /**
+   * `Bf.spread_attrs` writes every other bag key with the bag's spelling
+   * (`tabIndex`), as the reference does, so a literal is guarded against a
+   * key that spells its attribute in another letter case too.
+   */
+  spreadKeysVerbatim = true
+
   private options: Required<PebbleAdapterOptions>
   /** Names bound at template level (signals, memos, props, local constants):
    * a loop that binds one with `{% set %}` saves and restores it (#3386). */

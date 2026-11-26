@@ -7,11 +7,9 @@ import { createFixture } from '../src/types'
  * `htmlFor="explicit"` and the element renders one `for`, the bag's; a key
  * the bag lacks (`className`, `httpEquiv`) keeps the literal.
  *
- * `expectedHtml` is hand-authored (`SKIP_AUTO_UPDATE`): the Hono reference
- * writes the literal as `for` and the bag key as `htmlFor`, which its JSX
- * renderer then also writes as `for`, so it renders two `for` attributes
- * and a browser keeps the first (limitation
- * `spread-key-alias-literal-duplicate`).
+ * The reference writes the literal as `for` and the bag key `htmlFor` as
+ * `for` too, two keys of its props object, so it renders the literal only
+ * when the bag lacks `htmlFor` (`IRAttribute.spreadAliasOverriders`).
  */
 export const fixture = createFixture({
   id: 'spread-open-bag-literal-alias-before',

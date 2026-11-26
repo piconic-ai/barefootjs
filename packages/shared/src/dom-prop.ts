@@ -32,10 +32,20 @@ export const BOOLEAN_ATTRS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * An alias table keyed by user-written names: a null-prototype object, so
+ * only its own entries are aliases. On an ordinary object `table.toString`,
+ * `table.constructor` or `table.__proto__` would return an inherited member
+ * for a prop of that name.
+ */
+function aliasTable(entries: Record<string, string>): Readonly<Record<string, string>> {
+  return Object.freeze(Object.assign(Object.create(null) as Record<string, string>, entries))
+}
+
+/**
  * SVG presentation attributes written camelCase in JSX that MUST be emitted
  * as kebab-case in the DOM (`strokeWidth` → `stroke-width`).
  */
-const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
+const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = aliasTable({
   // stroke
   strokeWidth: 'stroke-width',
   strokeLinecap: 'stroke-linecap',
@@ -70,7 +80,7 @@ const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
   markerStart: 'marker-start',
   markerMid: 'marker-mid',
   markerEnd: 'marker-end',
-}
+})
 
 /**
  * HTML attributes written in React-style camelCase in JSX that map to a
@@ -87,7 +97,7 @@ const SVG_CAMEL_TO_KEBAB: Readonly<Record<string, string>> = {
  * table pass through unchanged, so `data-*`, `aria-*`, and custom-element
  * attributes are never rewritten.
  */
-const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = {
+const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = aliasTable({
   acceptCharset: 'accept-charset',
   accessKey: 'accesskey',
   allowFullScreen: 'allowfullscreen',
@@ -143,7 +153,7 @@ const HTML_CAMEL_ALIASES: Readonly<Record<string, string>> = {
   srcSet: 'srcset',
   tabIndex: 'tabindex',
   useMap: 'usemap',
-}
+})
 
 /**
  * SVG XML attribute names that are case-sensitive and MUST stay in camelCase.
@@ -262,7 +272,7 @@ export function toHTMLAttrName(key: string): string {
  * template runtimes' `spread_attrs` helpers for an open bag. The shared
  * `spread-*-attr-names` fixtures pin both to the reference.
  */
-export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
+export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = aliasTable({
   className: 'class',
   htmlFor: 'for',
   crossOrigin: 'crossorigin',
@@ -271,7 +281,7 @@ export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
   fetchPriority: 'fetchpriority',
   noModule: 'nomodule',
   formAction: 'formaction',
-}
+})
 
 /**
  * The attribute name a spread bag key renders as ({@link SPREAD_KEY_ATTR_NAMES}).
@@ -279,7 +289,7 @@ export const SPREAD_KEY_ATTR_NAMES: Readonly<Record<string, string>> = {
  * already normalized (`class`, `tabindex`) is left as it is.
  */
 export function toSpreadAttrName(key: string): string {
-  return Object.prototype.hasOwnProperty.call(SPREAD_KEY_ATTR_NAMES, key) ? SPREAD_KEY_ATTR_NAMES[key] : key
+  return SPREAD_KEY_ATTR_NAMES[key] ?? key
 }
 
 /**
@@ -301,6 +311,51 @@ export const SPREAD_KEYS_RENAMED_EVERYWHERE: ReadonlySet<string> = new Set(['cla
  */
 export function spreadKeysRenamedTo(attrName: string, renamed: ReadonlySet<string> = SPREAD_KEYS_RENAMED_EVERYWHERE): string[] {
   return Object.keys(SPREAD_KEY_ATTR_NAMES).filter(key => SPREAD_KEY_ATTR_NAMES[key] === attrName && renamed.has(key))
+}
+
+/**
+ * The name an HTML parser stores the attribute `name` under, for comparing
+ * two attribute names: its tokenizer lowercases the ASCII letters `A`-`Z`
+ * of every attribute name (and on an SVG or MathML element then restores
+ * the case of its fixed table, `viewBox`). So `tabIndex` and `tabindex` are
+ * one attribute, and an element that writes both renders it twice, where a
+ * browser keeps the first. Any other letter keeps its case: `Ä` and `ä` are
+ * two attributes.
+ */
+export function foldAttrName(name: string): string {
+  let folded = ''
+  for (const ch of name) folded += ch >= 'A' && ch <= 'Z' ? String.fromCharCode(ch.charCodeAt(0) + 32) : ch
+  return folded
+}
+
+/**
+ * The React-style keys that spell the attribute `attrName` in another letter
+ * case (`tabIndex` for `tabindex`, `readOnly` for `readonly`, `viewBox` for
+ * `viewbox`). A spread helper that writes a bag key with the bag's spelling,
+ * as the reference does, writes such a key as an attribute the browser takes
+ * for `attrName` ({@link foldAttrName}). A key the reference renames
+ * ({@link SPREAD_KEY_ATTR_NAMES}) is not listed: {@link spreadKeysRenamedTo}
+ * answers for it. A boolean attribute (`readonly`) lists none: its presence,
+ * not its value, is what renders, and the adapters do not spell a bag's
+ * boolean alike, so the literal is left as it is.
+ */
+export function spreadKeysInOtherCase(attrName: string): string[] {
+  const folded = foldAttrName(attrName)
+  if (isBooleanAttr(folded)) return []
+  return [...Object.keys(HTML_CAMEL_ALIASES), ...SVG_XML_CAMEL_ATTRS].filter(key =>
+    key !== attrName
+    && foldAttrName(key) === folded
+    && SPREAD_KEY_ATTR_NAMES[key] === undefined)
+}
+
+/**
+ * The key a JSX runtime writes the HTML attribute `attrName` under: the
+ * attribute name itself, except `class`, which the JSX vocabulary spells
+ * `className`. A spread key spelled the same merges with it in the props
+ * object, so the runtime itself keeps the last write.
+ */
+export function jsxAttrKey(attrName: string): string {
+  return attrName === 'class' ? 'className' : attrName
 }
 
 /**

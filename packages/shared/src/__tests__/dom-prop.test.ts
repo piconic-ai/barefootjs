@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
+import { classifyDOMProp, toHTMLAttrName, toHTMLAttrNameRuntime, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, SPREAD_KEY_ATTR_NAMES, isBooleanAttr, isEventProp, BOOLEAN_ATTRS } from '../dom-prop'
 
 describe('classifyDOMProp', () => {
   test('children → skip', () => {
@@ -282,6 +282,68 @@ describe('spreadKeysRenamedTo', () => {
     test(`${attr}`, () => {
       expect(spreadKeysRenamedTo(attr)).toEqual(byDefault)
       expect(spreadKeysRenamedTo(attr, all)).toEqual(byAll)
+    })
+  }
+})
+
+describe('spreadKeysInOtherCase', () => {
+  // [attribute, the keys that spell it in another letter case]
+  const matrix: Array<[string, string[]]> = [
+    ['tabindex', ['tabIndex']],
+    // A boolean attribute lists none.
+    ['readonly', []],
+    ['maxlength', ['maxLength']],
+    ['viewbox', ['viewBox']],
+    // A key the reference renames is `spreadKeysRenamedTo`'s answer.
+    ['crossorigin', []],
+    ['for', []],
+    // Kebab-cased, not another letter case.
+    ['accept-charset', []],
+    ['stroke-width', []],
+    ['id', []],
+    // The attribute's own spelling is not listed.
+    ['viewBox', []],
+  ]
+  for (const [attr, keys] of matrix) {
+    test(`${attr}`, () => {
+      expect(spreadKeysInOtherCase(attr)).toEqual(keys)
+    })
+  }
+
+  test('every listed key folds to the attribute', () => {
+    for (const [attr] of matrix) {
+      for (const key of spreadKeysInOtherCase(attr)) expect(foldAttrName(key)).toBe(foldAttrName(attr))
+    }
+  })
+})
+
+describe('jsxAttrKey', () => {
+  test('spells class as className and every other attribute as it is', () => {
+    expect(jsxAttrKey('class')).toBe('className')
+    expect(jsxAttrKey('for')).toBe('for')
+    expect(jsxAttrKey('tabindex')).toBe('tabindex')
+  })
+})
+
+describe('foldAttrName', () => {
+  test('folds the ASCII letters only, as the HTML tokenizer does', () => {
+    expect(foldAttrName('tabIndex')).toBe('tabindex')
+    expect(foldAttrName('VIEWBOX')).toBe('viewbox')
+    expect(foldAttrName('Ä')).toBe('Ä')
+    expect(foldAttrName('data-Ä')).toBe('data-Ä')
+    // U+212A KELVIN SIGN lowercases to `k` in JS, but is not ASCII.
+    expect(foldAttrName('\u212A')).toBe('\u212A')
+  })
+})
+
+describe('alias tables read only their own entries', () => {
+  for (const key of ['toString', 'constructor', 'hasOwnProperty', '__proto__', 'valueOf']) {
+    test(`${key} has no alias`, () => {
+      expect(toHTMLAttrName(key)).toBe(key)
+      expect(toHTMLAttrNameRuntime(key)).toBe(key)
+      expect(toSpreadAttrName(key)).toBe(key)
+      expect(spreadKeysInOtherCase(foldAttrName(key))).toEqual([])
+      expect(classifyDOMProp(key)).toEqual({ kind: 'attr', attrName: key })
     })
   }
 })

@@ -20326,6 +20326,32 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-boolean-case-keys": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-both-cases-later-write": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-client-literal-after": {
       "kinds": [
         "identifier",
@@ -20347,6 +20373,46 @@
       "axes": [],
       "contexts": [
         "attribute"
+      ]
+    },
+    "spread-closed-rest-literal-case-alias": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-non-ascii-key": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-object-member-keys": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
       ]
     },
     "spread-closed-rest-repeated": {
@@ -20447,6 +20513,21 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-svg-case-keys": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-then-bag-renamed-key": {
       "kinds": [
         "call",
@@ -20495,6 +20576,27 @@
       "axes": [],
       "contexts": [
         "attribute"
+      ]
+    },
+    "spread-open-bag-literal-case-alias": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "spread-open-bag-literal-renamed-elsewhere": {

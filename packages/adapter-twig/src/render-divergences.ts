@@ -57,6 +57,9 @@ export const renderDivergences: RenderDivergences = {
   // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
   // writes it as it is or renames only its own few keys (`crossorigin`).
   'spread-open-bag-hono-renamed-keys': { limitation: 'spread-bag-camel-key-name' },
+  // The bag's `tabIndex` renders as `tab-index` beside the literal
+  // `tabindex`, which the compiler keeps since it is another attribute here.
+  'spread-open-bag-literal-case-alias': { limitation: 'spread-bag-camel-key-name' },
   // The bag's `crossOrigin` renders as `cross-origin` beside the literal
   // `crossorigin`, which the compiler keeps since it is another attribute here.
   'spread-open-bag-literal-renamed-elsewhere': { limitation: 'spread-key-alias-literal-duplicate' },
@@ -168,6 +171,13 @@ export const renderDivergences: RenderDivergences = {
   // A boolean member of an object-typed prop as a text child (`{props.cfg.on}`)
   // prints the boolean where JSX renders nothing.
   'object-prop-member-boolean-text-child': { limitation: 'object-prop-member-boolean-text-child' },
+  // A closed rest declaring `tabIndex` and `tabindex`, then a later
+  // `tabindex`: the rest's `tabIndex` still renders, first.
+  'spread-closed-rest-both-cases-later-write': { limitation: 'closed-rest-both-cases-later-write' },
+  // A closed rest key `strokeWidth` on an SVG element renders camelCased.
+  'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
+  // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
+  'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
 }
 
 /**
