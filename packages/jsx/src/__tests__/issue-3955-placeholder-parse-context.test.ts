@@ -39,7 +39,11 @@ function Cell(props: { v: string }) { return <td>{props.v}</td> }
 function Dot(props: { v: string }) { return <circle data-v={props.v} /> }
 export function Host() {
   const [n] = createSignal('a')
-  const read = () => n()
+  // A block body keeps \`v\` init-only: the client template splices an
+  // expression-bodied zero-param helper's call as its body (#3975).
+  const read = () => {
+    return n()
+  }
   const v = read()
   return (
     <div>

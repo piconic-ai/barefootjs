@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a template expression calling a module-scope helper by bare name (an arrow-valued `const`, a `function` declaration, or a chain of them), in text or boolean-test position, directly or through a module const whose initializer calls it (`const B = mk()` read as `B.k`)',
   expected: 'the helper runs at render time and its result renders in the server HTML',
   diagnostic: ['BF101', 'BF102'],
-  fixtures: ['module-const-arrow-helper', 'module-function-helper-chain', 'module-helper-boolcontext-call', 'keyed-row-branch-call', 'module-const-helper-call-inlined', 'module-const-helper-call-child', 'module-const-helper-call-runtime-alias'],
+  fixtures: ['module-const-arrow-helper', 'module-function-helper-chain', 'module-helper-boolcontext-call', 'keyed-row-branch-call', 'module-const-helper-call-inlined', 'module-const-helper-call-child', 'module-const-helper-call-runtime-alias', 'module-helper-reads-module-const', 'module-helper-reads-module-const-chain', 'module-helper-reads-module-const-values', 'module-helper-reads-module-const-branch-loop', 'module-helper-reads-module-const-init', 'module-helper-reads-module-const-shadowed', 'module-helper-reads-module-const-prop-hidden', 'module-helper-param-reads-module-const', 'module-function-reads-module-const', 'module-helper-const-identity'],
 })
