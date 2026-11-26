@@ -688,3 +688,80 @@ describe('Date members through an inline intersection member type (#3949)', () =
     expect(messages[0]).toContain('cannot be reconciled')
   })
 })
+
+describe('a parenthesized type lowers like the type it wraps (#3973)', () => {
+  const AB = 'type AB = { at: Date; label: string }'
+
+  function matches(src: string, call: string): boolean {
+    const matcher = datePlugin.prepare(metadata(src))
+    if (!matcher) return false
+    const { callee, args } = callParts(call)
+    return matcher(callee, args) !== null
+  }
+
+  function refusals(src: string): string[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
+  }
+
+  function memberType(member: string): unknown {
+    const meta = metadata(`${AB}\nexport function Foo(props: { data: ${member} }) { return <p>{props.data.label}</p> }`)
+    return meta.propsType?.properties?.find((p) => p.name === 'data')?.type
+  }
+
+  test.each([
+    ['(AB)', 'AB'],
+    ['((AB))', 'AB'],
+    ['(AB)[]', 'AB[]'],
+    ['Array<(AB)>', 'Array<AB>'],
+    ['(AB) | null', 'AB | null'],
+    ['({ at: Date })', '{ at: Date }'],
+    ["('x' | 'y') | 'z'", "'x' | 'y' | 'z'"],
+    ["'x' | ('y' | ('z'))", "'x' | 'y' | 'z'"],
+    ['(AB | null) | undefined', 'AB | null | undefined'],
+    ['(AB | null)[]', '(AB | null)[]'],
+    ['Array<(AB | null)>', 'Array<AB | null>'],
+  ])('member type %s has the same TypeInfo as %s, raw included', (parenthesized, bare) => {
+    // `raw` of the outer node keeps its own spelling; compare the structure below it.
+    const strip = (info: unknown): unknown => JSON.parse(JSON.stringify(info, (k, v) => (k === 'raw' ? undefined : v)))
+    expect(strip(memberType(parenthesized))).toEqual(strip(memberType(bare)))
+  })
+
+  test('the wrapped node names the type, not the parentheses', () => {
+    expect(memberType('(AB)')).toMatchObject({ kind: 'interface', raw: 'AB' })
+    expect(memberType('(AB)[]')).toMatchObject({ kind: 'array', raw: '(AB)[]', elementType: { kind: 'interface', raw: 'AB' } })
+  })
+
+  test.each([
+    ['inline props type', `export function Foo(props: { data: (AB) }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['props interface', `interface Props { data: ((AB)) }
+     export function Foo(props: Props) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['destructured', `export function Foo({ data }: { data: (AB) }) { return <p>{data.at.getTime()}</p> }`, 'data.at.getTime()'],
+    ['nullable union arm', `export function Foo(props: { data: (AB) | null }) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['parenthesized props annotation', `export function Foo(props: ({ data: AB })) { return <p>{props.data.at.getTime()}</p> }`, 'props.data.at.getTime()'],
+    ['parenthesized props alias body', `type Props = ({ data: AB })
+     export function Foo({ data }: Props) { return <p>{data.at.getTime()}</p> }`, 'data.at.getTime()'],
+  ])('a Date read through a parenthesized type is lowered: %s', (_label, component, call) => {
+    expect(matches(`${AB}\n${component}`, call)).toBe(true)
+  })
+
+  test('a parenthesized alias body records the same properties as a bare one', () => {
+    const props = (body: string) =>
+      metadata(`type AB = ${body}\nexport function Foo(props: { data: AB }) { return <p>{props.data.label}</p> }`)
+        .typeDefinitions?.find((t) => t.name === 'AB')?.properties?.map((p) => [p.name, p.type.kind])
+    expect(props('({ at: Date; label: string })')).toEqual(props('{ at: Date; label: string }'))
+    expect(props('({ at: Date; label: string })')).toHaveLength(2)
+  })
+
+  test.each(['(AB)[]', 'Array<(AB)>', '((AB))[]'])('a loop row typed %s is refused exactly like AB[]', (items) => {
+    const loop = (element: string) =>
+      refusals(`
+        ${AB}
+        export function Foo(props: { items: ${element} }) {
+          return <ul>{props.items.map((i) => <li key={i.label}>{i.at.getUTCFullYear()}</li>)}</ul>
+        }
+      `)
+    expect(loop(items)).toEqual(loop('AB[]'))
+    expect(loop(items)).toHaveLength(1)
+  })
+})

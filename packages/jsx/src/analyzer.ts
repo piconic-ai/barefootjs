@@ -28,6 +28,7 @@ import {
   constituentTypeInfo,
   intersectionConstituents,
   unwrapParenthesizedType,
+  typeLiteralMembers,
   isComponentFunction,
   isArrowComponentFunction,
   collectReactiveGetterNames,
@@ -2791,9 +2792,8 @@ function collectTypeAliasDefinition(
 ): void {
   // Only object-type aliases carry structured fields; other aliases
   // (string-literal unions, etc.) have no field set to record.
-  const properties = ts.isTypeLiteralNode(node.type)
-    ? membersToProperties(node.type.members, ctx.sourceFile)
-    : undefined
+  const literalMembers = typeLiteralMembers(node.type)
+  const properties = literalMembers ? membersToProperties(literalMembers, ctx.sourceFile) : undefined
   const stringLiteralUnion = stringLiteralMembers(node.type)
   ctx.typeDefinitions.push({
     kind: 'type',
@@ -4705,10 +4705,10 @@ function propsTypeInfo(typeNode: ts.TypeNode, sourceFile: ts.SourceFile): TypeIn
  * Returns null for open types (extends HTMLAttributes, index signatures, etc.)
  * where static key enumeration is not possible.
  */
-function collectTypeKeys(typeNode: ts.TypeNode, ctx: AnalyzerContext): string[] | null {
-  if (ts.isTypeLiteralNode(typeNode)) {
-    return collectKeysFromMembers(typeNode.members, ctx)
-  }
+function collectTypeKeys(annotation: ts.TypeNode, ctx: AnalyzerContext): string[] | null {
+  const typeNode = unwrapParenthesizedType(annotation)
+  const literalMembers = typeLiteralMembers(typeNode)
+  if (literalMembers) return collectKeysFromMembers(literalMembers, ctx)
 
   if (ts.isTypeReferenceNode(typeNode)) {
     const typeName = typeNode.typeName.getText(ctx.sourceFile)
@@ -4720,15 +4720,10 @@ function collectTypeKeys(typeNode: ts.TypeNode, ctx: AnalyzerContext): string[] 
       if (typeDecl.heritageClauses && typeDecl.heritageClauses.length > 0) return null
       return collectKeysFromMembers(typeDecl.members, ctx)
     }
-    if (ts.isTypeAliasDeclaration(typeDecl)) {
-      if (ts.isTypeLiteralNode(typeDecl.type)) {
-        return collectKeysFromMembers(typeDecl.type.members, ctx)
-      }
-      if (ts.isIntersectionTypeNode(typeDecl.type)) {
-        // Intersection types are considered open
-        return null
-      }
-    }
+    // An alias of an object literal enumerates its keys; any other alias
+    // body (an intersection, a union, ...) is considered open.
+    const aliasMembers = typeLiteralMembers(typeDecl.type)
+    if (aliasMembers) return collectKeysFromMembers(aliasMembers, ctx)
   }
 
   return null
@@ -4896,10 +4891,10 @@ function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes
     if (ts.isInterfaceDeclaration(decl)) {
       if (decl.heritageClauses?.length) return null
       members = decl.members
-    } else if (ts.isTypeLiteralNode(decl.type)) {
-      members = decl.type.members
     } else {
-      return null
+      const aliasMembers = typeLiteralMembers(decl.type)
+      if (!aliasMembers) return null
+      members = aliasMembers
     }
     const types: TypeInfo[] = []
     for (const member of members) {
@@ -4982,7 +4977,7 @@ function memberTypeNode(typeNode: ts.TypeNode, name: string, ctx: AnalyzerContex
     }
     return null
   }
-  const members = ts.isTypeLiteralNode(typeNode) ? typeNode.members : null
+  const members = typeLiteralMembers(typeNode)
   if (members) return memberSignatureType(members, name, ctx)
   if (!ts.isTypeReferenceNode(typeNode)) return null
   const decl = findTypeDeclaration(typeNode.typeName.getText(ctx.sourceFile), ctx.sourceFile)
@@ -5031,9 +5026,10 @@ function literalTypeKey(typeNode: ts.TypeNode): ParamInfo['literalKeys'] | null 
 }
 
 function collectMemberTypes(
-  typeNode: ts.TypeNode,
+  annotation: ts.TypeNode,
   ctx: AnalyzerContext
 ): Map<string, DestructuredMemberType> | null {
+  const typeNode = unwrapParenthesizedType(annotation)
   const localObjectMembers = localObjectMemberTypesFor(ctx)
   const fromMembers = (
     members: ts.NodeArray<ts.TypeElement>
@@ -5052,9 +5048,8 @@ function collectMemberTypes(
     return map
   }
 
-  if (ts.isTypeLiteralNode(typeNode)) {
-    return fromMembers(typeNode.members)
-  }
+  const literalMembers = typeLiteralMembers(typeNode)
+  if (literalMembers) return fromMembers(literalMembers)
 
   if (ts.isTypeReferenceNode(typeNode)) {
     const typeName = typeNode.typeName.getText(ctx.sourceFile)
@@ -5063,9 +5058,8 @@ function collectMemberTypes(
     if (ts.isInterfaceDeclaration(typeDecl)) {
       return fromMembers(typeDecl.members)
     }
-    if (ts.isTypeAliasDeclaration(typeDecl) && ts.isTypeLiteralNode(typeDecl.type)) {
-      return fromMembers(typeDecl.type.members)
-    }
+    const aliasMembers = typeLiteralMembers(typeDecl.type)
+    if (aliasMembers) return fromMembers(aliasMembers)
   }
 
   return null
@@ -5075,10 +5069,12 @@ function collectMemberTypes(
  * Extract props parameters from a type annotation.
  * Supports type literals and type references to local interfaces.
  */
-function extractPropsFromType(typeNode: ts.TypeNode, ctx: AnalyzerContext): void {
+function extractPropsFromType(annotation: ts.TypeNode, ctx: AnalyzerContext): void {
+  const typeNode = unwrapParenthesizedType(annotation)
   // Type literal: { prop1: Type1; prop2?: Type2 }
-  if (ts.isTypeLiteralNode(typeNode)) {
-    extractPropsFromTypeMembers(typeNode.members, ctx)
+  const literalMembers = typeLiteralMembers(typeNode)
+  if (literalMembers) {
+    extractPropsFromTypeMembers(literalMembers, ctx)
     return
   }
 
@@ -5089,11 +5085,8 @@ function extractPropsFromType(typeNode: ts.TypeNode, ctx: AnalyzerContext): void
     // Find the type definition in the same file
     const typeDecl = findTypeDeclaration(typeName, ctx.sourceFile)
     if (typeDecl) {
-      if (ts.isInterfaceDeclaration(typeDecl)) {
-        extractPropsFromTypeMembers(typeDecl.members, ctx)
-      } else if (ts.isTypeAliasDeclaration(typeDecl) && ts.isTypeLiteralNode(typeDecl.type)) {
-        extractPropsFromTypeMembers(typeDecl.type.members, ctx)
-      }
+      const members = ts.isInterfaceDeclaration(typeDecl) ? typeDecl.members : typeLiteralMembers(typeDecl.type)
+      if (members) extractPropsFromTypeMembers(members, ctx)
     }
   }
 }

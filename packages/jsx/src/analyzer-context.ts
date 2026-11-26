@@ -474,6 +474,11 @@ export function typeNodeToTypeInfo(
   rawOf?: (node: ts.TypeNode) => string
 ): TypeInfo | null {
   if (!typeNode) return null
+  // `(T)` is `T`: the parentheses only group, so lower the inner node,
+  // `raw` included. Every position reaches this one door — a member type,
+  // an array element (`(A | B)[]`), a union arm, a generic argument
+  // (`Array<(T)>`) — so no consumer has to know parentheses exist (#3973).
+  if (ts.isParenthesizedTypeNode(typeNode)) return typeNodeToTypeInfo(typeNode.type, sourceFile, rawOf)
 
   const synthetic = rawOf !== undefined
   const raw = rawOf ? rawOf(typeNode) : typeNode.getText(sourceFile)
@@ -512,39 +517,11 @@ export function typeNodeToTypeInfo(
   // `LiteralTypeNode(NullKeyword)` — NOT the bare `NullKeyword` the
   // switch above catches — which is exactly why nullish union arms were
   // invisible before.
-  if (ts.isLiteralTypeNode(typeNode)) {
-    const lit = typeNode.literal
-    if (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit)) {
-      return { kind: 'primitive', raw, primitive: 'string', literalValue: lit.text }
-    }
-    if (ts.isNumericLiteral(lit)) {
-      return { kind: 'primitive', raw, primitive: 'number', literalValue: lit.text }
-    }
-    if (
-      ts.isPrefixUnaryExpression(lit) &&
-      lit.operator === ts.SyntaxKind.MinusToken &&
-      ts.isNumericLiteral(lit.operand)
-    ) {
-      return { kind: 'primitive', raw, primitive: 'number', literalValue: `-${lit.operand.text}` }
-    }
-    if (lit.kind === ts.SyntaxKind.TrueKeyword || lit.kind === ts.SyntaxKind.FalseKeyword) {
-      return {
-        kind: 'primitive',
-        raw,
-        primitive: 'boolean',
-        literalValue: lit.kind === ts.SyntaxKind.TrueKeyword ? 'true' : 'false',
-      }
-    }
-    if (lit.kind === ts.SyntaxKind.NullKeyword) {
-      return { kind: 'primitive', raw, primitive: 'null' }
-    }
-    // BigInt and anything newer: opaque, as before.
-    return { kind: 'unknown', raw }
-  }
+  if (ts.isLiteralTypeNode(typeNode)) return literalTypeInfo(typeNode.literal, raw)
 
   // Union types
   if (ts.isUnionTypeNode(typeNode)) {
-    return { kind: 'union', raw, unionTypes: typeNode.types.map(recurse) }
+    return { kind: 'union', raw, unionTypes: typeNode.types.flatMap((arm) => unionArms(recurse(arm))) }
   }
 
   // Type literal (object type)
@@ -600,6 +577,46 @@ export function typeNodeToTypeInfo(
 }
 
 /**
+ * The arms one lowered union member contributes to the enclosing union: a
+ * grouped union (`('a' | 'b') | 'c'`, the only way the parser nests one)
+ * spreads into its arms, so it lowers exactly like the flat `'a' | 'b' | 'c'`
+ * while the enclosing node keeps its own `raw` spelling (#3973).
+ */
+function unionArms(info: TypeInfo): TypeInfo[] {
+  return info.kind === 'union' && info.unionTypes ? info.unionTypes : [info]
+}
+
+/** `typeNodeToTypeInfo` for a literal type node: a primitive of the literal's family carrying its value. */
+function literalTypeInfo(lit: ts.LiteralTypeNode['literal'], raw: string): TypeInfo {
+  if (ts.isStringLiteral(lit) || ts.isNoSubstitutionTemplateLiteral(lit)) {
+    return { kind: 'primitive', raw, primitive: 'string', literalValue: lit.text }
+  }
+  if (ts.isNumericLiteral(lit)) {
+    return { kind: 'primitive', raw, primitive: 'number', literalValue: lit.text }
+  }
+  if (
+    ts.isPrefixUnaryExpression(lit) &&
+    lit.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(lit.operand)
+  ) {
+    return { kind: 'primitive', raw, primitive: 'number', literalValue: `-${lit.operand.text}` }
+  }
+  if (lit.kind === ts.SyntaxKind.TrueKeyword || lit.kind === ts.SyntaxKind.FalseKeyword) {
+    return {
+      kind: 'primitive',
+      raw,
+      primitive: 'boolean',
+      literalValue: lit.kind === ts.SyntaxKind.TrueKeyword ? 'true' : 'false',
+    }
+  }
+  if (lit.kind === ts.SyntaxKind.NullKeyword) {
+    return { kind: 'primitive', raw, primitive: 'null' }
+  }
+  // BigInt and anything newer: opaque, as before.
+  return { kind: 'unknown', raw }
+}
+
+/**
  * `typeNodeToTypeInfo`'s fallback: `unknown`. An intersection (`A & B`, also
  * parenthesized) stays `unknown` to every consumer that switches on `kind`,
  * but its constituents ride along in `inherits` so type-evidence lookups
@@ -614,6 +631,18 @@ function opaqueTypeInfo(typeNode: ts.TypeNode, raw: string, sourceFile: ts.Sourc
 /** Strip any number of enclosing parentheses: `((Base))` -> `Base`. */
 export function unwrapParenthesizedType(type: ts.TypeNode): ts.TypeNode {
   return ts.isParenthesizedTypeNode(type) ? unwrapParenthesizedType(type.type) : type
+}
+
+/**
+ * The members of `type` when it is an object type literal, through any
+ * enclosing parentheses (`type Props = ({ a: string })`), else null. The one
+ * answer every "is this annotation / alias body an object literal" site
+ * reads, so a parenthesized body declares the same members as a bare one
+ * (#3973).
+ */
+export function typeLiteralMembers(type: ts.TypeNode): ts.NodeArray<ts.TypeElement> | null {
+  const inner = unwrapParenthesizedType(type)
+  return ts.isTypeLiteralNode(inner) ? inner.members : null
 }
 
 /** The leaf arms of an intersection, parentheses and nested intersections flattened. */

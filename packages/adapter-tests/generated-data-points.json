@@ -4773,6 +4773,27 @@
       }
     }
   ],
+  "date-parenthesized-member-destructured": [
+    {
+      "name": "gen:data:object:minimal",
+      "props": {
+        "data": {
+          "at": {
+            "$date": "1970-01-01T00:00:00.000Z"
+          },
+          "label": ""
+        }
+      }
+    }
+  ],
+  "date-parenthesized-member-nullable": [
+    {
+      "name": "gen:data:union:1",
+      "props": {
+        "data": null
+      }
+    }
+  ],
   "date-tolocale-datestyle": [
     {
       "name": "gen:createdAt:epoch",
@@ -4901,6 +4922,44 @@
           "$date": "9999-12-31T23:59:59.999Z"
         },
         "locale": "en-US"
+      }
+    }
+  ],
+  "date-tolocale-union-grouped": [
+    {
+      "name": "gen:createdAt:epoch",
+      "props": {
+        "createdAt": {
+          "$date": "1970-01-01T00:00:00.000Z"
+        },
+        "locale": "en-GB"
+      }
+    },
+    {
+      "name": "gen:createdAt:pre-1970",
+      "props": {
+        "createdAt": {
+          "$date": "1969-07-20T20:17:40.123Z"
+        },
+        "locale": "en-GB"
+      }
+    },
+    {
+      "name": "gen:createdAt:leap-day",
+      "props": {
+        "createdAt": {
+          "$date": "2024-02-29T12:00:00.000Z"
+        },
+        "locale": "en-GB"
+      }
+    },
+    {
+      "name": "gen:createdAt:year-9999",
+      "props": {
+        "createdAt": {
+          "$date": "9999-12-31T23:59:59.999Z"
+        },
+        "locale": "en-GB"
       }
     }
   ],
@@ -16513,6 +16572,22 @@
     {
       "name": "gen:initial:absent",
       "props": {}
+    }
+  ],
+  "parenthesized-member-array": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "parenthesized-member-generic-array": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
     }
   ],
   "percent-delimiter-string-literal": [
