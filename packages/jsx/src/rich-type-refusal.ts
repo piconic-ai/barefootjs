@@ -396,13 +396,30 @@ function pushLoopItemDiagnostic(
  * copy-paste rewrite is offered, since `describeReceiverPath` drops the `?.`
  * and `new Date(null)` is the epoch: the advice says to keep the null guard.
  */
+const ROW_PRECOMPUTE_ADVICE = `Pre-compute the value server-side for each row (for example, give each row a string or number field holding it) and read that field in the loop.`
+
+/**
+ * The escape advice for a row field whose type is unknown (#3914: its
+ * evidence is hidden behind an undeclared base or lost to an intersection
+ * conflict). Only the per-row pre-computed field is offered: a revival names
+ * a constructor, and `new Date(r.at)` on a field that turns out to be some
+ * other class with its own `getTime()` turns a working read into `NaN`.
+ */
+function buildUnresolvedRowSuggestion(receiverPath: string): { message: string; escape: ReadonlyArray<{ kind: EscapeKind }> } {
+  return {
+    message:
+      `${ROW_PRECOMPUTE_ADVICE} No /* @client */ escape is suggested: the type of '${receiverPath}' is unknown here, so neither how to revive it after it crosses the bf-p boundary as JSON nor whether a bare call on the JSON value works can be decided.`,
+    escape: [{ kind: 'prop-precompute' }],
+  }
+}
+
 function buildRowSuggestion(
   call: string,
   receiverPath: string,
   typeName: string,
   row: LoopRowRead,
 ): { message: string; escape: ReadonlyArray<{ kind: EscapeKind }> } {
-  const precompute = `Pre-compute the value server-side for each row (for example, give each row a string or number field holding it) and read that field in the loop.`
+  const precompute = ROW_PRECOMPUTE_ADVICE
   if (!JSON_REVIVABLE_RICH_TYPE_NAMES.has(typeName)) {
     return {
       message:
@@ -556,7 +573,8 @@ function checkUnresolvedInheritedReceiver(
   seen.add(key)
   // Read through a loop row, the member is a row field, not a prop, and
   // declaring its type would not compile the call either (the Date lowering
-  // resolves receivers through props only), so only the row escapes apply.
+  // resolves receivers through props only). Its type is unknown, so only the
+  // per-row pre-computed field is offered, never a Date revival.
   const row = loopRowReadOf(call, callee, bindings)
   const member = row ? 'field' : 'prop'
   const why = conflicting
@@ -568,7 +586,7 @@ function checkUnresolvedInheritedReceiver(
     message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. ${why[0].toUpperCase()}${why.slice(1)}.`,
     loc,
     suggestion: row
-      ? buildRowSuggestion(`${callee.property}()`, receiverPath, 'Date', row)
+      ? buildUnresolvedRowSuggestion(receiverPath)
       : {
           message: `Declare '${propName}' (for example '${propName}: Date') with one type on its containing type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
           escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],

@@ -939,7 +939,7 @@ describe('a catalogued Date call on a loop row (#3972)', () => {
     expect(errs[0].suggestion).not.toContain('timeZone')
   })
 
-  test('a Date of unknown inherited type read through a row gets row advice, not a prop fix', () => {
+  test('a field of unknown inherited type read through a row gets per-row advice only, no prop fix or Date revival', () => {
     const errs = refusals(`
       import type { Base } from './base'
       interface Row extends Base { id: string }
@@ -952,7 +952,34 @@ describe('a catalogued Date call on a loop row (#3972)', () => {
     expect(errs[0].suggestion).not.toContain('Declare')
     expect(errs[0].suggestion).toContain('for each row')
     expect(errs[0].suggestion).not.toContain('as a prop')
-    expect(errs[0].suggestion).toContain('{/* @client */ new Date(r.at).getTime()}')
+    // The field may be another class with its own getTime(); reviving it as
+    // a Date would turn a working read into NaN.
+    expect(errs[0].suggestion).not.toContain('new Date(')
+    expect(errs[0].suggestion).toContain("the type of 'r.at' is unknown here")
+  })
+
+  test('a row field whose type is lost to an intersection conflict gets no Date revival either', () => {
+    const errs = refusals(`
+      interface Base { at: string }
+      type Row = Base & { at: Date }
+      export function Foo(props: { rows: Row[] }) {
+        return <ul>{props.rows.map((r) => <li key="k">{r.at.getTime()}</li>)}</ul>
+      }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("Field 'at' is declared with types that cannot be reconciled")
+    expect(errs[0].suggestion).toContain('for each row')
+    expect(errs[0].suggestion).not.toContain('new Date(')
+  })
+
+  test('an unresolved PROP keeps its declare-the-type advice', () => {
+    const errs = refusals(`
+      import type { Base } from './base'
+      interface Props extends Base { id: string }
+      export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`)
+    expect(errs).toHaveLength(1)
+    expect(errs[0].message).toContain("Prop 'at' is not declared")
+    expect(errs[0].suggestion).toContain("Declare 'at'")
+    expect(errs[0].suggestion).not.toContain('new Date(')
   })
 
   test.each([
