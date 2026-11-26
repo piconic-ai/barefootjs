@@ -1,5 +1,0 @@
----
-"@barefootjs/jsx": patch
----
-
-A dynamic child of `<style>`, `<script>`, `<textarea>` or `<title>` now renders its bare value, with no `<!--bf:sN-->…<!--/-->` slot markers. Raw text and RCDATA read no comment, so the markers used to become literal text (a style rule dropped, a script statement commented out, a textarea showing the markers) and the client's comment-based update found nothing to update. The element's own content is rewritten on a signal change instead. Only HTML-namespace hosts are affected: inside `<svg>` / `<math>` (and under a MathML `annotation-xml` without an HTML `encoding`) the markers stay. A textarea's leading line feed is stripped the way the HTML parser does, so hydration keeps the server-rendered value. Shapes the update cannot express (a conditional or element child, a `/* @client */` expression, reactive text inside a conditional branch, a component's children, or any row-fed text in a loop row) are refused with BF021. go-template still refuses dynamic text in `<style>` / `<script>` (BF101).
