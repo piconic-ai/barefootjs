@@ -210,6 +210,46 @@ export function C(props: ${callerProps}) {
   })
 })
 
+describe('a key a spread carries from an optional param, through each hop (#3986 review)', () => {
+  const spreader = `function Spreader(props: { children?: unknown; seed?: unknown }) {
+  return <Mid {...props} forwarded={props.children} />
+}`
+  const src = (extra: string, call: string, callerProps = '{ label: string }') => `
+'use client'
+import { createSignal } from '@barefootjs/client'
+${kid}
+${mid}
+${spreader}
+${extra}
+export function C(props: ${callerProps}) {
+  return <div>${call}</div>
+}
+`
+  const viaSpread = `function Outer(props: { children?: unknown; seed?: unknown }) {
+  return <Spreader {...props} />
+}`
+  const cases: Array<[string, string, string, number, string?]> = [
+    ['an explicit override the spread carries on', '', '<Spreader seed="override">{props.label}</Spreader>', 0],
+    ['the override omitted', '', '<Spreader>{props.label}</Spreader>', 1],
+    ['an explicit override carried through two spreads', viaSpread, '<Outer seed="override">{props.label}</Outer>', 0],
+    ['the override omitted through two spreads', viaSpread, '<Outer>{props.label}</Outer>', 1],
+    ['an override written on the second hop only', `function Outer(props: { children?: unknown }) {
+  return <Spreader seed="o2">{props.children}</Spreader>
+}`, '<Outer>{props.label}</Outer>', 0],
+    ['an override the first hop drops', `function Outer(props: { children?: unknown; seed?: unknown }) {
+  return <Spreader>{props.children}</Spreader>
+}`, '<Outer seed="override">{props.label}</Outer>', 1],
+    ['a spread of a required caller param', '', '<Spreader {...props}>{props.label}</Spreader>', 0, '{ label: string; seed: string }'],
+    // Whether C's own caller passes the optional seed is unknown when C compiles.
+    ['a spread of an optional caller param', '', '<Spreader {...props}>{props.label}</Spreader>', 1, '{ label: string; seed?: string }'],
+  ]
+  for (const [name, extra, call, count, callerProps] of cases) {
+    test(`${count ? 'refused' : 'not refused'}: ${name}`, () => {
+      expect(bf101(src(extra, call, callerProps))).toHaveLength(count)
+    })
+  }
+})
+
 const root = mkdtempSync(join(tmpdir(), 'bf-go-nested-forward-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 

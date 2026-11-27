@@ -17,7 +17,9 @@ import { createFixture } from '../src/types'
  * the spread overrides only when passed (called without it), and an
  * explicit writer after the spread; a fallback a spread overrides only
  * when passed, reached by a call that falls back after and before one that
- * passes the overriding key, and by a spread that does not carry it.
+ * passes the overriding key, by a spread that does not carry it, and by
+ * calls that omit the override a further spread would carry on (directly,
+ * through two spreads, and through a component that drops it).
  */
 export const fixture = createFixture({
   id: 'children-forwarded-into-child-prop-seed-forms',
@@ -118,6 +120,15 @@ function OverrideFirst(props: { children?: unknown }) {
 function OverrideSecond(props: { children?: unknown }) {
   return <p><Mid forwarded={props.children} /><Mid forwarded={props.children} seed="override" /></p>
 }
+function Spreader(props: { children?: unknown; seed?: unknown }) {
+  return <Mid {...props} forwarded={props.children} />
+}
+function SpreadOuter(props: { children?: unknown; seed?: unknown }) {
+  return <Spreader {...props} />
+}
+function DropsSeed(props: { children?: unknown; seed?: unknown }) {
+  return <Spreader>{props.children}</Spreader>
+}
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -139,6 +150,9 @@ export function Host(props: { label: string; items: string[] }) {
       <OverrideFirst>{props.label}</OverrideFirst>
       <OverrideSecond>{props.label}</OverrideSecond>
       <Mid {...props} forwarded={<em>{props.label}</em>} />
+      <Spreader>{props.label}</Spreader>
+      <SpreadOuter>{props.label}</SpreadOuter>
+      <DropsSeed seed="override">{props.label}</DropsSeed>
     </div>
   )
 }
@@ -203,6 +217,9 @@ export function Leaf(props: { seed?: unknown }) {
         <b bf-s="test_s36_s1_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       </p>
       <b bf-s="test_s39_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s41_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s43_s0_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s45_s0_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
     </div>
   `,
 })

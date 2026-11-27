@@ -11,7 +11,9 @@ import { createFixture } from '../src/types'
  * the const, and through `{...props}`: a static JSX-valued prop the spread
  * carries, and an explicit writer the spread replaces (a required param, or
  * an optional one the call passes, including an explicit override of a
- * fallback the next component's spread replaces). The twin of
+ * fallback the next component's spread replaces, carried on by a further
+ * spread of an optional param directly or through two spreads, or written
+ * on the second hop only). The twin of
  * `children-forwarded-into-child-prop-seed`.
  */
 export const fixture = createFixture({
@@ -62,6 +64,15 @@ function Mid(props: { forwarded?: unknown; seed?: unknown }) {
 function Overrides(props: { children?: unknown }) {
   return <Mid forwarded={props.children} seed="override" />
 }
+function Spreader(props: { children?: unknown; seed?: unknown }) {
+  return <Mid {...props} forwarded={props.children} />
+}
+function SpreadOuter(props: { children?: unknown; seed?: unknown }) {
+  return <Spreader {...props} />
+}
+function SecondHop(props: { children?: unknown }) {
+  return <Spreader seed="o2">{props.children}</Spreader>
+}
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -79,6 +90,9 @@ export function Host(props: { label: string; items: string[] }) {
       <SpreadPassed seed="x">{props.label}</SpreadPassed>
       <Overrides>{props.label}</Overrides>
       <Mid forwarded={<em>{props.label}</em>} seed="x" />
+      <Spreader seed="override">{props.label}</Spreader>
+      <SpreadOuter seed="override">{props.label}</SpreadOuter>
+      <SecondHop>{props.label}</SecondHop>
     </div>
   )
 }
@@ -109,6 +123,9 @@ export function Host(props: { label: string; items: string[] }) {
       <b bf-s="test_s17_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s19_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s22_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s24_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s26_s0_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s28_s0_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
     </div>
   `,
 })

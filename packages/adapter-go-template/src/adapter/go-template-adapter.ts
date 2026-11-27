@@ -206,7 +206,7 @@ import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWriters } from "./props/props-spread.ts"
 import { derivedFieldReading, passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseTemplateTimeDeliveryToNestedDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
-import { callWrites, collectNestedInputForwards, nestedDerivedReading, type NestedInputForward } from "./props/nested-input-forwards.ts"
+import { callWrites, collectNestedInputForwards, nestedDerivedReading, passedKeys, type NestedInputForward } from "./props/nested-input-forwards.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, childrenInputFieldValue, childrenInputRead, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -1515,7 +1515,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const nested = nestedDerivedReading(
       declaredName,
       propName,
-      callWrites(comp, { propsObjectName: this.state.propsObjectName, propsParams: this.state.currentPropsParams }),
+      // Which keys this component's own caller passes is unknown here, so
+      // a key a spread carries from an optional param is not counted.
+      passedKeys(callWrites(comp, { propsObjectName: this.state.propsObjectName, propsParams: this.state.currentPropsParams }), new Set()),
       (component) => this.childNestedInputForwards.get(component),
       (component, prop) => derivedFieldReading(this.lateDeliveryDerivedDeps(component), prop),
     )

@@ -47,40 +47,64 @@ export interface NestedInputForward {
    */
   readonly fallbackReads: ReadonlySet<string>
   readonly unlessPassed: ReadonlySet<string>
-  /** The keys this call definitely passes to `child` ({@link callWrites}). */
+  /** The keys this call passes to `child` ({@link callWrites}). */
   readonly writes: CallWrites
 }
 
-/** The keys a component call definitely passes. */
-export type CallWrites = ReadonlySet<string>
+/**
+ * The keys a component call passes, as far as the compiler can tell:
+ * `definite` ones it always passes, and `conditional` ones a `{...props}`
+ * spread carries from an optional param of the calling component, keyed by
+ * the key and listing the calling component's own caller-facing keys any
+ * one of which, when its caller passes it, makes the key passed.
+ */
+export interface CallWrites {
+  readonly definite: ReadonlySet<string>
+  readonly conditional: ReadonlyMap<string, readonly string[]>
+}
 
 /**
- * The keys `comp`'s call definitely passes to the component it calls, as
- * far as the compiler can tell: an explicit prop (or JSX children), and a
- * key a `{...props}` spread carries from a REQUIRED param of the calling
- * component (`callerProps`), which its own caller always passes. A key a
- * spread carries only when passed, and any key of a spread whose keys are
- * unknown, is not definite: a fallback that such a key would override still
- * counts (`reaches`).
+ * The keys `comp`'s call passes to the component it calls: an explicit
+ * prop (or JSX children) and a key a `{...props}` spread carries from a
+ * required param of the calling component (`callerProps`) definitely; a key
+ * the spread carries from an optional param only when the calling
+ * component's own caller passed that param. A key of a spread whose keys
+ * are unknown is neither.
  */
 export function callWrites(
   comp: Pick<IRComponent, 'props' | 'children'>,
   callerProps: Pick<ComponentIR['metadata'], 'propsObjectName' | 'propsParams'>,
 ): CallWrites {
-  const keys = new Set<string>()
-  for (const p of comp.props) if (p.value.kind !== 'spread') keys.add(p.name)
-  if (comp.children.length > 0) keys.add('children')
-  if (!comp.props.some(p => p.value.kind === 'spread')) return keys
+  const definite = new Set<string>()
+  const conditional = new Map<string, string[]>()
+  for (const p of comp.props) if (p.value.kind !== 'spread') definite.add(p.name)
+  if (comp.children.length > 0) definite.add('children')
+  if (!comp.props.some(p => p.value.kind === 'spread')) return { definite, conditional }
   const params = callerProps.propsParams ?? []
   const resolved = resolveComponentPropKeys(planComponentProps(
     { props: comp.props, children: comp.children, slotId: null },
     { propsObjectName: callerProps.propsObjectName ?? null, propsParams: params },
   ))
+  const keyOf = (name: string) => params.find(p => p.name === name)
   for (const key of resolved ?? []) {
-    if (key.base?.kind !== 'props-param') continue
-    const baseName = key.base.name
-    if (params.find(p => p.name === baseName)?.optional === false) keys.add(key.key)
+    const via = [...key.presentParams]
+    if (key.base?.kind === 'props-param') {
+      if (keyOf(key.base.name)?.optional === false) definite.add(key.key)
+      else via.push(key.base.name)
+    }
+    if (definite.has(key.key) || via.length === 0) continue
+    conditional.set(key.key, via.map(name => keyOf(name)?.sourceName ?? name))
   }
+  return { definite, conditional }
+}
+
+/**
+ * The keys a call with `writes` passes when the component making it was
+ * itself called passing `incoming`.
+ */
+export function passedKeys(writes: CallWrites, incoming: ReadonlySet<string>): ReadonlySet<string> {
+  const keys = new Set(writes.definite)
+  for (const [key, via] of writes.conditional) if (via.some(k => incoming.has(k))) keys.add(key)
   return keys
 }
 
@@ -283,38 +307,40 @@ function walkComponents(
 export function nestedDerivedReading(
   parent: string,
   propName: string,
-  parentCallWrites: CallWrites,
+  parentCallKeys: ReadonlySet<string>,
   forwardsOf: (component: string) => readonly NestedInputForward[] | undefined,
   derivedReading: (component: string, prop: string) => string | undefined,
 ): NestedDerivedReading | undefined {
   const seen = new Set<string>()
-  const follow = (component: string, prop: string, writes: CallWrites): NestedDerivedReading | undefined => {
+  const follow = (component: string, prop: string, incoming: ReadonlySet<string>): NestedDerivedReading | undefined => {
     const field = capitalizeFieldName(prop)
     for (const f of forwardsOf(component) ?? []) {
-      if (!reaches(f, field, writes)) continue
+      if (!reaches(f, field, incoming)) continue
       const direct = derivedReading(f.child, f.prop)
       if (direct !== undefined) return { child: f.child, prop: f.prop, owner: f.child, field: direct }
-      // Keyed by the keys the call passes too: whether a fallback of the
-      // next component reaches depends on them, so the same (component,
-      // prop) reached through two calls is followed for each.
-      const key = `${f.child}\0${f.prop}\0${[...f.writes].sort().join('\0')}`
+      // The keys this call passes, given those passed to `component`; the
+      // walk is keyed by them too, since whether a fallback of the next
+      // component reaches depends on them, so the same (component, prop)
+      // reached through two calls is followed for each.
+      const next = passedKeys(f.writes, incoming)
+      const key = `${f.child}\0${f.prop}\0${[...next].sort().join('\0')}`
       if (seen.has(key)) continue
       seen.add(key)
-      const deeper = follow(f.child, f.prop, f.writes)
+      const deeper = follow(f.child, f.prop, next)
       if (deeper) return { child: f.child, prop: f.prop, owner: deeper.owner, field: deeper.field }
     }
     return undefined
   }
-  return follow(parent, propName, parentCallWrites)
+  return follow(parent, propName, parentCallKeys)
 }
 
 /**
  * Whether `field` reaches `f`'s nested prop when the component holding `f`
- * is called with `writes`: always for a plain read, and for a fallback read
+ * is called passing `incoming`: always for a plain read, and for a fallback read
  * unless that call definitely passes one of the keys that override it.
  */
-function reaches(f: NestedInputForward, field: string, writes: CallWrites): boolean {
+function reaches(f: NestedInputForward, field: string, incoming: ReadonlySet<string>): boolean {
   if (f.reads.has(field)) return true
   if (!f.fallbackReads.has(field)) return false
-  return ![...f.unlessPassed].some(k => writes.has(k))
+  return ![...f.unlessPassed].some(k => incoming.has(k))
 }
