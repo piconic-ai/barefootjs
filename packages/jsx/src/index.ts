@@ -145,6 +145,7 @@ export { refuseInheritedConstServerReads } from './adapters/inherited-const-serv
 export { refuseUnloweredOperators } from './adapters/unlowered-operator.ts'
 export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
 export { refuseUnloweredArrayElements } from './adapters/unlowered-array-element.ts'
+export { refuseUnloweredIifeConsts } from './adapters/unlowered-iife-const.ts'
 export { refuseUnappliedPropDefaults, type UnappliedPropDefaultSink } from './adapters/unapplied-prop-default.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'

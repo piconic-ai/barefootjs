@@ -135,10 +135,9 @@ export const renderDivergences: RenderDivergences = {
   // #3988: a const read in a loop row whose parameter shadows a name the
   // initializer reads renders an empty row (as on main).
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
-  // #3975: a module const initialized by an immediately invoked arrow that
-  // reads another module const: the template has no value for the const,
-  // so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
+  // A signal seeded from a member of a module object literal const
+  // (`createSignal(CFG.n)`): the constructor has no value for the seed.
+  'module-const-object-member-signal-seed': { limitation: 'module-const-object-member-signal-seed' },
   // A module array const spreading a value no compile-time evaluator
   // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
   'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },
@@ -164,6 +163,7 @@ export const renderDivergences: RenderDivergences = {
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
   'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-record-prop-bag-boolean-value': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
@@ -172,8 +172,6 @@ export const renderDivergences: RenderDivergences = {
   'spread-closed-rest-repeated-after-bag': { limitation: 'closed-rest-repeated' },
   // The bag's `crossOrigin` renders as `cross-origin` beside the folded literal `crossorigin`.
   'spread-closed-rest-then-bag-renamed-key': { limitation: 'spread-bag-camel-key-name' },
-  // A destructured prop typed as a record, spread on an element, does not build.
-  'spread-optional-bag-literal-before': { limitation: 'record-prop-bag-spread' },
   // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
   // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
   // writes it as it is or renames only its own few keys (`crossorigin`).
@@ -427,6 +425,12 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // A caller that passes the key renders it once per expansion of the
+  // repeated body rest (`id="x" id="x"`).
+  'spread-body-rest-repeated-omitted:gen:id:empty': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:markup': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:multibyte': { limitation: 'closed-rest-repeated' },
+
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the destructure default applied to an explicit `null`. It now applies
   // only to an absent or `undefined` prop (#3848 U8).

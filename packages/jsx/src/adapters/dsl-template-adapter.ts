@@ -34,6 +34,7 @@ import { refuseInheritedConstServerReads } from './inherited-const-server-read.t
 import { refuseUnloweredOperators } from './unlowered-operator.ts'
 import { refuseUninlinableSeedCalls } from './uninlinable-seed-call.ts'
 import { refuseUnloweredArrayElements } from './unlowered-array-element.ts'
+import { refuseUnloweredIifeConsts } from './unlowered-iife-const.ts'
 import { refuseUnappliedPropDefaults } from './unapplied-prop-default.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
@@ -476,6 +477,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     refuseUninlinableSeedCalls(ir, this.errorSink())
     // A server-read signal seed, memo body or const holding an array literal with a spread element (#3954).
     refuseUnloweredArrayElements(ir, this.errorSink())
+    // A server-read module const initialized by a function literal call no template evaluates (#4022).
+    refuseUnloweredIifeConsts(ir, this.errorSink())
     // A server-read prop whose computed destructure default no template can apply (#3725).
     refuseUnappliedPropDefaults(ir, this.errorSink())
   }

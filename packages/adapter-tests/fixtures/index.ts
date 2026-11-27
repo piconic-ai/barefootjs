@@ -623,6 +623,13 @@ import { fixture as spreadClosedRestObjectMemberKeys } from './spread-closed-res
 import { fixture as spreadClosedRestBothCasesLaterWrite } from './spread-closed-rest-both-cases-later-write'
 import { fixture as spreadClosedRestClientLiteralAfter } from './spread-closed-rest-client-literal-after'
 import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeated'
+import { fixture as spreadClosedRestRepeatedOmitted } from './spread-closed-rest-repeated-omitted'
+import { fixture as spreadClosedRestRepeatedPresent } from './spread-closed-rest-repeated-present'
+import { fixture as spreadRecordPropBag } from './spread-record-prop-bag'
+import { fixture as spreadBagUnsafeAttrNames } from './spread-bag-unsafe-attr-names'
+import { fixture as spreadRecordPropBagBooleanValue } from './spread-record-prop-bag-boolean-value'
+import { fixture as spreadOpenObjectPropBag } from './spread-open-object-prop-bag'
+import { fixture as spreadBodyRestRepeatedOmitted } from './spread-body-rest-repeated-omitted'
 import { fixture as spreadClosedRestRepeatedAfterBag } from './spread-closed-rest-repeated-after-bag'
 import { fixture as spreadClosedRestRepeatedLast } from './spread-closed-rest-repeated-last'
 import { fixture as spreadClosedRestRepeatedBoth } from './spread-closed-rest-repeated-both'
@@ -1750,6 +1757,29 @@ import { fixture as moduleHelperReadsModuleConstPropHidden } from './module-help
 import { fixture as moduleHelperParamReadsModuleConst } from './module-helper-param-reads-module-const'
 import { fixture as moduleFunctionReadsModuleConst } from './module-function-reads-module-const'
 import { fixture as moduleConstIifeReadsModuleConst } from './module-const-iife-reads-module-const'
+import { fixture as moduleConstIifeValues } from './module-const-iife-values'
+import { fixture as moduleConstIifeLoopChildSeed } from './module-const-iife-loop-child-seed'
+import { fixture as componentConstIife } from './component-const-iife'
+import { fixture as componentConstIifeReadsWrittenProp } from './component-const-iife-reads-written-prop'
+import { fixture as componentConstIifeReadsWrittenPropClient } from './component-const-iife-reads-written-prop-client'
+import { fixture as componentConstIifeReadsConstNamedLikeLet } from './component-const-iife-reads-const-named-like-let'
+import { fixture as componentConstIifeBlockBody } from './component-const-iife-block-body'
+import { fixture as componentConstIifeBlockBodyClient } from './component-const-iife-block-body-client'
+import { fixture as moduleConstIifeBlockBody } from './module-const-iife-block-body'
+import { fixture as moduleConstIifeBlockBodyClient } from './module-const-iife-block-body-client'
+import { fixture as moduleConstIifeWithArgument } from './module-const-iife-with-argument'
+import { fixture as moduleConstIifeWithArgumentClient } from './module-const-iife-with-argument-client'
+import { fixture as moduleConstIifeSamplingBody } from './module-const-iife-sampling-body'
+import { fixture as moduleConstIifeReadNameWrittenInSwitch } from './module-const-iife-read-name-written-in-switch'
+import { fixture as moduleConstIifeReadNameWrittenInSwitchClient } from './module-const-iife-read-name-written-in-switch-client'
+import { fixture as componentConstIifeReturnsFunction } from './component-const-iife-returns-function'
+import { fixture as componentConstIifeReturnsFunctionClient } from './component-const-iife-returns-function-client'
+import { fixture as moduleConstIifeWriteBody } from './module-const-iife-write-body'
+import { fixture as moduleConstIifeWriteBodyClient } from './module-const-iife-write-body-client'
+import { fixture as moduleConstIifeNestedCall } from './module-const-iife-nested-call'
+import { fixture as moduleConstIifeNestedCallClient } from './module-const-iife-nested-call-client'
+import { fixture as moduleConstIifeSamplingBodyClient } from './module-const-iife-sampling-body-client'
+import { fixture as moduleConstObjectMemberSignalSeed } from './module-const-object-member-signal-seed'
 import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
 import { fixture as moduleHelperConstIdentity } from './module-helper-const-identity'
 import { fixture as moduleConstLiteralIdentity } from './module-const-literal-identity'
@@ -2335,6 +2365,13 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestBothCasesLaterWrite,
   spreadClosedRestClientLiteralAfter,
   spreadClosedRestRepeated,
+  spreadClosedRestRepeatedOmitted,
+  spreadClosedRestRepeatedPresent,
+  spreadRecordPropBag,
+  spreadBagUnsafeAttrNames,
+  spreadRecordPropBagBooleanValue,
+  spreadOpenObjectPropBag,
+  spreadBodyRestRepeatedOmitted,
   spreadClosedRestRepeatedAfterBag,
   spreadClosedRestRepeatedLast,
   spreadClosedRestRepeatedBoth,
@@ -3148,6 +3185,29 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperParamReadsModuleConst,
   moduleFunctionReadsModuleConst,
   moduleConstIifeReadsModuleConst,
+  moduleConstIifeValues,
+  moduleConstIifeLoopChildSeed,
+  componentConstIife,
+  componentConstIifeReadsWrittenProp,
+  componentConstIifeReadsWrittenPropClient,
+  componentConstIifeReadsConstNamedLikeLet,
+  componentConstIifeBlockBody,
+  componentConstIifeBlockBodyClient,
+  moduleConstIifeBlockBody,
+  moduleConstIifeBlockBodyClient,
+  moduleConstIifeWithArgument,
+  moduleConstIifeWithArgumentClient,
+  moduleConstIifeSamplingBody,
+  moduleConstIifeReadNameWrittenInSwitch,
+  moduleConstIifeReadNameWrittenInSwitchClient,
+  componentConstIifeReturnsFunction,
+  componentConstIifeReturnsFunctionClient,
+  moduleConstIifeWriteBody,
+  moduleConstIifeWriteBodyClient,
+  moduleConstIifeNestedCall,
+  moduleConstIifeNestedCallClient,
+  moduleConstIifeSamplingBodyClient,
+  moduleConstObjectMemberSignalSeed,
   componentHelperSignalChildProp,
   moduleHelperConstIdentity,
   moduleConstLiteralIdentity,

@@ -47,6 +47,7 @@ import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
 import { isFunctionScope, isInvokedInPlace, runsInPlace } from './in-place-function.ts'
 import { classifyValueUses } from './value-uses.ts'
+import { callsFunctionLiteralInPlace, repeatableAppliedArrowValue } from './applied-arrow.ts'
 import { expandModuleArraySpreads, recordModuleArraySpread } from './module-array-spread.ts'
 import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
@@ -4433,9 +4434,12 @@ function collectConstant(
 
   const isModule = _isModule
   const name = node.name.text
-  let value = node.initializer
-    ? ctx.getJS(node.initializer)
+  const initializer = constantInitializer(node, declarationKind, ctx)
+  let value = initializer
+    ? ctx.getJS(initializer)
     : undefined
+  // The source text, types included, for `.tsx` output: the applied arrow
+  // `initializer` stands for evaluates to the same value.
   const typedValue = node.initializer
     ? node.initializer.getText(ctx.sourceFile)
     : undefined
@@ -4443,8 +4447,8 @@ function collectConstant(
   // Detect JSX initializers and store AST nodes for IR-level inlining (#547)
   let isJsx = false
   let isJsxFunction = false
-  if (node.initializer) {
-    let init: ts.Expression = node.initializer
+  if (initializer) {
+    let init: ts.Expression = initializer
     while (ts.isParenthesizedExpression(init)) init = init.expression
     if (ts.isJsxElement(init) || ts.isJsxSelfClosingElement(init) || ts.isJsxFragment(init)) {
       isJsx = true
@@ -4515,11 +4519,11 @@ function collectConstant(
 
   // Extract structured branch info from ternary initializers
   let valueBranches: string[] | undefined
-  if (node.initializer) {
-    let inner: ts.Expression = node.initializer
+  if (initializer) {
+    let inner: ts.Expression = initializer
     while (ts.isParenthesizedExpression(inner)) inner = inner.expression
     if (ts.isConditionalExpression(inner)) {
-      valueBranches = extractValueBranches(node.initializer, ctx)
+      valueBranches = extractValueBranches(initializer, ctx)
     }
   }
 
@@ -4531,19 +4535,19 @@ function collectConstant(
     type = inferTypeFromValue(value)
   }
 
-  const freeIdentifiers = node.initializer
-    ? extractFreeIdentifiersFromNode(node.initializer)
+  const freeIdentifiers = initializer
+    ? extractFreeIdentifiersFromNode(initializer)
     : undefined
 
   // Compute AST-derived flags for Phase 2 optimization
-  const containsArrow = node.initializer ? nodeContainsArrow(node.initializer) : false
-  let unwrappedInitializer: ts.Expression | undefined = node.initializer
+  const containsArrow = initializer ? nodeContainsArrow(initializer) : false
+  let unwrappedInitializer: ts.Expression | undefined = initializer
   while (unwrappedInitializer && (ts.isParenthesizedExpression(unwrappedInitializer) || ts.isAsExpression(unwrappedInitializer) || ts.isSatisfiesExpression(unwrappedInitializer))) {
     unwrappedInitializer = unwrappedInitializer.expression
   }
   const isFunctionValue = unwrappedInitializer !== undefined &&
     (ts.isArrowFunction(unwrappedInitializer) || ts.isFunctionExpression(unwrappedInitializer))
-  const systemConstructKind = node.initializer ? getSystemConstructKind(node.initializer) : undefined
+  const systemConstructKind = initializer ? getSystemConstructKind(initializer) : undefined
 
   // Pre-transform bare prop refs for template inlining (#807). Two
   // distinct cases:
@@ -4567,7 +4571,7 @@ function collectConstant(
   //     name happens to match a prop key. `rewriteBarePropRefs` is not
   //     scope-aware, so we have to gate eligibility upstream.
   let templateValue: string | undefined
-  if (value && ctx.propsParams.length > 0 && node.initializer) {
+  if (value && ctx.propsParams.length > 0 && initializer) {
     let propNames: Set<string>
     // Local → caller-facing key (#2524 CSR half) — only Case 1 propsParams
     // entries can carry `sourceName`; Case 2's alias set below is keyed by
@@ -4609,7 +4613,7 @@ function collectConstant(
       )
     }
     if (propNames.size > 0) {
-      const rewritten = rewriteBarePropRefs(value, node.initializer, propNames, undefined, propAliases, templateRead)
+      const rewritten = rewriteBarePropRefs(value, initializer, propNames, undefined, propAliases, templateRead)
       if (rewritten !== undefined) {
         templateValue = rewritten
         // For the body-destructure case, also rewrite the init-body
@@ -4654,12 +4658,13 @@ function collectConstant(
     type,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     freeIdentifiers,
-    valueUses: classifyValueUses(node.initializer),
+    valueUses: classifyValueUses(initializer),
     isJsx,
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
     needsOperandGrouping: initializerNeedsGrouping(unwrappedInitializer),
     isFunctionValue: isFunctionValue || undefined,
+    callsFunctionLiteral: callsFunctionLiteralFlag(initializer),
     systemConstructKind,
     templateValue,
     origin: {
@@ -4668,9 +4673,27 @@ function collectConstant(
       effect: 'pure',
     },
   }
-  recordIdentityCandidate(constant, node.initializer, ctx.checker)
+  recordIdentityCandidate(constant, initializer, ctx.checker)
   ctx.localConstants.push(constant)
-  recordModuleArraySpread(constant, node.initializer, ctx.moduleArraySpreads)
+  recordModuleArraySpread(constant, initializer, ctx.moduleArraySpreads)
+}
+
+/**
+ * The initializer a const is recorded with. `const B = (() => ({ k: V }))()`
+ * holds what `const B = { k: V }` holds, so the const is recorded as
+ * initialized by the arrow's body and every consumer decides on the body (a
+ * template folds `B.k`, #4022). Only a body that evaluates to the same value
+ * each time (`repeatableAppliedArrowValue`), and only for a `const`.
+ */
+function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let', ctx: AnalyzerContext): ts.Expression | undefined {
+  if (!node.initializer || declarationKind !== 'const') return node.initializer
+  return repeatableAppliedArrowValue(node.initializer, ctx.sourceFile) ?? node.initializer
+}
+
+/** `ConstantInfo.callsFunctionLiteral` for the recorded initializer (`constantInitializer`). */
+function callsFunctionLiteralFlag(initializer: ts.Expression | undefined): true | undefined {
+  if (initializer === undefined || !callsFunctionLiteralInPlace(initializer)) return undefined
+  return true
 }
 
 // =============================================================================

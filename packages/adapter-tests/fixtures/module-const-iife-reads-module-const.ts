@@ -2,14 +2,14 @@ import { createFixture } from '../src/types'
 
 /**
  * #3975, the literal sibling of `module-helper-reads-module-const`: the module
- * const is an immediately invoked arrow (`(() => ({ k: V }))()`). The CSR
- * template has no form for a const whose value holds an arrow, and a
- * template adapter has no value for the const, so both render `B.k` as `''`
- * (registered as `module-const-iife-reads-module-const`).
+ * const is an immediately invoked arrow (`(() => ({ k: V }))()`). Its body
+ * repeats, so the analyzer records the const as initialized by the body
+ * (#4022): a template folds `B.k` as it does for `const B = { k: V }`, and
+ * the CSR template reads it the same way.
  */
 export const fixture = createFixture({
   id: 'module-const-iife-reads-module-const',
-  description: 'a module const initialized by an immediately invoked arrow that reads another module const renders client-side',
+  description: 'a module const initialized by an immediately invoked arrow that reads another module const renders what the arrow returns',
   source: `
 'use client'
 const V = 'v'

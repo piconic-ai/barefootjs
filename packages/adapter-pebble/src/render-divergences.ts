@@ -27,16 +27,15 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A bag key that is not one attribute name is written as it is
+  // (`x onmouseover=alert(1)="x"`), where the reference drops it.
+  'spread-bag-unsafe-attr-names': { limitation: 'spread-bag-unsafe-attr-name' },
   // A children fallback const read in a loop row whose parameter shadows a
   // name its initializer reads: the row renders empty.
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
   // A children fallback read with a boolean fallback: present children read
   // through a const are dropped, and an absent read prints `false`.
   'children-fallback-value-shapes': { limitation: 'children-fallback-boolean-display' },
-  // #3975: a module const initialized by an immediately invoked arrow that
-  // reads another module const: the template has no value for the const,
-  // so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
   // A module array const spreading a value no compile-time evaluator
   // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
   'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },
@@ -55,6 +54,7 @@ export const renderDivergences: RenderDivergences = {
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
   'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-record-prop-bag-boolean-value': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
@@ -165,6 +165,12 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // A caller that passes the key renders it once per expansion of the
+  // repeated body rest (`id="x" id="x"`).
+  'spread-body-rest-repeated-omitted:gen:id:empty': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:markup': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:multibyte': { limitation: 'closed-rest-repeated' },
+
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the seed applied a destructure default to an explicit `null`. It now
   // applies only to an absent or `undefined` prop (#3848 U7).

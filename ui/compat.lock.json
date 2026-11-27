@@ -1987,6 +1987,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2023,6 +2024,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2062,6 +2064,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2098,6 +2101,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2135,6 +2139,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2171,6 +2176,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2207,6 +2213,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -2244,6 +2251,7 @@
               "callback-outside-evaluator",
               "component-scope-helper-call",
               "computed-const-loop-source",
+              "const-iife-unlowered",
               "const-literal-inherited-key",
               "const-object-spread-unresolved",
               "destructure-default-reads-component-state",
@@ -4037,6 +4045,363 @@
           ],
           "escape": {
             "state": "debt"
+          }
+        }
+      },
+      "component-const-iife-block-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-block-body-client"
+          }
+        }
+      },
+      "component-const-iife-reads-written-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        }
+      },
+      "component-const-iife-returns-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-returns-function-client"
           }
         }
       },
@@ -10399,60 +10764,718 @@
           }
         }
       },
-      "module-const-iife-reads-module-const": {
+      "module-const-iife-block-body": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "module-const-iife-reads-module-const"
-          ]
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-block-body-client"
+          }
+        }
+      },
+      "module-const-iife-nested-call": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-nested-call-client"
+          }
+        }
+      },
+      "module-const-iife-read-name-written-in-switch": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-read-name-written-in-switch-client"
+          }
+        }
+      },
+      "module-const-iife-sampling-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-sampling-body-client"
+          }
+        }
+      },
+      "module-const-iife-with-argument": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-with-argument-client"
+          }
+        }
+      },
+      "module-const-iife-write-body": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-iife-write-body-client"
+          }
         }
       },
       "module-const-inherited-key": {
@@ -12458,6 +13481,14 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "module-const-object-member-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-object-member-signal-seed"
+          ]
         }
       },
       "module-const-object-spread-unresolved-array": {
@@ -17618,6 +18649,56 @@
           }
         }
       },
+      "spread-bag-unsafe-attr-names": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        }
+      },
       "spread-closed-rest-boolean-case-keys": {
         "blade": {
           "kind": "render",
@@ -18462,6 +19543,20 @@
           ]
         }
       },
+      "spread-open-object-prop-bag": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "open-object-prop-bag-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "spread-open-props-object-literal-alias-after": {
         "blade": {
           "kind": "render",
@@ -18518,11 +19613,59 @@
           ]
         }
       },
-      "spread-optional-bag-literal-before": {
+      "spread-record-prop-bag-boolean-value": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "record-prop-bag-spread"
+            "spread-bag-boolean-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
           ]
         }
       },
@@ -20299,6 +21442,18 @@
         "description": "A same-named signal or memo that transforms dynamic JSX children holds the transformed value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-shadow-transform.ts"
       },
+      "component-const-iife-block-body": {
+        "description": "a component const initialized by an immediately invoked arrow with a block body renders what the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-block-body.ts"
+      },
+      "component-const-iife-reads-written-prop": {
+        "description": "a component IIFE const reading props the body later writes renders the values at the call",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop.ts"
+      },
+      "component-const-iife-returns-function": {
+        "description": "a component const holding the anonymous arrow an immediately invoked arrow returns keeps its empty…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-returns-function.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -20655,9 +21810,29 @@
         "description": "a module const spreading a module helper call (`{ ...mk('v') }`) renders on a client mount (#3952)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-helper-call-spread-inlined.ts"
       },
-      "module-const-iife-reads-module-const": {
-        "description": "a module const initialized by an immediately invoked arrow that reads another module const renders…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-reads-module-const.ts"
+      "module-const-iife-block-body": {
+        "description": "a module const initialized by an immediately invoked function with a block body renders client-side",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-block-body.ts"
+      },
+      "module-const-iife-nested-call": {
+        "description": "module consts whose initializer calls an arrow literal below the top render what the calls return",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-nested-call.ts"
+      },
+      "module-const-iife-read-name-written-in-switch": {
+        "description": "a module IIFE const reading a const whose name a switch case writes elsewhere renders what the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-read-name-written-in-switch.ts"
+      },
+      "module-const-iife-sampling-body": {
+        "description": "a module const initialized by an immediately invoked arrow that constructs a value renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-sampling-body.ts"
+      },
+      "module-const-iife-with-argument": {
+        "description": "a module const initialized by an immediately invoked arrow with an argument renders client-side",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-with-argument.ts"
+      },
+      "module-const-iife-write-body": {
+        "description": "module consts initialized by an immediately invoked arrow whose body writes render what the call…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-write-body.ts"
       },
       "module-const-inherited-key": {
         "description": "a module const read with a key only its prototype has reads the inherited function",
@@ -20726,6 +21901,10 @@
       "module-const-object-array-child-prop": {
         "description": "a module array-of-objects const passed whole as a child prop reaches the child",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-array-child-prop.ts"
+      },
+      "module-const-object-member-signal-seed": {
+        "description": "a signal seeded from a member of a module-level object literal const renders the seed",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-member-signal-seed.ts"
       },
       "module-const-object-spread-unresolved-array": {
         "description": "a module const spreading an array literal (`{ ...[1] }`) refuses a read of its key (BF101)",
@@ -21015,6 +22194,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-bag-unsafe-attr-names": {
+        "description": "Spread bag keys that are not one attribute name are dropped, valid keys render",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-bag-unsafe-attr-names.ts"
+      },
       "spread-closed-rest-boolean-case-keys": {
         "description": "Closed rest keys hidden and HIDDEN render as separate writes, beside a bare hidden",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-boolean-case-keys.ts"
@@ -21083,13 +22266,17 @@
         "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-renamed-elsewhere.ts"
       },
+      "spread-open-object-prop-bag": {
+        "description": "A destructured object prop with an index signature spread onto an element renders every entry",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-object-prop-bag.ts"
+      },
       "spread-open-props-object-literal-alias-after": {
         "description": "An attribute after a spread of an open props object carrying its htmlFor spread key renders once,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-props-object-literal-alias-after.ts"
       },
-      "spread-optional-bag-literal-before": {
-        "description": "A literal before an omitted optional bag spread renders",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-optional-bag-literal-before.ts"
+      "spread-record-prop-bag-boolean-value": {
+        "description": "A record prop spread with a boolean value outside the boolean attribute set renders its text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-record-prop-bag-boolean-value.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
@@ -21178,6 +22365,18 @@
       "callback-index-param-client": {
         "description": "A `.map()` callback reading its index, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param-client.ts"
+      },
+      "component-const-iife-block-body-client": {
+        "description": "The client-directive escape of component-const-iife-block-body",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-block-body-client.ts"
+      },
+      "component-const-iife-reads-written-prop-client": {
+        "description": "The client-directive escape of component-const-iife-reads-written-prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop-client.ts"
+      },
+      "component-const-iife-returns-function-client": {
+        "description": "The client-directive escape of component-const-iife-returns-function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-returns-function-client.ts"
       },
       "computed-const-loop-source-parenthesized-precomputed": {
         "description": "prop-precompute twin of computed-const-loop-source-parenthesized — a parenthesized prop source…",
@@ -21338,6 +22537,30 @@
       "module-const-object-spread-unresolved-client": {
         "description": "a /* @client */ read of a module const that spreads a call defers to the browser",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-client.ts"
+      },
+      "module-const-iife-block-body-client": {
+        "description": "The client-directive escape of module-const-iife-block-body",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-block-body-client.ts"
+      },
+      "module-const-iife-nested-call-client": {
+        "description": "The client-directive escape of module-const-iife-nested-call",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-nested-call-client.ts"
+      },
+      "module-const-iife-read-name-written-in-switch-client": {
+        "description": "The client-directive escape of module-const-iife-read-name-written-in-switch",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-read-name-written-in-switch-client.ts"
+      },
+      "module-const-iife-sampling-body-client": {
+        "description": "The client-directive escape of module-const-iife-sampling-body",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-sampling-body-client.ts"
+      },
+      "module-const-iife-with-argument-client": {
+        "description": "The client-directive escape of module-const-iife-with-argument",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-with-argument-client.ts"
+      },
+      "module-const-iife-write-body-client": {
+        "description": "The client-directive escape of module-const-iife-write-body",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-iife-write-body-client.ts"
       },
       "module-const-inherited-key-client": {
         "description": "a /* @client */ read of a module const key only its prototype has defers to the browser",
@@ -22103,6 +23326,7 @@
       "expected": "the key renders once, with the last write JS makes: the rest's value, else an intervening bag's, else the earlier write",
       "actual": "Renders the key once per expansion (`title=\"fallback\" title=\"fallback\"`), the rest's value ahead of the bag's, or drops the earlier write because a later expansion writes the omitted key as `undefined`",
       "fixtures": [
+        "spread-body-rest-repeated-omitted",
         "spread-closed-rest-repeated",
         "spread-closed-rest-repeated-after-bag",
         "spread-closed-rest-repeated-around-bag",
@@ -22179,6 +23403,38 @@
         "module-const-loop-source-computed",
         "static-array-from-props",
         "static-array-from-props-with-component"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "const-iife-unlowered": {
+      "title": "A const initialized by a function literal call no template evaluates, read on the server",
+      "kind": "refusal",
+      "given": "a module or component const (or a module `let`) whose initializer calls a function literal in place, at any depth, other than a zero-param arrow with an expression body that repeats, writes nothing, holds no function and reads no binding it sees that is declared with `let` / `var`, and no name whose spelling the file writes anywhere, a prop included (`label = 'updated'`, `[n] = [9]`, a computed method key; writes go by spelling, so a write to another binding of the name, in a `switch` case for one, counts too) (a read of `arguments`, `this` and the like as a key or a member name is not one): a block body (`(() => { return { k: 'a' } })()`, `(function () { return … })()`, also under `!`), an argument (`((x) => ({ k: x }))('v')`), a body that constructs or samples a value (`(() => ({ k: new Date(0).toISOString() }))()`), writes (`(() => delete o.k)()`, `(() => (p.n = 5))()`, `(() => p.n++)()`) or returns a function (`(() => () => 1)()`), or a call below the top of the initializer (`(() => (() => 1)() + 2)()`, `c ? (() => 'c')() : 'd'`, a template literal, an array literal, an array iteration callback or the default of its parameter, `[undefined].map((x = (() => 1)()) => x)`), read by the server render (`{B.k}`)",
+      "expected": "the value the function returns (`a`)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "component-const-iife-block-body",
+        "component-const-iife-reads-written-prop",
+        "component-const-iife-returns-function",
+        "module-const-iife-block-body",
+        "module-const-iife-nested-call",
+        "module-const-iife-read-name-written-in-switch",
+        "module-const-iife-sampling-body",
+        "module-const-iife-with-argument",
+        "module-const-iife-write-body"
       ],
       "adapters": [
         "blade",
@@ -22864,26 +24120,17 @@
         "xslate"
       ]
     },
-    "module-const-iife-reads-module-const": {
-      "title": "Module const initialized by an immediately invoked arrow that reads another module const",
+    "module-const-object-member-signal-seed": {
+      "title": "A signal seeded from a member of a module-scope object literal const",
       "kind": "silent",
-      "given": "a module const whose initializer is an immediately invoked arrow reading another module value const (`const V = 'v'; const B = (() => ({ k: V }))()`), read in markup (`{B.k}`)",
-      "expected": "the value the arrow returns (`'v'`)",
-      "actual": "renders empty, in the server HTML of a template adapter and on a client mount",
+      "given": "a `createSignal` whose initial value reads a member of a module-scope object literal const (`const CFG = { n: 2, s: 'v' }; createSignal(CFG.n)`), rendered as text",
+      "expected": "the server HTML renders the seed (`2`, `v`)",
+      "actual": "renders empty",
       "fixtures": [
-        "module-const-iife-reads-module-const"
+        "module-const-object-member-signal-seed"
       ],
       "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
+        "go-template"
       ]
     },
     "module-scope-helper-call": {
@@ -23231,6 +24478,22 @@
         "xslate"
       ]
     },
+    "open-object-prop-bag-spread": {
+      "title": "A destructured prop typed as an object type with an index signature, spread onto an element",
+      "kind": "refusal",
+      "given": "a destructured prop typed as an object type whose properties are not its whole key set (`bag: { title: string; [key: string]: string }`) spread onto an intrinsic element (`{...bag}`)",
+      "expected": "the element renders every entry the caller passes, an undeclared key included",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "spread-open-object-prop-bag"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "open-rest-spread-onto-child-component": {
       "title": "An open rest bag spread onto a child component",
       "kind": "silent",
@@ -23328,19 +24591,6 @@
       "diagnostics": [
         "BF101",
         "BF102"
-      ]
-    },
-    "record-prop-bag-spread": {
-      "title": "A destructured prop typed as a record, spread onto an element",
-      "kind": "silent",
-      "given": "a destructured prop typed as a record (`bag?: Record<string, string>`) spread onto an intrinsic element (`{...bag}`)",
-      "expected": "the element renders the bag's entries, or nothing for an omitted bag",
-      "actual": "Emits a program that does not build: the prop field and the spread field get different types",
-      "fixtures": [
-        "spread-optional-bag-literal-before"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "ref-effect-attr-state-ssr": {
@@ -23491,12 +24741,13 @@
     "spread-bag-boolean-value": {
       "title": "A boolean spread bag value for a key outside the boolean attribute set",
       "kind": "silent",
-      "given": "an open spread bag or a closed rest whose key is not in the reference's boolean attribute set (`readOnly`, `data-x`, `title`) and holds `true` or `false`",
+      "given": "an open spread bag (a destructured record prop included) or a closed rest whose key is not in the reference's boolean attribute set (`readOnly`, `data-x`, `title`) and holds `true` or `false`",
       "expected": "the key renders with the value's text (`readOnly=\"true\"`, `data-x=\"true\"`, `data-y=\"false\"`); a key in the boolean attribute set (`disabled`) renders bare for `true` and is dropped for `false`",
       "actual": "Renders `true` as a bare attribute and drops `false` (`read-only`, `data-x`), or spells `false` as `0`",
       "fixtures": [
         "spread-closed-rest-boolean-values",
-        "spread-open-bag-boolean-values"
+        "spread-open-bag-boolean-values",
+        "spread-record-prop-bag-boolean-value"
       ],
       "adapters": [
         "blade",
@@ -23528,6 +24779,26 @@
         "jinja",
         "minijinja",
         "mojolicious",
+        "twig",
+        "xslate"
+      ]
+    },
+    "spread-bag-unsafe-attr-name": {
+      "title": "A spread bag key that is not one attribute name",
+      "kind": "silent",
+      "given": "an open spread bag (a record prop, an index-signature rest, a signal getter) carrying a key with a space, `=`, `>`, `<`, `/` or a quote (`{ \"x onmouseover=alert(1)\": \"x\" }`)",
+      "expected": "the key is dropped, and the bag's valid keys render",
+      "actual": "Renders the key into the markup as it is, so it can close the attribute or add another one (`x onmouseover=alert(1)=\"x\"`)",
+      "fixtures": [
+        "spread-bag-unsafe-attr-names"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]

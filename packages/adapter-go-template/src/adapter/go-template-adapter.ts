@@ -62,6 +62,7 @@ import {
   refuseUnloweredOperators,
   refuseUninlinableSeedCalls,
   refuseUnloweredArrayElements,
+  refuseUnloweredIifeConsts,
   refuseUnappliedPropDefaults,
   appliedPropDefaults,
   type ArithmeticCoercion,
@@ -1030,6 +1031,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     refuseUninlinableSeedCalls(authoredIr, this.state)
     // A server-read signal seed, memo body or const holding an array literal with a spread element (#3954).
     refuseUnloweredArrayElements(authoredIr, this.state)
+    // A server-read module const initialized by a function literal call no template evaluates (#4022).
+    refuseUnloweredIifeConsts(authoredIr, this.state)
     // A server-read prop whose computed destructure default no template can apply (#3725).
     refuseUnappliedPropDefaults(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
