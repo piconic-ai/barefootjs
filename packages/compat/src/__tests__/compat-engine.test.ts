@@ -88,6 +88,7 @@ describe('compileForCompat', () => {
           'object-spread-onto-child-component',
           'off-subset-callback-body',
           'opaque-local-accessor-call',
+          'open-object-prop-bag-spread',
           'prop-member-chain-signal-seed',
           'static-literal-loop-absent-row-field',
           'static-literal-loop-component-row',

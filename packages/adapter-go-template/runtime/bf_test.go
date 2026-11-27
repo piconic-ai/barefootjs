@@ -2401,6 +2401,43 @@ func TestSpreadAttrs(t *testing.T) {
 		{"empty", map[string]any{}, ""},
 		{"non-map", "x", ""},
 		{
+			// A key that is not one attribute name to the HTML parser is
+			// dropped in both emit branches (a string and a `true` value),
+			// as the JS reference's `SAFE_ATTR_NAME` drops it; a valid key
+			// beside it is kept.
+			name: "unsafe attribute names dropped",
+			bag: map[string]any{
+				"id":                     "ok",
+				"a b":                    "x",
+				"x=y":                    "x",
+				"x>y":                    true,
+				"onload\"":               "x",
+				"o'k":                    true,
+				"a/b":                    "x",
+				"a<b":                    "x",
+				"a\tb":                   true,
+				"a\u00a0b":               "x",
+				"a\u2003b":               "x",
+				"a\ufeffb":               true,
+				"":                       "x",
+				"hidden":                 true,
+				"x onmouseover=alert(1)": "x",
+			},
+			want: `hidden id="ok"`,
+		},
+		{
+			// U+0085 is no JS `\s`, so the reference keeps the key.
+			name: "U+0085 kept as in JS",
+			bag:  map[string]any{"a\u0085b": "x"},
+			want: "a\u0085b=\"x\"",
+		},
+		{
+			// A camelCase key's kebab-cased name is the one checked.
+			name: "unsafe camelCase key dropped",
+			bag:  map[string]any{"dataX Y": "x", "dataX": "ok"},
+			want: `data-x="ok"`,
+		},
+		{
 			name: "single string",
 			bag:  map[string]any{"id": "a"},
 			want: `id="a"`,

@@ -102,6 +102,27 @@ function collectNullablePropReads(ir: ComponentIR): ReadonlyMap<string, string> 
   return names
 }
 
+/**
+ * `reads` plus a read of each key of a closed-type rest (`rest.id`,
+ * `IRMetadata.restPropsExpandedKeys`), mapped to the key: a caller may omit
+ * any of them, as `collectNullableOptionalProps` treats them. A rest key
+ * read inside a larger value (`rest.id ?? (rest.id)`, the fallback a
+ * repeated `{...rest}` expansion carries; `on ? rest.id : 'x'`) can then be
+ * `undefined`, and the attribute is omitted the way Hono omits it. For the
+ * attribute presence answer only: the seed-read consumers of
+ * {@link collectNullablePropReads} map a read to a declared param.
+ */
+function withRestKeyReads(
+  reads: ReadonlyMap<string, string>,
+  metadata: Pick<IRMetadata, 'restPropsName' | 'restPropsExpandedKeys'>,
+): ReadonlyMap<string, string> {
+  const restName = metadata.restPropsName
+  if (!restName || metadata.restPropsExpandedKeys.length === 0) return reads
+  const out = new Map(reads)
+  for (const key of metadata.restPropsExpandedKeys) out.set(`${restName}.${key}`, key)
+  return out
+}
+
 /** A required string / number / boolean, or a union of them: a value that is never nullish. */
 function isNonNullishScalar(type: TypeInfo | undefined): boolean {
   if (!type) return false
@@ -284,7 +305,7 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
       signals.filter(s => s.parsed?.kind === 'identifier' && s.parsed.name === 'undefined').map(s => s.getter),
     ),
     memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
-    nullableProps: collectNullablePropReads(ir),
+    nullableProps: withRestKeyReads(collectNullablePropReads(ir), ir.metadata),
     nullableNumberProps: collectNullableNumberProps(ir),
     nullableScalarProps: collectNullableScalarProps(ir),
   }

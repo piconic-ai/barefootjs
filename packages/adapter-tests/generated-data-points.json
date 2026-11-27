@@ -21164,6 +21164,80 @@
       }
     }
   ],
+  "spread-body-rest-repeated-omitted": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "id": ""
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "id": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "id": "日本語"
+      }
+    }
+  ],
+  "spread-closed-rest-repeated-omitted": [
+    {
+      "name": "gen:on:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "on": true,
+        "rows": []
+      }
+    }
+  ],
+  "spread-closed-rest-repeated-present": [
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "id": "",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "id": "",
+        "n": 0
+      }
+    }
+  ],
   "spread-open-bag-literal-alias-after": [
     {
       "name": "gen:label:absent",
@@ -21227,6 +21301,103 @@
       "props": {
         "tabIndex": 2,
         "maxLength": "3"
+      }
+    }
+  ],
+  "spread-open-object-prop-bag": [
+    {
+      "name": "gen:bag:object:minimal",
+      "props": {
+        "bag": {
+          "title": ""
+        }
+      }
+    }
+  ],
+  "spread-record-prop-bag": [
+    {
+      "name": "gen:un:absent",
+      "props": {
+        "rec": {
+          "title": "r",
+          "data-k": "v"
+        },
+        "obj": {
+          "title": "o"
+        },
+        "named": {
+          "title": "n",
+          "lang": "en"
+        },
+        "both": {
+          "title": "b",
+          "lang": "fr"
+        },
+        "ext": {
+          "title": "x",
+          "lang": "de"
+        }
+      }
+    },
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "rec": {
+          "title": "r",
+          "data-k": "v"
+        },
+        "un": {
+          "title": "u",
+          "data-n": 1,
+          "hidden": true,
+          "lang": null
+        },
+        "obj": {
+          "title": ""
+        },
+        "named": {
+          "title": "n",
+          "lang": "en"
+        },
+        "both": {
+          "title": "b",
+          "lang": "fr"
+        },
+        "ext": {
+          "title": "x",
+          "lang": "de"
+        }
+      }
+    },
+    {
+      "name": "gen:obj:object:+lang",
+      "props": {
+        "rec": {
+          "title": "r",
+          "data-k": "v"
+        },
+        "un": {
+          "title": "u",
+          "data-n": 1,
+          "hidden": true,
+          "lang": null
+        },
+        "obj": {
+          "title": "",
+          "lang": ""
+        },
+        "named": {
+          "title": "n",
+          "lang": "en"
+        },
+        "both": {
+          "title": "b",
+          "lang": "fr"
+        },
+        "ext": {
+          "title": "x",
+          "lang": "de"
+        }
       }
     }
   ],
