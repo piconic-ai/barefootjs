@@ -9567,6 +9567,125 @@
           }
         }
       },
+      "memo-block-return-reads-typeof-const": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-return-reads-typeof-const-client"
+          }
+        }
+      },
       "memo-exponent-operator": {
         "blade": {
           "kind": "refusal",
@@ -9683,6 +9802,125 @@
           "escape": {
             "state": "escapable",
             "twin": "memo-exponent-operator-client"
+          }
+        }
+      },
+      "memo-object-body-reads-typeof-const": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-reads-typeof-const-client"
           }
         }
       },
@@ -18705,6 +18943,125 @@
           }
         }
       },
+      "signal-seed-reads-typeof-const": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-reads-typeof-const-client"
+          }
+        }
+      },
       "signal-seed-typeof-prop": {
         "blade": {
           "kind": "refusal",
@@ -22520,9 +22877,17 @@
         "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
       },
+      "memo-block-return-reads-typeof-const": {
+        "description": "A memo reading a const member that applies typeof renders the type name (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-return-reads-typeof-const.ts"
+      },
       "memo-exponent-operator": {
         "description": "A memo applying ** and ~ to a prop renders the computed numbers (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-exponent-operator.ts"
+      },
+      "memo-object-body-reads-typeof-const": {
+        "description": "A memo reading a const member that applies typeof renders the type name (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-body-reads-typeof-const.ts"
       },
       "memo-over-array-const-index": {
         "description": "A memo over an element of an array const, and over the length of a nested one (#3953)",
@@ -22968,6 +23333,10 @@
         "description": "A signal seeded from a const initialized by a local function a template cannot inline refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function.ts"
       },
+      "signal-seed-reads-typeof-const": {
+        "description": "A signal seed reading a const member that applies typeof renders the type name (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-reads-typeof-const.ts"
+      },
       "signal-seed-typeof-prop": {
         "description": "A signal seeded from typeof of a prop renders the type name (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-typeof-prop.ts"
@@ -23312,9 +23681,17 @@
         "description": "The /* @client */ escape of a local function call a template cannot inline",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop-client.ts"
       },
+      "memo-block-return-reads-typeof-const-client": {
+        "description": "The client-directive escape of memo-block-return-reads-typeof-const",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-return-reads-typeof-const-client.ts"
+      },
       "memo-exponent-operator-client": {
         "description": "The client-directive escape of a memo applying ** and ~ to a prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-exponent-operator-client.ts"
+      },
+      "memo-object-body-reads-typeof-const-client": {
+        "description": "The client-directive escape of memo-object-body-reads-typeof-const",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-body-reads-typeof-const-client.ts"
       },
       "memo-typeof-block-return-client": {
         "description": "The client-directive escape of a block memo returning typeof of a prop",
@@ -23435,6 +23812,10 @@
       "signal-seed-const-from-uninlinable-local-function-client": {
         "description": "The /* @client */ escape of a signal seeded from a const initialized by a local function a template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function-client.ts"
+      },
+      "signal-seed-reads-typeof-const-client": {
+        "description": "The client-directive escape of signal-seed-reads-typeof-const",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-reads-typeof-const-client.ts"
       },
       "signal-seed-typeof-prop-client": {
         "description": "The client-directive escape of a signal seeded from typeof of a prop",
@@ -25520,19 +25901,22 @@
     "server-read-unlowered-operator": {
       "title": "An operator no template lowers in a value read on the server",
       "kind": "refusal",
-      "given": "an operator outside comparison, arithmetic, `!` and unary `-` / `+` (`typeof x`, `a ** b`, `~a`, a bitwise or shift operator, `in`, `instanceof`) in a signal seed (`createSignal(typeof props.x)`), a memo body (`createMemo(() => typeof props.x)`, directly, through another memo, in a callback it runs, as the single `return` of a block body, or in a member of a returned object literal), a component const initializer (a const object literal only through a member a read reaches), or a child prop (`<Kid v={typeof props.x} />`) the server render reads",
+      "given": "an operator outside comparison, arithmetic, `!` and unary `-` / `+` (`typeof x`, `a ** b`, `~a`, a bitwise or shift operator, `in`, `instanceof`) in a signal seed (`createSignal(typeof props.x)`), a memo body (`createMemo(() => typeof props.x)`, directly, through another memo, in a callback it runs, as the single `return` of a block body, or in a member of a returned object literal), a component const initializer (a const object literal only through a member a template read reaches, or whole when a signal seed or memo body reads it), or a child prop (`<Kid v={typeof props.x} />`) the server render reads",
       "expected": "the read renders the computed value (`string` for `typeof` of a string prop)",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "child-prop-typeof",
         "const-typeof-prop",
+        "memo-block-return-reads-typeof-const",
         "memo-exponent-operator",
+        "memo-object-body-reads-typeof-const",
         "memo-typeof-block-return",
         "memo-typeof-child-prop",
         "memo-typeof-filter-callback",
         "memo-typeof-object-member",
         "memo-typeof-prop",
         "memo-typeof-through-memo",
+        "signal-seed-reads-typeof-const",
         "signal-seed-typeof-prop"
       ],
       "adapters": [

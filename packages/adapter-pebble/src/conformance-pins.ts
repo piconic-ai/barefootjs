@@ -78,6 +78,9 @@ export const conformancePins: ConformancePins = {
   'memo-typeof-filter-callback': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-typeof-block-return': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-typeof-object-member': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-object-body-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-block-return-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'signal-seed-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-exponent-operator': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'const-typeof-prop': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   // A component renders on the server whatever directive its prop carries: no escape.

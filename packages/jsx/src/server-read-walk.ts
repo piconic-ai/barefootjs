@@ -55,6 +55,12 @@ export interface ServerRead {
    * declaration with no expression tree (a block-bodied memo).
    */
   refusedCalls: readonly string[]
+  /**
+   * The names it reads when its expression has no analyzable tree (a
+   * block-bodied memo, an object-literal memo body): the analyzer's free set
+   * the walk follows instead. Unset when the tree says what it reads.
+   */
+  untreedNames: ReadonlySet<string> | undefined
 }
 
 /** What one expression reads: its free names, and those it calls with no arguments. */
@@ -106,7 +112,8 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     seen.add(binding)
     const reads = readsOf(followed.expr, followed.fallback, { scope: BindingScope.EMPTY, from: binding.scope }, ctx)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
-    const read: ServerRead = { name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls }
+    const untreedNames = reads.expr ? undefined : new Set(reads.names)
+    const read: ServerRead = { name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls, untreedNames }
     visit(read)
     if (!followsThrough || followsThrough(read)) pending.push({ reads, from: binding.scope })
   }

@@ -1218,6 +1218,12 @@ import { fixture as constTypeofPropClient } from './const-typeof-prop-client'
 import { fixture as memoTypeofChildProp } from './memo-typeof-child-prop'
 import { fixture as childPropTypeof } from './child-prop-typeof'
 import { fixture as memoVoidNullishFallback } from './memo-void-nullish-fallback'
+import { fixture as memoObjectBodyReadsTypeofConst } from './memo-object-body-reads-typeof-const'
+import { fixture as memoObjectBodyReadsTypeofConstClient } from './memo-object-body-reads-typeof-const-client'
+import { fixture as memoBlockReturnReadsTypeofConst } from './memo-block-return-reads-typeof-const'
+import { fixture as memoBlockReturnReadsTypeofConstClient } from './memo-block-return-reads-typeof-const-client'
+import { fixture as signalSeedReadsTypeofConst } from './signal-seed-reads-typeof-const'
+import { fixture as signalSeedReadsTypeofConstClient } from './signal-seed-reads-typeof-const-client'
 import { fixture as memoTypeofBlockReturn } from './memo-typeof-block-return'
 import { fixture as memoTypeofBlockReturnClient } from './memo-typeof-block-return-client'
 import { fixture as memoTypeofObjectMember } from './memo-typeof-object-member'
@@ -3454,6 +3460,12 @@ export const jsxFixtures: JSXFixture[] = [
   memoTypeofChildProp,
   childPropTypeof,
   memoVoidNullishFallback,
+  memoObjectBodyReadsTypeofConst,
+  memoObjectBodyReadsTypeofConstClient,
+  memoBlockReturnReadsTypeofConst,
+  memoBlockReturnReadsTypeofConstClient,
+  signalSeedReadsTypeofConst,
+  signalSeedReadsTypeofConstClient,
   memoTypeofBlockReturn,
   memoTypeofBlockReturnClient,
   memoTypeofObjectMember,

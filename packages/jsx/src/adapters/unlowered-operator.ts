@@ -51,17 +51,27 @@ export function refuseUnloweredOperators(ir: ComponentIR, sink: UninlinableSeedC
   }, component)
   const reads: ServerRead[] = []
   walkServerReads(ir, read => reads.push(read))
+  const unparsed = unparsedValues(ir)
+  const valueOf = (read: ServerRead): ParsedExpr | undefined =>
+    read.expr ?? (read.kind === 'signal' || read.kind === 'memo' ? unparsed.get(read.name) : undefined)
   // A signal seed or a memo body is computed apart from any emitter, from
   // the whole of each const it reads: a const it reads counts as read whole.
   for (const read of reads) {
-    if (read.expr) sources.push({ expr: read.expr, at: { scope: BindingScope.EMPTY, from: read.scope }, whole: read.kind === 'signal' || read.kind === 'memo' })
+    const value = valueOf(read)
+    if (value) sources.push({ expr: value, at: { scope: BindingScope.EMPTY, from: read.scope }, whole: read.kind === 'signal' || read.kind === 'memo' })
   }
-  const unparsed = unparsedValues(ir)
-  const constPaths = readPathsByName(sources, literalConstNames(reads), ctx)
+  const literalConsts = literalConstNames(reads)
+  const constPaths = readPathsByName(sources, literalConsts, ctx)
+  // A declaration whose reads come from the analyzer's free set rather than
+  // a tree (a block-bodied or object-literal memo body) reads each const it
+  // names whole, as far as anything here can tell.
+  for (const read of reads) {
+    for (const name of read.untreedNames ?? []) if (literalConsts.has(name)) constPaths.set(name, [...(constPaths.get(name) ?? []), []])
+  }
   for (const read of reads) {
     // A module-scope declaration is out of scope, as for the array-element refusal.
     if (read.scope === 'module') continue
-    const value = read.expr ?? (read.kind === 'signal' || read.kind === 'memo' ? unparsed.get(read.name) : undefined)
+    const value = valueOf(read)
     if (!value) continue
     const at: EvaluatedAt = { scope: BindingScope.EMPTY, from: read.scope }
     // A const read in a template position is read member by member (`o.n`
@@ -112,7 +122,7 @@ type ReadPath = ReadonlyArray<string | null>
  * is `[]`, the whole value. A name a callback or loop row binds is not the
  * const.
  */
-function readPathsByName(sources: readonly ReadSource[], names: ReadonlySet<string>, ctx: EvaluatedWalkContext): ReadonlyMap<string, ReadPath[]> {
+function readPathsByName(sources: readonly ReadSource[], names: ReadonlySet<string>, ctx: EvaluatedWalkContext): Map<string, ReadPath[]> {
   const paths = new Map<string, ReadPath[]>()
   if (names.size === 0) return paths
   const add = (name: string, path: ReadPath): void => {

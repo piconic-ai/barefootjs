@@ -12529,6 +12529,32 @@
         "text"
       ]
     },
+    "memo-block-return-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-return-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-chain": {
       "kinds": [
         "binary",
@@ -12953,6 +12979,32 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "memo-object-body-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },
@@ -21919,6 +21971,32 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

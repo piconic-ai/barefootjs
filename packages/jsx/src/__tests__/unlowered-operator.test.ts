@@ -90,8 +90,15 @@ describe('refuseUnloweredOperators', () => {
     }
     // A loop row named like the const is not the const.
     expect(refused(`${decl}; return <ul>{['a'].map(o => <li key={o}>{o}</li>)}{o.n}</ul>`)).toEqual([])
-    // A memo or seed computes from the whole const.
+    // A memo or seed computes from the whole const, whatever tree its body has.
     expect(refused(`${decl}; const m = createMemo(() => o.n + 1); return <p>{m()}</p>`)).toEqual([`'o' is initialized from`])
+    for (const memo of ['createMemo(() => ({ n: o.n }))', 'createMemo(() => { return { n: o.n } })', 'createMemo(() => { const v = o.n; return { n: v } })']) {
+      expect(refused(`${decl}; const m = ${memo}; return <p>{m().n}</p>`)).toEqual([`'o' is initialized from`])
+    }
+    expect(refused(`${decl}; const [s] = createSignal({ n: o.n }); return <p>{s().n}</p>`)).toEqual([`'o' is initialized from`])
+    // A block memo that does not name the const leaves it to the template reads.
+    expect(refused(`${decl}; const m = createMemo(() => { const v = 2; return v }); return <p>{m()}{o.n}</p>`)).toEqual([])
+    expect(refused(`${decl}; const m = createMemo(() => ({ n: o.n })); return <p>{/* @client */ m().n}</p>`)).toEqual([])
   })
 
   test('each operator no template lowers', () => {

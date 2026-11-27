@@ -9869,7 +9869,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -10268,6 +10280,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -10677,7 +10695,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -11076,6 +11106,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -11563,7 +11599,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -12091,6 +12139,12 @@
               ]
             },
             {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "signal-seed-typeof-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -12485,7 +12539,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -12884,6 +12950,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -13281,7 +13353,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -13680,6 +13764,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -14065,7 +14155,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -14464,6 +14566,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -14855,7 +14963,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -15254,6 +15374,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -15633,7 +15759,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -16032,6 +16170,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -16423,7 +16567,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -16822,6 +16978,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -18541,7 +18703,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -19006,6 +19180,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -19643,7 +19823,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -20090,6 +20282,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -20919,7 +21117,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -21546,6 +21756,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -22219,7 +22435,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -22678,6 +22906,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -23315,7 +23549,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -23774,6 +24020,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -24399,7 +24651,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -24852,6 +25116,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -25489,7 +25759,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -25948,6 +26230,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -26549,7 +26837,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -27014,6 +27314,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -27639,7 +27945,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -28092,6 +28410,12 @@
               "fixture": "signal-seed-const-from-uninlinable-local-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -39067,7 +39391,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -39430,6 +39766,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -39893,7 +40235,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -40238,6 +40592,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -40875,7 +41235,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -41310,6 +41682,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -41803,7 +42181,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -42160,6 +42550,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -42629,7 +43025,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -42986,6 +43394,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -43443,7 +43857,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -43794,6 +44220,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -44269,7 +44701,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -44626,6 +45070,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -45077,7 +45527,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -45440,6 +45902,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -45897,7 +46365,19 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -46251,6 +46731,12 @@
               ]
             },
             {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -46544,6 +47030,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -46847,6 +47345,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -47010,6 +47514,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -47313,6 +47829,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -47491,6 +48013,18 @@
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -47818,6 +48352,12 @@
               ]
             },
             {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -47984,6 +48524,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -48287,6 +48839,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -48450,6 +49008,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -48753,6 +49323,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -48922,6 +49498,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -49225,6 +49813,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -49400,6 +49994,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -49703,6 +50309,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -49848,6 +50460,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -50151,6 +50775,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50314,6 +50944,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -50617,6 +51259,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -51600,6 +52248,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -51675,6 +52335,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -51814,6 +52480,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -51889,6 +52567,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52028,6 +52712,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52109,6 +52805,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52248,6 +52950,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52323,6 +53037,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52462,6 +53182,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52537,6 +53269,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52682,6 +53420,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52757,6 +53507,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52896,6 +53652,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52971,6 +53739,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -53110,6 +53884,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -53185,6 +53971,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -53324,6 +54116,18 @@
               ]
             },
             {
+              "fixture": "memo-block-return-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-block-return",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -53399,6 +54203,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
