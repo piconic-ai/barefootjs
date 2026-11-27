@@ -2893,6 +2893,26 @@
       }
     }
   ],
+  "component-const-prop-object-identity": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "component-prop-undefined-literal-positions": [
     {
       "name": "gen:label:absent",

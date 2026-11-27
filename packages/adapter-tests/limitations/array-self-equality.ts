@@ -13,5 +13,8 @@ export default defineLimitation({
     'strict-equality-optional-array-element',
     'strict-equality-nullable-array-element',
     'module-const-literal-identity',
+    'const-literal-identity-positions',
+    'component-const-prop-object-identity',
+    'module-const-alias-identity',
   ],
 })

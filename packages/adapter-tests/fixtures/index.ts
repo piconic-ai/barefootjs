@@ -1761,6 +1761,9 @@ import { fixture as moduleConstObjectMemberSignalSeed } from './module-const-obj
 import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
 import { fixture as moduleHelperConstIdentity } from './module-helper-const-identity'
 import { fixture as moduleConstLiteralIdentity } from './module-const-literal-identity'
+import { fixture as constLiteralIdentityPositions } from './const-literal-identity-positions'
+import { fixture as componentConstPropObjectIdentity } from './component-const-prop-object-identity'
+import { fixture as moduleConstAliasIdentity } from './module-const-alias-identity'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
@@ -3182,6 +3185,9 @@ export const jsxFixtures: JSXFixture[] = [
   componentHelperSignalChildProp,
   moduleHelperConstIdentity,
   moduleConstLiteralIdentity,
+  constLiteralIdentityPositions,
+  componentConstPropObjectIdentity,
+  moduleConstAliasIdentity,
   moduleConstObjectSpreadUnresolvedComputedProps,
   moduleConstObjectSpreadUnresolvedComputedLocal,
   moduleConstObjectSpreadUnresolvedComputedOptional,

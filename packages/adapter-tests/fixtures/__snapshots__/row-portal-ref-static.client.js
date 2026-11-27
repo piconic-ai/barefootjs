@@ -58,5 +58,5 @@ export function initRowPortalRefStatic(__scope, _p = {}) {
 
 }
 
-hydrate('RowPortalRefStatic', { init: initRowPortalRefStatic, template: (_p) => `<div><p class="last" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><ul bf="s4"><!--bf-loop:l0-->${(['a', 'b']).map((r) => `<li data-key="${escapeAttr(r)}"><button type="button" class="row" data-key="${escapeAttr(r)}" bf="s3"><!--bf:s2-->${escapeText(r)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('RowPortalRefStatic', { init: initRowPortalRefStatic, template: (_p) => `${((__bf_const_ROWS) => `<div><p class="last" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><ul bf="s4"><!--bf-loop:l0-->${(__bf_const_ROWS).map((r) => `<li data-key="${escapeAttr(r)}"><button type="button" class="row" data-key="${escapeAttr(r)}" bf="s3"><!--bf:s2-->${escapeText(r)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul></div>`)((['a', 'b']))}` })
 export function RowPortalRefStatic(_p, __bfKey) { return createComponent('RowPortalRefStatic', _p, __bfKey) }

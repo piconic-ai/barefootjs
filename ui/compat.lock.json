@@ -4287,6 +4287,125 @@
           }
         }
       },
+      "component-const-prop-object-identity": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -4671,6 +4790,125 @@
           "limitations": [
             "loop-shadowed-const-alias-hop"
           ]
+        }
+      },
+      "const-literal-identity-positions": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         }
       },
       "const-object-prop-identity-hydrate": {
@@ -9216,6 +9454,125 @@
           "escape": {
             "state": "escapable",
             "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        }
+      },
+      "module-const-alias-identity": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
           }
         }
       },
@@ -20388,6 +20745,10 @@
         "description": "a component const holding the anonymous arrow an immediately invoked arrow returns keeps its empty…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-returns-function.ts"
       },
+      "component-const-prop-object-identity": {
+        "description": "a component const object built from a prop is the same object at two reads",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-prop-object-identity.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -20403,6 +20764,10 @@
       "const-getter-read-loop-shadowed": {
         "description": "A const reading a signal getter, read in a loop row that shadows the getter, keeps the signal value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-getter-read-loop-shadowed.ts"
+      },
+      "const-literal-identity-positions": {
+        "description": "an object literal const is the same object at an attribute, text, loop rows and child props",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-literal-identity-positions.ts"
       },
       "const-object-prop-identity-hydrate": {
         "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
@@ -20679,6 +21044,10 @@
       "memo-uninlinable-local-function-named-like-prop": {
         "description": "A memo calling a local function named like a typed prop that a template cannot inline refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop.ts"
+      },
+      "module-const-alias-identity": {
+        "description": "a const aliasing an object literal const is the same object as it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-alias-identity.ts"
       },
       "module-const-array-member-signal-seed": {
         "description": "A signal seeded from the length of a module-level literal array const renders the seed",
@@ -21272,6 +21641,10 @@
         "description": "The client-directive escape of component-const-iife-returns-function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-returns-function-client.ts"
       },
+      "strict-equality-reference-rewrite": {
+        "description": "=== / !== over a primitive field of two objects or arrays instead of the objects themselves",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-reference-rewrite.ts"
+      },
       "computed-const-loop-source-parenthesized-precomputed": {
         "description": "prop-precompute twin of computed-const-loop-source-parenthesized — a parenthesized prop source…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized-precomputed.ts"
@@ -21451,10 +21824,6 @@
       "module-const-inherited-key-value-client": {
         "description": "a signal seed and memos reading an inherited const key, read only from /* @client */, defer to the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-value-client.ts"
-      },
-      "strict-equality-reference-rewrite": {
-        "description": "=== / !== over a primitive field of two objects or arrays instead of the objects themselves",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-reference-rewrite.ts"
       },
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
@@ -21668,6 +22037,9 @@
       "expected": "`===` is true and `!==` is false",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "component-const-prop-object-identity",
+        "const-literal-identity-positions",
+        "module-const-alias-identity",
         "module-const-literal-identity",
         "strict-equality-nullable-array-element",
         "strict-equality-optional-array-element",

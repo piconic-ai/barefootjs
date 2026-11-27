@@ -52,7 +52,29 @@ export function initCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['check']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -62,51 +84,7 @@ hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['check']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['check']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CheckIcon(_p, __bfKey) { return createComponent('CheckIcon', _p, __bfKey) }
 export function initChevronDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -160,7 +138,29 @@ export function initChevronDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-down']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -170,51 +170,7 @@ hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-down']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-down']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ChevronDownIcon(_p, __bfKey) { return createComponent('ChevronDownIcon', _p, __bfKey) }
 export function initChevronUpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -268,7 +224,29 @@ export function initChevronUpIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-up']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-up']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -278,51 +256,7 @@ hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-up']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-up']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ChevronUpIcon(_p, __bfKey) { return createComponent('ChevronUpIcon', _p, __bfKey) }
 export function initChevronLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -376,7 +310,29 @@ export function initChevronLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-left']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -386,51 +342,7 @@ hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-left']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-left']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ChevronLeftIcon(_p, __bfKey) { return createComponent('ChevronLeftIcon', _p, __bfKey) }
 export function initChevronRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -484,7 +396,29 @@ export function initChevronRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-right']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -494,51 +428,7 @@ hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-right']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-right']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ChevronRightIcon(_p, __bfKey) { return createComponent('ChevronRightIcon', _p, __bfKey) }
 export function initXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -592,7 +482,29 @@ export function initXIcon(__scope, _p = {}) {
 
 }
 
-hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('XIcon', { init: initXIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['x']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['x']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -602,51 +514,7 @@ hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmln
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['x']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['x']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function XIcon(_p, __bfKey) { return createComponent('XIcon', _p, __bfKey) }
 export function initPlusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -700,7 +568,29 @@ export function initPlusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['plus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['plus']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -710,51 +600,7 @@ hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['plus']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['plus']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function PlusIcon(_p, __bfKey) { return createComponent('PlusIcon', _p, __bfKey) }
 export function initMinusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -808,7 +654,29 @@ export function initMinusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['minus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['minus']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -818,51 +686,7 @@ hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['minus']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['minus']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function MinusIcon(_p, __bfKey) { return createComponent('MinusIcon', _p, __bfKey) }
 export function initSunIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -916,7 +740,29 @@ export function initSunIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('SunIcon', { init: initSunIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['sun']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['sun']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -926,51 +772,7 @@ hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['sun']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['sun']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function SunIcon(_p, __bfKey) { return createComponent('SunIcon', _p, __bfKey) }
 export function initMoonIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1024,7 +826,29 @@ export function initMoonIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['moon']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['moon']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1034,51 +858,7 @@ hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['moon']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['moon']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function MoonIcon(_p, __bfKey) { return createComponent('MoonIcon', _p, __bfKey) }
 export function initMonitorIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1132,7 +912,29 @@ export function initMonitorIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['monitor']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['monitor']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1142,51 +944,7 @@ hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spread
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['monitor']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['monitor']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function MonitorIcon(_p, __bfKey) { return createComponent('MonitorIcon', _p, __bfKey) }
 export function initCopyIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1240,7 +998,29 @@ export function initCopyIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['copy']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['copy']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1250,51 +1030,7 @@ hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['copy']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['copy']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CopyIcon(_p, __bfKey) { return createComponent('CopyIcon', _p, __bfKey) }
 export function initClipboardIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1348,7 +1084,29 @@ export function initClipboardIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1358,51 +1116,7 @@ hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ClipboardIcon(_p, __bfKey) { return createComponent('ClipboardIcon', _p, __bfKey) }
 export function initClipboardCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1456,7 +1170,29 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard-check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard-check']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1466,51 +1202,7 @@ hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard-check']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard-check']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ClipboardCheckIcon(_p, __bfKey) { return createComponent('ClipboardCheckIcon', _p, __bfKey) }
 export function initMenuIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1564,7 +1256,29 @@ export function initMenuIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['menu']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['menu']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1574,51 +1288,7 @@ hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['menu']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['menu']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function MenuIcon(_p, __bfKey) { return createComponent('MenuIcon', _p, __bfKey) }
 export function initArrowLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1672,7 +1342,29 @@ export function initArrowLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-left']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1682,51 +1374,7 @@ hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-left']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-left']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ArrowLeftIcon(_p, __bfKey) { return createComponent('ArrowLeftIcon', _p, __bfKey) }
 export function initArrowRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1780,7 +1428,29 @@ export function initArrowRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-right']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1790,51 +1460,7 @@ hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-right']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-right']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ArrowRightIcon(_p, __bfKey) { return createComponent('ArrowRightIcon', _p, __bfKey) }
 export function initArrowUpDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1888,7 +1514,29 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-up-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-up-down']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1898,51 +1546,7 @@ hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-up-down']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-up-down']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function ArrowUpDownIcon(_p, __bfKey) { return createComponent('ArrowUpDownIcon', _p, __bfKey) }
 export function initEllipsisIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1973,7 +1577,7 @@ export function initEllipsisIcon(__scope, _p = {}) {
 
 }
 
-hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1983,7 +1587,7 @@ hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>` })
+})[_p.size] } : {}))}` })
 export function EllipsisIcon(_p, __bfKey) { return createComponent('EllipsisIcon', _p, __bfKey) }
 export function initGitHubIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2014,7 +1618,7 @@ export function initGitHubIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2024,7 +1628,7 @@ hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function GitHubIcon(_p, __bfKey) { return createComponent('GitHubIcon', _p, __bfKey) }
 export function initSettingsIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2055,7 +1659,7 @@ export function initSettingsIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2065,7 +1669,7 @@ hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>` })
+})[_p.size] } : {}))}` })
 export function SettingsIcon(_p, __bfKey) { return createComponent('SettingsIcon', _p, __bfKey) }
 export function initGlobeIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2096,7 +1700,7 @@ export function initGlobeIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2106,7 +1710,7 @@ hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function GlobeIcon(_p, __bfKey) { return createComponent('GlobeIcon', _p, __bfKey) }
 export function initLogOutIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2137,7 +1741,7 @@ export function initLogOutIcon(__scope, _p = {}) {
 
 }
 
-hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2147,7 +1751,7 @@ hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function LogOutIcon(_p, __bfKey) { return createComponent('LogOutIcon', _p, __bfKey) }
 export function initCircleHelpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2178,7 +1782,7 @@ export function initCircleHelpIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2188,7 +1792,7 @@ hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `<svg ${
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CircleHelpIcon(_p, __bfKey) { return createComponent('CircleHelpIcon', _p, __bfKey) }
 export function initSearchIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2219,7 +1823,7 @@ export function initSearchIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2229,7 +1833,7 @@ hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function SearchIcon(_p, __bfKey) { return createComponent('SearchIcon', _p, __bfKey) }
 export function initCircleCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2260,7 +1864,7 @@ export function initCircleCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2270,7 +1874,7 @@ hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CircleCheckIcon(_p, __bfKey) { return createComponent('CircleCheckIcon', _p, __bfKey) }
 export function initCircleXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2301,7 +1905,7 @@ export function initCircleXIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2311,7 +1915,7 @@ hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `<svg ${spread
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CircleXIcon(_p, __bfKey) { return createComponent('CircleXIcon', _p, __bfKey) }
 export function initTriangleAlertIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2342,7 +1946,7 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
 
 }
 
-hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2352,7 +1956,7 @@ hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `<
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function TriangleAlertIcon(_p, __bfKey) { return createComponent('TriangleAlertIcon', _p, __bfKey) }
 export function initInfoIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2383,7 +1987,7 @@ export function initInfoIcon(__scope, _p = {}) {
 
 }
 
-hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2393,7 +1997,7 @@ hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function InfoIcon(_p, __bfKey) { return createComponent('InfoIcon', _p, __bfKey) }
 export function initCalendarIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2424,7 +2028,7 @@ export function initCalendarIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2434,7 +2038,7 @@ hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function CalendarIcon(_p, __bfKey) { return createComponent('CalendarIcon', _p, __bfKey) }
 export function initGripVerticalIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2465,7 +2069,7 @@ export function initGripVerticalIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2475,7 +2079,7 @@ hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>` })
+})[_p.size] } : {}))}` })
 export function GripVerticalIcon(_p, __bfKey) { return createComponent('GripVerticalIcon', _p, __bfKey) }
 export function initLoaderCircleIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2529,7 +2133,29 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
 
 }
 
-hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['loader-circle']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['loader-circle']) + '"' : ''}></path></svg>`)(({
+  'check': 'M20 6 9 17l-5-5',
+  'chevron-down': 'm6 9 6 6 6-6',
+  'chevron-up': 'm18 15-6-6-6 6',
+  'chevron-left': 'm15 18-6-6 6-6',
+  'chevron-right': 'm9 18 6-6-6-6',
+  'x': 'M18 6 6 18M6 6l12 12',
+  'plus': 'M5 12h14M12 5v14',
+  'minus': 'M5 12h14',
+  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
+  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
+  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
+  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
+  'menu': 'M4 6h16M4 12h16M4 18h16',
+  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
+  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
+  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
+  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
+  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
+  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
+}), (_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2539,51 +2165,7 @@ hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['loader-circle']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['loader-circle']) + '"' : ''}></path></svg>` })
+})[_p.size] } : {}))}` })
 export function LoaderCircleIcon(_p, __bfKey) { return createComponent('LoaderCircleIcon', _p, __bfKey) }
 export function initPanelLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2614,7 +2196,7 @@ export function initPanelLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>`)((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2624,7 +2206,7 @@ hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>` })
+})[_p.size] } : {}))}` })
 export function PanelLeftIcon(_p, __bfKey) { return createComponent('PanelLeftIcon', _p, __bfKey) }
 export function initIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2859,7 +2441,7 @@ export function initIcon(__scope, _p = {}) {
   initChild('PanelLeftIcon', _s2, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className","name"]))
 }
 
-hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
+hydrate('Icon', { init: initIcon, template: (_p) => `${((__bf_const_linecap) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2879,7 +2461,7 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
   md: 20,
   lg: 24,
   xl: 32,
-})[(_p.size === undefined ? 'md' : _p.size)])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round')) != null ? 'stroke-linecap="' + escapeAttr((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round')) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
+})[(_p.size === undefined ? 'md' : _p.size)])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${((__bf_const_linecap)) != null ? 'stroke-linecap="' + escapeAttr((__bf_const_linecap)) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}`)((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round'))}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var documentOrder = documentOrder ?? function(a, b) {

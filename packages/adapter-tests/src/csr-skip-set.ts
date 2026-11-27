@@ -310,15 +310,15 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // silent entry in `CSR_RENDER_DIVERGENCES` as well.
   'module-helper-param-reads-module-const',
   'module-function-reads-module-const',
-  // A REAL SSR/CSR divergence: an object const compared with itself
-  // (`B === B`). The CSR template splices a const's value at each read, so
-  // each read is a separate object and the comparison renders `false` where
-  // the server renders `true`. That holds for a literal const on main as
-  // for one built by a zero-param helper call (#3975). The template adapters
-  // refuse the comparison (BF101), and the refusal entries list both, so
-  // neither can cite a silent entry in `CSR_RENDER_DIVERGENCES` as well.
-  'module-helper-const-identity',
-  'module-const-literal-identity',
+  // A REAL SSR/CSR divergence: a const aliasing an object literal const
+  // (`const C = B`), compared with it. The CSR template binds a const whose
+  // own initializer evaluates a fresh value once per template evaluation,
+  // but the alias is spliced with the literal it resolves to, so each read
+  // of `C` is a separate object and the comparisons render `false` where
+  // the server renders `true`. The template adapters refuse the comparison
+  // (BF101), and the refusal entry lists it, so it cannot cite a silent
+  // entry in `CSR_RENDER_DIVERGENCES` as well.
+  'module-const-alias-identity',
   // Same harness-configuration artifact: whether the CSR template may
   // evaluate `Date.UTC()` through the computed const `stamp` is decided by
   // the adapter's `acceptsTemplateCall`, which this harness does not pass,
