@@ -1064,6 +1064,15 @@ type bfToggleItemIn struct {
 	DefaultOn interface{}
 }
 
+// bfPageShellIn is PageShellInput as NewPageShellProps reads it: each
+// bf.Opt field as its JS value.
+type bfPageShellIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Children interface{}
+}
+
 // bfPostArticleIn is PostArticleInput as NewPostArticleProps reads it: each
 // bf.Opt field as its JS value.
 type bfPostArticleIn struct {
@@ -1828,7 +1837,13 @@ func NewNowPlayingProps(in NowPlayingInput) NowPlayingProps {
 }
 
 // NewPageShellProps creates PageShellProps from PageShellInput.
-func NewPageShellProps(in PageShellInput) PageShellProps {
+func NewPageShellProps(input PageShellInput) PageShellProps {
+	in := bfPageShellIn{
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		Children: bf.ChildrenIn(input.Children),
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "PageShell_" + randomID(6)
