@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, spreadKeysAliasingAttr, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -1153,7 +1153,9 @@ function isEmptyStringFallback(fallback: ParsedExpr): boolean {
  * `?? ''`, on the left of another `?? fallback`, or on the left of
  * `|| fallback` (#3554). A chained
  * `(children ?? '<b>x</b>') ?? ''` reads as `children ?? ('<b>x</b>' ?? '')`
- * (`nullishChainParts`), so its inner fallback stays escaped text. A name the enclosing loop rows bind
+ * (`nullishChainParts`), so its inner fallback stays escaped text. A
+ * component-scope const holding one of the fallback reads
+ * (`childrenFallbackConstRead`) reads as it. A name the enclosing loop rows bind
  * (item, index, destructured names and preamble locals, through `scope`)
  * shadows the prop; a component-body `const children` cannot coexist with a
  * destructured `children` param, so the destructure is the binding when it
@@ -1164,20 +1166,59 @@ function childrenReadOf(
   analyzer: AnalyzerContext,
   scope: BindingScope,
 ): IRExpression['childrenRead'] | null {
+  const fallback = childrenFallbackReadOf(parsed, analyzer, scope)
+  if (fallback) return fallback
+  if (isBareChildrenRead(parsed, analyzer, scope)) return 'bare'
+  // A component-scope const holding a fallback read of the prop
+  // (`const label = props.children ?? 'x'`) reads as that fallback read.
+  // Shadowing is checked once, for the name the expression itself reads.
+  if (parsed.kind !== 'identifier' || scope.isBound(parsed.name)) return null
+  return childrenFallbackConstRead(parsed.name, analyzer)
+}
+
+/**
+ * A `??` / `||` read whose head is a bare read of the children prop
+ * (`isBareChildrenRead`): `children ?? ''`, `children ?? fallback`,
+ * `children || fallback`; `null` for anything else.
+ */
+function childrenFallbackReadOf(
+  parsed: ParsedExpr,
+  analyzer: AnalyzerContext,
+  scope: BindingScope,
+): Exclude<IRExpression['childrenRead'], 'bare' | undefined> | null {
   const chain = nullishChainParts(parsed)
   if (chain) {
-    if (childrenReadOf(chain.head, analyzer, scope) !== 'bare') return null
+    if (!isBareChildrenRead(chain.head, analyzer, scope)) return null
     return isEmptyStringFallback(chain.fallback) ? 'nullish-empty' : 'nullish-fallback'
   }
   const orChain = fallbackChainParts(parsed, '||')
-  if (orChain) return childrenReadOf(orChain.head, analyzer, scope) === 'bare' ? 'or-fallback' : null
-  // Shadowing is checked once, for the name the expression itself reads.
-  if (parsed.kind === 'identifier') {
-    return !scope.isBound(parsed.name) && isChildrenBinding(parsed.name, analyzer) ? 'bare' : null
-  }
+  if (orChain) return isBareChildrenRead(orChain.head, analyzer, scope) ? 'or-fallback' : null
+  return null
+}
+
+/** A name holding the children prop (`isChildrenBinding`) or `<propsObject>.children`, not shadowed by `scope`. */
+function isBareChildrenRead(parsed: ParsedExpr, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  if (parsed.kind === 'identifier') return !scope.isBound(parsed.name) && isChildrenBinding(parsed.name, analyzer)
   const readsProps =
     parsed.kind === 'member' && parsed.object.kind === 'identifier' && !scope.isBound(parsed.object.name)
-  return readsProps && isPropsChildrenMember(parsed, analyzer) ? 'bare' : null
+  return readsProps && isPropsChildrenMember(parsed, analyzer)
+}
+
+/**
+ * The fallback read a component-scope const holds, reached through const
+ * alias hops (`const label = props.children ?? 'x'`, `const d = label`).
+ * The initializer resolves in the component scope it was declared in, so
+ * a loop row binding a name at the use site does not shadow it there.
+ */
+function childrenFallbackConstRead(
+  name: string,
+  analyzer: AnalyzerContext,
+): Exclude<IRExpression['childrenRead'], 'bare' | undefined> | null {
+  const consts = childrenHopConstants(analyzer)
+  return resolveAliasOrigin(childrenAliasHops(analyzer), name, n => {
+    const init = consts.get(n)
+    return init ? childrenFallbackReadOf(init, analyzer, BindingScope.EMPTY) : null
+  })
 }
 
 /**
@@ -8156,6 +8197,7 @@ function processAttributes(
     })
   }
   markAttrsOverridableBySpread(attrs, ctx)
+  markAttrsShadowingSpreadAliases(attrs, ctx)
 
   // The ref callback is resolved once, for both the SSR-portal recognition
   // and BF063. BF063 runs after the loop so it sees every attribute this
@@ -8228,6 +8270,83 @@ function markAttrsOverridableBySpread(
     }
     if (tests.aliasOverriders.length > 0) attr.spreadAliasOverriders = tests.aliasOverriders
   })
+}
+
+/**
+ * Sets `IRAttribute.spreadAliasShadows` on each attribute written after an
+ * open spread whose bag may carry the same attribute under a key a JSX
+ * runtime keeps apart from the attribute's own (`htmlFor` beside `for`,
+ * `tabIndex` beside `tabindex`, `spreadKeysAliasingAttr`). Only the JSX
+ * runtimes (the reference, the client JS) read it, so the keys are theirs,
+ * whatever the target adapter's spread helper renames. JS keeps the
+ * last write, so `<label {...rest} htmlFor="y">` renders one `for`, the
+ * literal's; a JSX runtime that writes the literal as `for` and the bag key
+ * as `htmlFor` holds two props and renders both.
+ *
+ * A closed rest key (`restExpandedKey`) is left as it is: when the rest
+ * lacks the key at render time, the earlier bag's value is the last write.
+ */
+function markAttrsShadowingSpreadAliases(attrs: IRAttribute[], ctx: TransformContext): void {
+  const firstSpread = attrs.findIndex(attr => attr.value.kind === 'spread')
+  if (firstSpread < 0) return
+  attrs.forEach((attr, index) => {
+    if (index <= firstSpread || attr.value.kind === 'spread' || attr.restExpandedKey) return
+    const aliasKeys = spreadKeysAliasingAttr(toSpreadAttrName(attr.name))
+    if (aliasKeys.length === 0) return
+    const shadowed = new Set<string>()
+    for (const spread of attrs.slice(0, index)) {
+      if (spread.value.kind !== 'spread') continue
+      for (const key of keysBagMayClear(spread.value.expr, aliasKeys, ctx)) shadowed.add(key)
+    }
+    if (shadowed.size > 0) attr.spreadAliasShadows = [...shadowed]
+  })
+}
+
+/**
+ * {@link keysBagMayCarry} for a key a JSX runtime only clears, never reads:
+ * a props object whose type admits undeclared keys (`props: Record<string,
+ * unknown>`) may carry any of them. The literal guard keeps the narrower
+ * answer, as reading an undeclared prop off it fails on a template adapter.
+ */
+function keysBagMayClear(spreadExpr: string, keys: readonly string[], ctx: TransformContext): readonly string[] {
+  const name = spreadExpr.trim()
+  if (name === ctx.analyzer.propsObjectName && !ctx.scope.isBound(name) && ctx.analyzer.propsObjectTypeOpen) return keys
+  const literal = literalBagKeys(constBagInitializer(parseExpression(name), ctx))
+  if (literal !== null) return keys.filter(key => literal.has(key))
+  return keysBagMayCarry(spreadExpr, keys, ctx)
+}
+
+/**
+ * A spread of a component `const` (`const sizeAttrs = size ? {…} : {}`)
+ * read as its initializer, one hop; any other expression as it is.
+ */
+function constBagInitializer(parsed: ParsedExpr | null, ctx: TransformContext): ParsedExpr | null {
+  if (parsed?.kind !== 'identifier' || ctx.scope.isBound(parsed.name)) return parsed
+  const constant = constantsByName(ctx).get(parsed.name)
+  return (constant?.declarationKind === 'const' && constant.parsed) || parsed
+}
+
+/**
+ * The keys an inline object spread can carry when it spells them all
+ * (`{...(size ? { width: size } : {})}`, `{...(on && { title: 't' })}`), or
+ * null when it may carry others (a nested spread, any other expression).
+ */
+function literalBagKeys(parsed: ParsedExpr | null): Set<string> | null {
+  if (parsed === null) return null
+  switch (parsed.kind) {
+    case 'object-literal':
+      return parsed.properties.every(p => p.kind === 'prop')
+        ? new Set(parsed.properties.map(p => (p.kind === 'prop' ? p.key : '')))
+        : null
+    case 'conditional': {
+      const consequent = literalBagKeys(parsed.consequent)
+      const alternate = consequent && literalBagKeys(parsed.alternate)
+      return consequent && alternate ? new Set([...consequent, ...alternate]) : null
+    }
+    // A falsy left side spreads nothing.
+    case 'logical': return parsed.op === '&&' ? literalBagKeys(parsed.right) : null
+    default: return null
+  }
 }
 
 /**

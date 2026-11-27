@@ -3728,6 +3728,112 @@
           ]
         }
       },
+      "children-fallback-const-row-shadow": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        }
+      },
+      "children-fallback-value-shapes": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        }
+      },
       "children-read-into-state-forms": {
         "go-template": {
           "kind": "refusal",
@@ -16558,6 +16664,62 @@
           ]
         }
       },
+      "spread-closed-rest-boolean-values": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        }
+      },
       "spread-closed-rest-both-cases-later-write": {
         "blade": {
           "kind": "render",
@@ -16972,6 +17134,62 @@
           ]
         }
       },
+      "spread-open-bag-boolean-values": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        }
+      },
       "spread-open-bag-hono-renamed-keys": {
         "blade": {
           "kind": "render",
@@ -17022,6 +17240,62 @@
           ]
         }
       },
+      "spread-open-bag-literal-alias-after": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        }
+      },
       "spread-open-bag-literal-case-alias": {
         "blade": {
           "kind": "render",
@@ -17069,6 +17343,62 @@
           "kind": "render",
           "limitations": [
             "spread-bag-camel-key-name"
+          ]
+        }
+      },
+      "spread-open-bag-literal-other-spelling-after": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
           ]
         }
       },
@@ -17134,6 +17464,62 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "spread-open-props-object-literal-alias-after": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
         }
       },
       "static-array-from-props": {
@@ -18865,6 +19251,14 @@
         "description": "An element child a component reads into state renders as that element",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-element-read-into-state.ts"
       },
+      "children-fallback-const-row-shadow": {
+        "description": "A children fallback const read in a row whose parameter shadows a name its initializer reads",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-const-row-shadow.ts"
+      },
+      "children-fallback-value-shapes": {
+        "description": "A fallback read of the children prop with a boolean or number fallback keeps present children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-value-shapes.ts"
+      },
       "children-read-into-state-forms": {
         "description": "Every way of computing state from dynamic JSX children sees those children",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-forms.ts"
@@ -19561,6 +19955,10 @@
         "description": "Closed rest keys hidden and HIDDEN render as separate writes, beside a bare hidden",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-boolean-case-keys.ts"
       },
+      "spread-closed-rest-boolean-values": {
+        "description": "Boolean values in a closed rest render as the reference renders them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-boolean-values.ts"
+      },
       "spread-closed-rest-both-cases-later-write": {
         "description": "A literal after a closed rest declaring tabIndex and tabindex renders once, the literal",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-both-cases-later-write.ts"
@@ -19597,13 +19995,25 @@
         "description": "An open bag after a closed rest spread displaces the folded literal only where it writes the same…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-then-bag-renamed-key.ts"
       },
+      "spread-open-bag-boolean-values": {
+        "description": "Boolean values in an open spread bag render as the reference renders them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-boolean-values.ts"
+      },
       "spread-open-bag-hono-renamed-keys": {
         "description": "Open rest bag renames only the spread keys the reference renames and writes other camelCase keys as…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-hono-renamed-keys.ts"
       },
+      "spread-open-bag-literal-alias-after": {
+        "description": "An attribute after an open bag carrying its htmlFor / httpEquiv spread key renders once, with the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-alias-after.ts"
+      },
       "spread-open-bag-literal-case-alias": {
         "description": "A literal tabIndex / tabindex before an open bag carrying tabIndex renders the bag value once",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-case-alias.ts"
+      },
+      "spread-open-bag-literal-other-spelling-after": {
+        "description": "An attribute after an open bag carrying its crossOrigin / tabIndex / viewbox spelling renders once,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-other-spelling-after.ts"
       },
       "spread-open-bag-literal-renamed-elsewhere": {
         "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
@@ -19612,6 +20022,10 @@
       "spread-open-object-prop-bag": {
         "description": "A destructured object prop with an index signature spread onto an element renders every entry",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-object-prop-bag.ts"
+      },
+      "spread-open-props-object-literal-alias-after": {
+        "description": "An attribute after a spread of an open props object carrying its htmlFor spread key renders once,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-props-object-literal-alias-after.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
@@ -20122,7 +20536,9 @@
       "expected": "the key renders once, with the last write; a `null` bag value overrides the earlier literal and renders nothing",
       "actual": "Renders the key twice, so a browser keeps the first, or renders the earlier literal where the bag holds `null`",
       "fixtures": [
-        "attr-spread-key-overlap"
+        "attr-spread-key-overlap",
+        "spread-open-bag-literal-alias-after",
+        "spread-open-bag-literal-other-spelling-after"
       ],
       "adapters": [
         "blade",
@@ -20425,6 +20841,69 @@
       "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
       "fixtures": [
         "children-element-read-into-state"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-boolean-display": {
+      "title": "A children fallback read with a boolean fallback",
+      "kind": "silent",
+      "given": "a `??` / `||` read of the children prop whose fallback is a boolean (`{props.children ?? false}`, `{children || false}`), read directly or through a body const (`const label = props.children ?? false`), rendered as text",
+      "expected": "present children render as markup (`<p><i>a</i></p>`); absent children render nothing, as `{false}` does",
+      "actual": "drops present children read through the const (`<p></p>`) and renders absent children as `false` (`<p>false</p>`)",
+      "fixtures": [
+        "children-fallback-value-shapes"
+      ],
+      "adapters": [
+        "blade",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-const-shadowed-read": {
+      "title": "A children fallback const read where a name its initializer reads is shadowed",
+      "kind": "silent",
+      "given": "a component-scope const holding a `??` / `||` read of the children prop (`const label = props.children ?? '<s>row</s>'`) rendered as text in a loop row whose parameter has the name of something the initializer reads (`[1].map((props) => <li key={props}>{label}</li>)`)",
+      "expected": "the initializer reads the component's props where it is declared: present children render as markup (`<li><i>a</i></li>`), absent children render the fallback as escaped text",
+      "actual": "renders the row empty (`<li></li>`)",
+      "fixtures": [
+        "children-fallback-const-row-shadow"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-reactive-slot": {
+      "title": "A children fallback read whose fallback is reactive",
+      "kind": "silent",
+      "given": "a client component that renders a `??` / `||` read of `props.children` whose fallback reads another prop or a signal (`{props.children ?? props.alt}`, `{props.children || text()}`), directly or through a body const (`const label = props.children ?? props.alt`), called with an element as its JSX children (`<Alt><i>a</i></Alt>`)",
+      "expected": "the element renders inside the read's text slot (`<!--bf:s0--><i>a</i><!--/-->`); absent children render the fallback as escaped text",
+      "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
+      "fixtures": [
+        "children-fallback-reactive-read"
       ],
       "adapters": [
         "hono",
@@ -21851,6 +22330,28 @@
         "xslate"
       ]
     },
+    "spread-bag-boolean-value": {
+      "title": "A boolean spread bag value for a key outside the boolean attribute set",
+      "kind": "silent",
+      "given": "an open spread bag or a closed rest whose key is not in the reference's boolean attribute set (`readOnly`, `data-x`, `title`) and holds `true` or `false`",
+      "expected": "the key renders with the value's text (`readOnly=\"true\"`, `data-x=\"true\"`, `data-y=\"false\"`); a key in the boolean attribute set (`disabled`) renders bare for `true` and is dropped for `false`",
+      "actual": "Renders `true` as a bare attribute and drops `false` (`read-only`, `data-x`), or spells `false` as `0`",
+      "fixtures": [
+        "spread-closed-rest-boolean-values",
+        "spread-open-bag-boolean-values"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "spread-bag-camel-key-name": {
       "title": "An open spread bag key in camelCase outside the spread renames",
       "kind": "silent",
@@ -22114,15 +22615,17 @@
     "whole-props-spread-undeclared-prop": {
       "title": "An undeclared prop through a whole-props spread",
       "kind": "silent",
-      "given": "a child that spreads its whole props object onto an element (`<b {...props}>`) is passed a prop its props type does not declare",
+      "given": "a component that spreads its whole props object onto an element (`<b {...props}>`) is passed a prop its props type does not declare, including one an index signature admits (`props: Record<string, unknown>`)",
       "expected": "the undeclared prop renders on the spread element (`title=\"passed\"`)",
       "actual": "drops the undeclared prop from the element",
       "fixtures": [
-        "child-undeclared-prop-whole-props-spread"
+        "child-undeclared-prop-whole-props-spread",
+        "spread-open-props-object-literal-alias-after"
       ],
       "adapters": [
         "blade",
         "erb",
+        "go-template",
         "jinja",
         "minijinja",
         "mojolicious",

@@ -41,6 +41,7 @@ export {
   toSpreadAttrName,
   spreadKeysRenamedTo,
   spreadKeysInOtherCase,
+  spreadKeysAliasingAttr,
   foldAttrName,
   jsxAttrKey,
   SPREAD_KEYS_RENAMED_EVERYWHERE,

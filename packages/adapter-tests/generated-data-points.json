@@ -2451,6 +2451,26 @@
       }
     }
   ],
+  "children-body-const-fallback-read": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "children-element-read-into-state": [
     {
       "name": "gen:tone:absent",
@@ -20967,6 +20987,63 @@
         "on": false,
         "id": "",
         "n": 0
+      }
+    }
+  ],
+  "spread-open-bag-literal-alias-after": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:attrs:absent",
+      "props": {
+        "label": "L",
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
       }
     }
   ],

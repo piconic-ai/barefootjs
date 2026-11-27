@@ -178,6 +178,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
   'spread-open-bag-literal-case-alias',
+  'spread-open-bag-literal-alias-after',
+  'spread-open-bag-literal-other-spelling-after',
+  'spread-open-props-object-literal-alias-after',
+  // The CSR template renders a closed rest's `readOnly: true` as a bare
+  // boolean, and the open bag reaches its element only through
+  // `applyRestAttrs` (limitation `spread-bag-boolean-value`).
+  'spread-open-bag-boolean-values',
+  'spread-closed-rest-boolean-values',
   // A DOM serializes an HTML element's attribute names lowercased, so the
   // client-built element shows the closed rest's `tabIndex` as `tabindex`
   // where the reference writes the key's spelling; a browser reads both as
@@ -399,6 +407,9 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An element child a component reads into a signal: the CSR template
   // prints the signal's initial value as escaped text.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
+  // A children fallback read with a reactive fallback: its text slot
+  // escapes present children markup.
+  'children-fallback-reactive-read': { limitation: 'children-fallback-reactive-slot' },
   // A module const whose immediately invoked arrow reads another module
   // const: the CSR template has no form for it, so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },

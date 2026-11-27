@@ -608,6 +608,11 @@ import { fixture as spreadClosedRestAttrNames } from './spread-closed-rest-attr-
 import { fixture as spreadClosedRestAttrNamesOverlap } from './spread-closed-rest-attr-names-overlap'
 import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-literal-alias-before'
 import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
+import { fixture as spreadOpenBagLiteralAliasAfter } from './spread-open-bag-literal-alias-after'
+import { fixture as spreadOpenBagLiteralOtherSpellingAfter } from './spread-open-bag-literal-other-spelling-after'
+import { fixture as spreadOpenPropsObjectLiteralAliasAfter } from './spread-open-props-object-literal-alias-after'
+import { fixture as spreadOpenBagBooleanValues } from './spread-open-bag-boolean-values'
+import { fixture as spreadClosedRestBooleanValues } from './spread-closed-rest-boolean-values'
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
 import { fixture as spreadOpenBagLiteralCaseAlias } from './spread-open-bag-literal-case-alias'
 import { fixture as spreadClosedRestLiteralCaseAlias } from './spread-closed-rest-literal-case-alias'
@@ -1763,6 +1768,10 @@ import { fixture as childrenRenamedParam } from './children-renamed-param'
 import { fixture as childrenRenamedParamFallbackShapes } from './children-renamed-param-fallback-shapes'
 import { fixture as childrenRenamedParamConditional } from './children-renamed-param-conditional'
 import { fixture as childrenLocalBindsOtherProp } from './children-local-binds-other-prop'
+import { fixture as childrenFallbackValueShapes } from './children-fallback-value-shapes'
+import { fixture as childrenFallbackReactiveRead } from './children-fallback-reactive-read'
+import { fixture as childrenFallbackConstRowShadow } from './children-fallback-const-row-shadow'
+import { fixture as childrenBodyConstFallbackRead } from './children-body-const-fallback-read'
 import { fixture as childrenAliasHop } from './children-alias-hop'
 import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fragment-root'
 import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
@@ -2293,6 +2302,11 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestAttrNamesOverlap,
   spreadOpenBagLiteralAliasBefore,
   spreadClosedRestLiteralAliasAfter,
+  spreadOpenBagLiteralAliasAfter,
+  spreadOpenBagLiteralOtherSpellingAfter,
+  spreadOpenPropsObjectLiteralAliasAfter,
+  spreadOpenBagBooleanValues,
+  spreadClosedRestBooleanValues,
   spreadOpenBagLiteralRenamedElsewhere,
   spreadOpenBagLiteralCaseAlias,
   spreadClosedRestLiteralCaseAlias,
@@ -3200,6 +3214,10 @@ export const jsxFixtures: JSXFixture[] = [
   childrenRenamedParamConditional,
   childrenLocalBindsOtherProp,
   childrenAliasHop,
+  childrenBodyConstFallbackRead,
+  childrenFallbackValueShapes,
+  childrenFallbackReactiveRead,
+  childrenFallbackConstRowShadow,
   childrenAliasHopFragmentRoot,
   childrenRenamedBesideChildrenLocal,
   childrenAliasLoopShadow,

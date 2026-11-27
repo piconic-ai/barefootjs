@@ -2334,6 +2334,27 @@
         "text"
       ]
     },
+    "children-body-const-fallback-read": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -2379,6 +2400,59 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "children-fallback-const-row-shadow": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-fallback-reactive-read": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-fallback-value-shapes": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -21243,6 +21317,16 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-boolean-values": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-both-cases-later-write": {
       "kinds": [
         "identifier",
@@ -21502,7 +21586,25 @@
         "text"
       ]
     },
+    "spread-open-bag-boolean-values": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-open-bag-hono-renamed-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-alias-after": {
       "kinds": [
         "identifier"
       ],
@@ -21541,6 +21643,18 @@
         "text"
       ]
     },
+    "spread-open-bag-literal-other-spelling-after": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-open-bag-literal-renamed-elsewhere": {
       "kinds": [
         "identifier"
@@ -21551,6 +21665,15 @@
       ]
     },
     "spread-open-object-prop-bag": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-props-object-literal-alias-after": {
       "kinds": [
         "identifier"
       ],
