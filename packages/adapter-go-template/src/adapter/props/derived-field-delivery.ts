@@ -14,6 +14,7 @@
 import type { IRComponent, IRProp, ParsedExpr, SourceLocation } from '@barefootjs/jsx'
 import type { CompileState } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import type { NestedDerivedReading } from './nested-input-forwards.ts'
 
 /**
  * The first of a child's constructor-derived fields that reads the prop the
@@ -58,6 +59,37 @@ export function refuseTemplateTimeDeliveryToDerivedField(
     },
   })
   return true
+}
+
+/**
+ * BF101 when `propName` (`children` or a JSX-valued prop) is delivered to
+ * `<childName>` at template execute time and `<childName>` forwards it into
+ * a nested component whose constructor-derived field reads it (`reading`,
+ * from `nestedDerivedReading`, #3986): `<childName>`'s constructor builds
+ * that nested component before the value arrives.
+ */
+export function refuseTemplateTimeDeliveryToNestedDerivedField(
+  state: Pick<CompileState, 'errors'>,
+  childName: string,
+  reading: NestedDerivedReading,
+  propName: string,
+  loc: SourceLocation,
+): void {
+  const isChildren = propName === 'children'
+  const what = isChildren ? 'its children' : `its '${propName}' prop`
+  const value = isChildren ? 'these children' : `this '${propName}' value`
+  const { child, prop, owner, field } = reading
+  state.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `<${childName}> passes ${what} to <${child}>'s '${prop}' prop, and <${owner}>'s '${field}' is computed from it when <${childName}>'s props are constructed, but the Go template adapter renders ${value} only when the template executes, after that computation, so '${field}' would be computed as if ${what} were absent.`,
+    loc,
+    suggestion: {
+      message: isChildren
+        ? `Render \`props.children\` in <${childName}> directly instead of passing it to <${child}>'s '${prop}', or pass <${childName}> static text children outside a loop row.`
+        : `Render \`props.${propName}\` in <${childName}> directly instead of passing it to <${child}>'s '${prop}', or pass <${childName}> a '${propName}' value that is not JSX.`,
+    },
+  })
 }
 
 /**

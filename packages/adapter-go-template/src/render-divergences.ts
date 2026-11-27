@@ -125,6 +125,11 @@ export const renderDivergences: RenderDivergences = {
   'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
   // A defaulted body destructure of children read into state seeds nil.
   'children-body-default-nullish-seed': { limitation: 'body-default-children-read-into-state' },
+  // Children delivered at template execute time and forwarded into a nested
+  // component's prop: the forwarding component's constructor built the
+  // nested Props before they arrived, so the nested component reads the prop
+  // as absent.
+  'children-forwarded-into-child-prop-plain': { limitation: 'template-time-children-forwarded-into-child-prop' },
   // #3988: a children fallback of `false` / `0` read through a const (or a
   // destructured children) drops present children and prints the fallback
   // for absent ones, on every DSL adapter but ERB (as on main).
