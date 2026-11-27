@@ -226,3 +226,31 @@ func TestTypedNilIsNull(t *testing.T) {
 		t.Errorf("ToString({}) = %q", got)
 	}
 }
+
+// A child's Children field tells an omitted value (undefined) from a passed
+// `null`: PassChildren marks the null, ChildrenIn reads both back (#3987).
+func TestPassChildrenAndChildrenIn(t *testing.T) {
+	var field interface{}
+	if got := ChildrenIn(field); !IsUndefined(got) {
+		t.Errorf("ChildrenIn of an omitted field = %#v, want Undefined", got)
+	}
+	if got := ChildrenIn(PassChildren(field, nil)); got != nil || IsUndefined(got) {
+		t.Errorf("ChildrenIn of a passed null = %#v, want nil", got)
+	}
+	if got := ChildrenIn(PassChildren(field, Null[string]())); got != nil {
+		t.Errorf("ChildrenIn of a passed Null Opt = %#v, want nil", got)
+	}
+	if got := ChildrenIn(PassChildren(field, Undefined)); !IsUndefined(got) {
+		t.Errorf("ChildrenIn of a passed undefined = %#v, want Undefined", got)
+	}
+	if got := ChildrenIn(PassChildren(field, template.HTML("<i>a</i>"))); got != template.HTML("<i>a</i>") {
+		t.Errorf("ChildrenIn of markup = %#v", got)
+	}
+	// A concrete Children field takes its zero value for null, as Coerce does.
+	if got := PassChildren("", nil); got != "" {
+		t.Errorf("PassChildren into string of null = %q, want the zero value", got)
+	}
+	if got := PassChildren("", "x"); got != "x" {
+		t.Errorf("PassChildren into string of x = %q", got)
+	}
+}

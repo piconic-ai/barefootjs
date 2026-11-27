@@ -641,8 +641,10 @@ import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child
 import { fixture as propsObjectSpreadChildChildren } from './props-object-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
+import { fixture as childrenAbsentReadIntoState } from './children-absent-read-into-state'
 import { fixture as childrenMarkupNullishSeed } from './children-markup-nullish-seed'
 import { fixture as childrenMarkupNullishMemo } from './children-markup-nullish-memo'
+import { fixture as childrenAbsentForwarded } from './children-absent-forwarded'
 import { fixture as nullishSeedOverUnknownProp } from './nullish-seed-over-unknown-prop'
 import { fixture as childrenDynamicReadIntoState } from './children-dynamic-read-into-state'
 import { fixture as childrenReadIntoStateForms } from './children-read-into-state-forms'
@@ -2311,8 +2313,10 @@ export const jsxFixtures: JSXFixture[] = [
   propsObjectSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
+  childrenAbsentReadIntoState,
   childrenMarkupNullishSeed,
   childrenMarkupNullishMemo,
+  childrenAbsentForwarded,
   nullishSeedOverUnknownProp,
   childrenDynamicReadIntoState,
   childrenReadIntoStateForms,
