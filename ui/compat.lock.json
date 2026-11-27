@@ -9611,6 +9611,14 @@
           }
         }
       },
+      "memo-block-branch-local-scope": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "block-memo-static-value-unseeded"
+          ]
+        }
+      },
       "memo-block-called-function-reads-typeof-const": {
         "blade": {
           "kind": "refusal",
@@ -23294,6 +23302,10 @@
         "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
       },
+      "memo-block-branch-local-scope": {
+        "description": "A block memo reads a module const past a branch-local of the same name (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-branch-local-scope.ts"
+      },
       "memo-block-called-function-reads-typeof-const": {
         "description": "A block memo calling a function over a typeof const member renders the type name (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-called-function-reads-typeof-const.ts"
@@ -24518,6 +24530,19 @@
       ],
       "diagnostics": [
         "BF056"
+      ]
+    },
+    "block-memo-static-value-unseeded": {
+      "title": "A block memo whose value only the static evaluator computes",
+      "kind": "silent",
+      "given": "a block-bodied memo with more than one statement that no template lowers but whose value the static evaluator computes (`if (true) { const label = 'x' } return label` beside a module `label`), read on the server",
+      "expected": "the read renders the computed value (the module const the branch-local does not shadow)",
+      "actual": "renders the slot empty",
+      "fixtures": [
+        "memo-block-branch-local-scope"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "body-default-children-read-into-state": {

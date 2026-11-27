@@ -1224,6 +1224,7 @@ import { fixture as constTypeofPropClient } from './const-typeof-prop-client'
 import { fixture as memoTypeofChildProp } from './memo-typeof-child-prop'
 import { fixture as childPropTypeof } from './child-prop-typeof'
 import { fixture as memoVoidNullishFallback } from './memo-void-nullish-fallback'
+import { fixture as memoBlockBranchLocalScope } from './memo-block-branch-local-scope'
 import { fixture as memoBlockShadowingLocalReadsTypeofConst } from './memo-block-shadowing-local-reads-typeof-const'
 import { fixture as memoBlockShadowingLocalReadsTypeofConstClient } from './memo-block-shadowing-local-reads-typeof-const-client'
 import { fixture as memoBlockLocalChainReadsTypeofConst } from './memo-block-local-chain-reads-typeof-const'
@@ -3485,6 +3486,7 @@ export const jsxFixtures: JSXFixture[] = [
   memoTypeofChildProp,
   childPropTypeof,
   memoVoidNullishFallback,
+  memoBlockBranchLocalScope,
   memoBlockShadowingLocalReadsTypeofConst,
   memoBlockShadowingLocalReadsTypeofConstClient,
   memoBlockLocalChainReadsTypeofConst,

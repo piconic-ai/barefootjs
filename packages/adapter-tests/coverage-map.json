@@ -12657,6 +12657,22 @@
         "text"
       ]
     },
+    "memo-block-branch-local-scope": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-block-called-function-reads-typeof-const": {
       "kinds": [
         "arrow",

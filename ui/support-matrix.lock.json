@@ -11779,6 +11779,12 @@
               ]
             },
             {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "memo-block-called-function-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -17696,6 +17702,12 @@
               ]
             },
             {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
@@ -21480,6 +21492,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
@@ -31904,6 +31922,12 @@
               ]
             },
             {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "memo-block-called-function-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -41988,6 +42012,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
@@ -60700,6 +60730,12 @@
               ]
             },
             {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "memo-block-shadowing-local-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -65790,6 +65826,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-branch-local-scope",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {

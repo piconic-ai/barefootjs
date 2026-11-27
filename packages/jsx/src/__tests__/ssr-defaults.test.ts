@@ -517,6 +517,39 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.k).toEqual({ value: 'ab' })
   })
 
+  test('a local declared in an `if` block ends with the block; a `var` is hoisted (#3981)', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      import { lookup } from './lookup'
+      const label = 'fallback'
+      const w = 'outer'
+      function Foo() {
+        const a = createMemo(() => { if (true) { const label = JSON.stringify('branch') } return label })
+        const b = createMemo(() => { if (true) { const label = 'x' } return label })
+        const c = createMemo(() => { if (true) { const label = lookup(); return label } return 'z' })
+        const d = createMemo(() => { if (true) { if (true) { const label = 'x' } return label } return 'n' })
+        const e = createMemo(() => { if (true) { const { label } = lookup() } return label })
+        const f = createMemo(() => { if (true) { var v = 'a' } return v })
+        const g = createMemo(() => { if (false) { var w = 'a' } return w ?? 'none' })
+        const h = createMemo(() => { if (true) { const label = 'x'; if (true) return label } return 'n' })
+        const i = createMemo(() => { for (const x of [1]) { const label = 'x' } return label })
+        return <p>{a()}{b()}{c()}{d()}{e()}{f()}{g()}{h()}{i()}</p>
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.a).toEqual({ value: 'fallback' })
+    expect(defaults?.b).toEqual({ value: 'fallback' })
+    expect(defaults?.c).toEqual({ value: null })
+    expect(defaults?.d).toEqual({ value: 'fallback' })
+    expect(defaults?.e).toEqual({ value: 'fallback' })
+    expect(defaults?.f).toEqual({ value: 'a' })
+    expect(defaults?.g).toEqual({ value: 'none' })
+    expect(defaults?.h).toEqual({ value: 'x' })
+    // Any other statement leaves the memo unresolved, as before.
+    expect(defaults?.i).toEqual({ value: null })
+  })
+
   test('non-evaluable initials yield null (caller falls back at render time)', () => {
     const metadata = metadataFor(`
       'use client'

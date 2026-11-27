@@ -933,10 +933,13 @@ function seedExpandedArray(c: ConstantInfo, bindings: Record<string, EvalResult>
 function evalStatementsForReturn(
   statements: readonly ts.Statement[],
   ctx: EvalContext,
+  enclosing: ReadonlyArray<Record<string, EvalResult>> = [],
 ): EvalResult | typeof NO_RETURN {
+  shadowBlockScoped(statements, ctx.bindings)
+  const scopes = [...enclosing, ctx.bindings]
   for (const stmt of statements) {
     if (ts.isVariableStatement(stmt)) {
-      bindLocals(stmt, ctx)
+      bindLocals(stmt, ctx, scopes)
     } else if (ts.isReturnStatement(stmt)) {
       return stmt.expression ? evalNode(stmt.expression, ctx) : UNRESOLVED
     } else if (ts.isIfStatement(stmt)) {
@@ -944,10 +947,9 @@ function evalStatementsForReturn(
       if (cond === UNRESOLVED) return UNRESOLVED
       const branch = cond ? stmt.thenStatement : stmt.elseStatement
       if (branch) {
-        const taken = evalStatementsForReturn(
-          ts.isBlock(branch) ? branch.statements : [branch],
-          ctx,
-        )
+        // The branch is a block of its own: what it declares ends with it.
+        const inner: EvalContext = { ...ctx, bindings: { ...ctx.bindings } }
+        const taken = evalStatementsForReturn(ts.isBlock(branch) ? branch.statements : [branch], inner, scopes)
         if (taken !== NO_RETURN) return taken
       }
       // Guard not taken (or its branch fell through) — continue.
@@ -961,16 +963,66 @@ function evalStatementsForReturn(
 
 /**
  * Bind each name `stmt` declares to its initializer's value. A local
- * shadows the name it declares for the rest of the block, resolved or not:
- * bound to UNRESOLVED (a destructured one always is), a `return` / guard
- * reading it surfaces UNRESOLVED instead of an outer binding of that name
- * (`const label = o.kind; return label` beside a module `label`).
+ * shadows the name it declares, resolved or not: bound to UNRESOLVED (a
+ * destructured one always is), a `return` / guard reading it surfaces
+ * UNRESOLVED instead of an outer binding of that name (`const label =
+ * o.kind; return label` beside a module `label`). A `let` / `const` lives in
+ * the block `ctx` evaluates; a `var` in the function, so it is bound in
+ * every enclosing block of it too (`scopes`, outermost first).
  */
-function bindLocals(stmt: ts.VariableStatement, ctx: EvalContext): void {
+function bindLocals(stmt: ts.VariableStatement, ctx: EvalContext, scopes: ReadonlyArray<Record<string, EvalResult>>): void {
+  const isVar = (stmt.declarationList.flags & ts.NodeFlags.BlockScoped) === 0
   for (const d of stmt.declarationList.declarations) {
     const v = ts.isIdentifier(d.name) && d.initializer ? evalNode(d.initializer, ctx) : UNRESOLVED
-    for (const name of bindingNames(d.name)) ctx.bindings[name] = v
+    for (const name of bindingNames(d.name)) {
+      ctx.bindings[name] = v
+      if (isVar) for (const scope of scopes) scope[name] = v
+    }
   }
+}
+
+/**
+ * Bind the names the `let` / `const` statements directly in `statements`
+ * declare to UNRESOLVED: such a name is in scope for its whole block, before
+ * its declaration too (where reading it throws), so no outer name of it
+ * shows through.
+ */
+function shadowBlockScoped(statements: readonly ts.Statement[], bindings: Record<string, EvalResult>): void {
+  for (const stmt of statements) {
+    if (!ts.isVariableStatement(stmt) || !(stmt.declarationList.flags & ts.NodeFlags.BlockScoped)) continue
+    for (const d of stmt.declarationList.declarations) for (const name of bindingNames(d.name)) bindings[name] = UNRESOLVED
+  }
+}
+
+/**
+ * The bindings a function body starts with: `outer`'s, and each name its
+ * `var` statements declare, hoisted to `undefined` (`hoistedVarNames`).
+ */
+function functionBodyBindings(outer: Record<string, EvalResult>, statements: readonly ts.Statement[]): Record<string, EvalResult> {
+  const bindings: Record<string, EvalResult> = { ...outer }
+  for (const name of hoistedVarNames(statements)) bindings[name] = undefined
+  return bindings
+}
+
+/**
+ * The names the `var` statements of a function body declare, through the
+ * `if` branches the evaluator enters (not into nested functions).
+ */
+function hoistedVarNames(statements: readonly ts.Statement[]): string[] {
+  const names: string[] = []
+  const visit = (stmt: ts.Statement): void => {
+    if (ts.isVariableStatement(stmt)) {
+      if ((stmt.declarationList.flags & ts.NodeFlags.BlockScoped) === 0) {
+        for (const d of stmt.declarationList.declarations) names.push(...bindingNames(d.name))
+      }
+    } else if (ts.isIfStatement(stmt)) {
+      for (const branch of [stmt.thenStatement, stmt.elseStatement]) {
+        if (branch) (ts.isBlock(branch) ? branch.statements : [branch]).forEach(visit)
+      }
+    }
+  }
+  statements.forEach(visit)
+  return names
 }
 
 /** The names a declaration binds, through destructuring patterns. */
@@ -1068,8 +1120,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   if (ts.isArrowFunction(node)) {
     if (node.parameters.length !== 0) return UNRESOLVED
     if (!ts.isBlock(node.body)) return evalNode(node.body as ts.Expression, ctx)
-    const localBindings: Record<string, EvalResult> = { ...ctx.bindings }
-    const localCtx: EvalContext = { ...ctx, bindings: localBindings }
+    const localCtx: EvalContext = { ...ctx, bindings: functionBodyBindings(ctx.bindings, node.body.statements) }
     const result = evalStatementsForReturn(node.body.statements, localCtx)
     return result === NO_RETURN ? UNRESOLVED : result
   }
