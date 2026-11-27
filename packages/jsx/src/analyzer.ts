@@ -4431,7 +4431,7 @@ function collectConstant(
 
   const isModule = _isModule
   const name = node.name.text
-  const initializer = constantInitializer(node, declarationKind, ctx.sourceFile)
+  const initializer = constantInitializer(node, declarationKind, ctx)
   let value = initializer
     ? ctx.getJS(initializer)
     : undefined
@@ -4682,9 +4682,9 @@ function collectConstant(
  * template folds `B.k`, #4022). Only a body that evaluates to the same value
  * each time (`repeatableAppliedArrowValue`), and only for a `const`.
  */
-function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let', sourceFile: ts.SourceFile): ts.Expression | undefined {
+function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let', ctx: AnalyzerContext): ts.Expression | undefined {
   if (!node.initializer || declarationKind !== 'const') return node.initializer
-  return repeatableAppliedArrowValue(node.initializer, sourceFile) ?? node.initializer
+  return repeatableAppliedArrowValue(node.initializer, ctx.sourceFile) ?? node.initializer
 }
 
 /** `ConstantInfo.callsFunctionLiteral` for the recorded initializer (`constantInitializer`). */

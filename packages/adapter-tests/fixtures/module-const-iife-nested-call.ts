@@ -4,7 +4,8 @@ import { createFixture } from '../src/types'
  * Module consts whose initializer calls an arrow literal in place below the
  * top: under an operator, inside an arrow the outer call peels to
  * (`(() => (() => 1)() + 2)()`), in a conditional, a template literal, an
- * array literal and an array iteration callback. No template evaluates the
+ * array literal, an array iteration callback, and the defaults of such a
+ * callback's parameters (plain and destructured). No template evaluates the
  * call, so the template adapters refuse the reads (BF101,
  * `const-iife-unlowered`).
  */
@@ -21,11 +22,13 @@ const C = c ? (() => 'c')() : 'd'
 const T = \`t\${(() => 'v')()}\`
 const L = [(() => 'l')()]
 const M = ['m'].map(x => (() => x + '!')())
+const D = [undefined].map((x = (() => 'd')()) => x)
+const E = [{}].map(({ a = (() => 'e')() }: { a?: string }) => a)
 export function ModuleConstIifeNestedCall() {
-  return <p>{P}|{Q}|{C}|{T}|{L[0]}|{M[0]}</p>
+  return <p>{P}|{Q}|{C}|{T}|{L[0]}|{M[0]}|{D[0]}|{E[0]}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test">3|3|c|tv|l|m!</p>
+    <p bf-s="test">3|3|c|tv|l|m!|d|e</p>
   `,
 })

@@ -17,11 +17,13 @@ const C = c ? (() => 'c')() : 'd'
 const T = \`t\${(() => 'v')()}\`
 const L = [(() => 'l')()]
 const M = ['m'].map(x => (() => x + '!')())
+const D = [undefined].map((x = (() => 'd')()) => x)
+const E = [{}].map(({ a = (() => 'e')() }: { a?: string }) => a)
 export function ModuleConstIifeNestedCallClient() {
-  return <p>{/* @client */ P}|{/* @client */ Q}|{/* @client */ C}|{/* @client */ T}|{/* @client */ L[0]}|{/* @client */ M[0]}</p>
+  return <p>{/* @client */ P}|{/* @client */ Q}|{/* @client */ C}|{/* @client */ T}|{/* @client */ L[0]}|{/* @client */ M[0]}|{/* @client */ D[0]}|{/* @client */ E[0]}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/-->|<!--bf:s2--><!--/-->|<!--bf:s3--><!--/-->|<!--bf:s4--><!--/-->|<!--bf:s5--><!--/--></p>
+    <p bf-s="test"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/-->|<!--bf:s2--><!--/-->|<!--bf:s3--><!--/-->|<!--bf:s4--><!--/-->|<!--bf:s5--><!--/-->|<!--bf:s6--><!--/-->|<!--bf:s7--><!--/--></p>
   `,
 })

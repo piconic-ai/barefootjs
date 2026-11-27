@@ -60,6 +60,26 @@ describe('a const initialized by an applied zero-param arrow', () => {
     expect(constantOf(`const B = ((() => ({ k: 'v' }))!)()`, 'B').value).toBe("({ k: 'v' })")
   })
 
+  test('a read resolves to the declaration it sees: a const or a param named like an unrelated `let` lowers', () => {
+    const unrelated = `function other() { let n = 2; let label = 'x'; var v = 3; return n + label + v }`
+    expect(constantOf(`const n = 1\n${unrelated}\nconst B = (() => n)()`, 'B').value).toBe('n')
+    const viaParam = irFor(unrelated, `const B = (() => ({ k: props.label }))()\n return <p>{B.k}</p>`).metadata.localConstants.find(c => c.name === 'B')!
+    expect(viaParam.parsed?.kind).toBe('object-literal')
+    // A shorthand read resolves the same way.
+    expect(constantOf(`const n = 1\n${unrelated}\nconst B = (() => ({ n }))()`, 'B').parsed?.kind).toBe('object-literal')
+    // A visible `let` / `var` (module scope, or one the component declares) keeps the call.
+    expect(constantOf(`let n = 1\nconst B = (() => n)()`, 'B').callsFunctionLiteral).toBe(true)
+    expect(constantOf(`var n = 1\nconst B = (() => ({ n }))()`, 'B').callsFunctionLiteral).toBe(true)
+    const local = irFor(`const n = 1`, `let n = 2\n const B = (() => n)()\n return <p>{B}</p>`).metadata.localConstants.find(c => c.name === 'B')!
+    expect(local.callsFunctionLiteral).toBe(true)
+  })
+
+  test('`arguments`, `this` and the like as a key or a member name read nothing', () => {
+    expect(constantOf(`const B = (() => ({ arguments: 1, this: 2, super: 3, delete: 4, await: 5, yield: 6 }))()`, 'B').parsed?.kind).toBe('object-literal')
+    expect(constantOf(`const O = { arguments: 'a' }\nconst B = (() => O.arguments)()`, 'B').value).toBe('O.arguments')
+    expect(constantOf(`const B = (() => ({ [String('k')]: 1 }))()`, 'B').callsFunctionLiteral).toBe(true)
+  })
+
   test('a component-scope const takes the same decision', () => {
     const c = irFor('', `const B = (() => ({ k: props.label }))()\n return <p>{B.k}</p>`).metadata.localConstants.find(c => c.name === 'B')!
     expect(c.parsed?.kind).toBe('object-literal')
@@ -108,10 +128,20 @@ describe('a const initialized by an applied zero-param arrow', () => {
       `const B = [1].map(x => (() => x + 1)())`,
       `const B = (function* () { yield 1 })()`,
     ]) expect(constantOf(decl, 'B').callsFunctionLiteral).toBe(true)
-    // A function stored in the value runs only when called.
+    // The defaults of an in-place callback's parameters run with it.
+    for (const decl of [
+      `const B = [undefined].map((x = (() => 1)()) => x)`,
+      `const B = [{}].map(({ a = (() => 1)() }: { a?: number }) => a)`,
+      `const B = [[]].map(([a = [(() => 1)()][0]]: number[]) => a)`,
+      `const B = [undefined].map(function (x = (() => 1)()) { return x })`,
+    ]) expect(constantOf(decl, 'B').callsFunctionLiteral).toBe(true)
+    // A function stored in the value runs only when called, its defaults too.
     expect(constantOf(`const H = { safe: 'x', f: () => (() => 1)() }`, 'H').callsFunctionLiteral).toBeUndefined()
+    expect(constantOf(`const H = { safe: 'x', f: (x = (() => 1)()) => x }`, 'H').callsFunctionLiteral).toBeUndefined()
+    expect(constantOf(`const H = { safe: 'x', f(x = (() => 1)()) { return x } }`, 'H').callsFunctionLiteral).toBeUndefined()
     expect(constantOf(`const H = [1].map(x => x + 1)`, 'H').callsFunctionLiteral).toBeUndefined()
-  })
+    // A `.map(` initializer builds a per-file program for type-based detection (~1s each).
+  }, 60_000)
 
   test('reads of the enclosing function keep the call', () => {
     for (const body of ['typeof this', 'arguments.length', 'typeof new.target']) {

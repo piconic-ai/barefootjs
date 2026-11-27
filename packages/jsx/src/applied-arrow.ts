@@ -23,7 +23,6 @@
 
 import ts from 'typescript'
 import { isArrayIterationCallee } from './in-place-function.ts'
-import { extractFreeIdentifiersFromNode } from './free-identifiers.ts'
 
 /**
  * `node` without the wrappers that change nothing about its value:
@@ -96,7 +95,10 @@ function isWrite(node: ts.Node): boolean {
 /**
  * Whether `node` reads a binding of the function it is evaluated in (`this`,
  * `super`, `arguments`, `new.target`) or suspends it (`await`, `yield`): the
- * body spliced elsewhere would read another function's.
+ * body spliced elsewhere would read another function's. Only a node in an
+ * evaluated position reaches here (`forEachEvaluatedChild`): `o.arguments`
+ * and `{ arguments: 1 }` read no `arguments`, and the keywords are their own
+ * node kinds, never a property name.
  */
 function readsEnclosingFunction(node: ts.Node): boolean {
   if (node.kind === ts.SyntaxKind.ThisKeyword || node.kind === ts.SyntaxKind.SuperKeyword) return true
@@ -118,7 +120,20 @@ function isRepeatableBody(node: ts.Node): boolean {
   if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) return false
   if (isWrite(node) || readsEnclosingFunction(node)) return false
   if (ts.isCallExpression(node)) return isAppliedZeroParamArrow(node)
-  return ts.forEachChild(node, child => (isRepeatableBody(child) ? undefined : true)) !== true
+  return forEachEvaluatedChild(node, child => (isRepeatableBody(child) ? undefined : true)) !== true
+}
+
+/**
+ * `ts.forEachChild` over the children of `node` that are evaluated as
+ * expressions: a property name (`o.arguments`, `{ arguments: 1 }`, a non-computed
+ * key) and a type are not, so an identifier there reads no binding.
+ */
+function forEachEvaluatedChild<T>(node: ts.Node, cb: (child: ts.Node) => T | undefined): T | undefined {
+  if (ts.isPropertyAccessExpression(node)) return cb(node.expression)
+  if (ts.isPropertyAssignment(node)) {
+    return (ts.isComputedPropertyName(node.name) ? cb(node.name) : undefined) ?? cb(node.initializer)
+  }
+  return ts.forEachChild(node, child => (ts.isTypeNode(child) ? undefined : cb(child)))
 }
 
 /** Whether `node` holds a function or class literal anywhere (an arrow, a function expression, a method, a class). */
@@ -128,10 +143,9 @@ function containsFunctionLiteral(node: ts.Node): boolean {
 }
 
 /**
- * Names the file declares with `let` or `var`, anywhere: a read of one may
- * see a value assigned after its declaration, which the consumers of a
- * const's initializer do not follow (they read the declared initializer).
- * Collected once per file.
+ * Names the file declares with `let` or `var`, anywhere: a read of any other
+ * name cannot resolve to one, so {@link readsMutableBinding} resolves only
+ * reads of these. Collected once per file.
  */
 const mutableNamesByFile = new WeakMap<ts.SourceFile, ReadonlySet<string>>()
 
@@ -140,7 +154,7 @@ function mutableBindingNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
   if (cached) return cached
   const names = new Set<string>()
   const visit = (node: ts.Node): void => {
-    if (ts.isVariableDeclarationList(node) && (node.flags & ts.NodeFlags.Const) === 0) {
+    if (ts.isVariableDeclarationList(node) && isMutableDeclarationList(node)) {
       for (const d of node.declarations) collectBindingNames(d.name, names)
     }
     ts.forEachChild(node, visit)
@@ -148,6 +162,10 @@ function mutableBindingNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
   visit(sourceFile)
   mutableNamesByFile.set(sourceFile, names)
   return names
+}
+
+function isMutableDeclarationList(list: ts.VariableDeclarationList): boolean {
+  return (list.flags & ts.NodeFlags.Const) === 0
 }
 
 function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
@@ -160,14 +178,118 @@ function collectBindingNames(name: ts.BindingName, out: Set<string>): void {
   }
 }
 
-/** Whether `body` reads a name the file declares with `let` or `var` (`mutableBindingNames`). */
+/** Each identifier `body` reads as a binding (not a property name or a type), shorthand values included. */
+function forEachReadIdentifier(body: ts.Node, cb: (id: ts.Identifier) => boolean): boolean {
+  const visit = (node: ts.Node): boolean => {
+    if (ts.isIdentifier(node)) return cb(node)
+    if (ts.isShorthandPropertyAssignment(node)) return cb(node.name)
+    return forEachEvaluatedChild(node, child => (visit(child) ? true : undefined)) === true
+  }
+  return visit(body)
+}
+
+type Mutability = 'mutable' | 'immutable'
+
+/** The names each scope node declares, by mutability (`scopeDeclarations`). */
+const declarationsByScope = new WeakMap<ts.Node, ReadonlyMap<string, Mutability>>()
+
+function recordBindingNames(name: ts.BindingName, kind: Mutability, out: Map<string, Mutability>): void {
+  const names = new Set<string>()
+  collectBindingNames(name, names)
+  for (const n of names) if (!out.has(n)) out.set(n, kind)
+}
+
+function recordDeclarationList(list: ts.VariableDeclarationList, out: Map<string, Mutability>): void {
+  const kind: Mutability = isMutableDeclarationList(list) ? 'mutable' : 'immutable'
+  for (const d of list.declarations) recordBindingNames(d.name, kind, out)
+}
+
+/** The `var` declarations a function body or a file holds, not those of a nested function. */
+function recordHoistedVars(root: ts.Node, out: Map<string, Mutability>): void {
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node) || ts.isClassLike(node)) return
+    if (ts.isVariableDeclarationList(node) && (node.flags & ts.NodeFlags.BlockScoped) === 0) recordDeclarationList(node, out)
+    ts.forEachChild(node, visit)
+  }
+  ts.forEachChild(root, visit)
+}
+
+/** A statement's own block-scoped or hoisted-name declaration (`let` / `const`, a function, a class, an import). */
+function recordStatement(stmt: ts.Statement, out: Map<string, Mutability>): void {
+  if (ts.isVariableStatement(stmt) && (stmt.declarationList.flags & ts.NodeFlags.BlockScoped) !== 0) {
+    recordDeclarationList(stmt.declarationList, out)
+  } else if ((ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt) || ts.isEnumDeclaration(stmt)) && stmt.name) {
+    if (!out.has(stmt.name.text)) out.set(stmt.name.text, 'immutable')
+  } else if (ts.isImportDeclaration(stmt) && stmt.importClause) {
+    const clause = stmt.importClause
+    if (clause.name) out.set(clause.name.text, 'immutable')
+    const bindings = clause.namedBindings
+    if (bindings && ts.isNamespaceImport(bindings)) out.set(bindings.name.text, 'immutable')
+    if (bindings && ts.isNamedImports(bindings)) for (const el of bindings.elements) out.set(el.name.text, 'immutable')
+  }
+}
+
+/** Whether `scope` holds statements (a file, a block, a `case`), whose declarations it records. */
+function recordStatementScope(scope: ts.Node, out: Map<string, Mutability>): boolean {
+  if (!(ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope) || ts.isCaseClause(scope) || ts.isDefaultClause(scope))) return false
+  for (const stmt of scope.statements) recordStatement(stmt, out)
+  if (ts.isSourceFile(scope) || (ts.isBlock(scope) && ts.isFunctionLike(scope.parent))) recordHoistedVars(scope, out)
+  return true
+}
+
+/** Whether `scope` is a function, a `for` or a `catch`, whose own bindings it records. */
+function recordBindingScope(scope: ts.Node, out: Map<string, Mutability>): boolean {
+  if (ts.isFunctionLike(scope)) {
+    for (const param of scope.parameters) recordBindingNames(param.name, 'immutable', out)
+    if ((ts.isFunctionExpression(scope) || ts.isClassExpression(scope)) && scope.name) out.set(scope.name.text, 'immutable')
+    return true
+  }
+  if (ts.isForStatement(scope) || ts.isForInStatement(scope) || ts.isForOfStatement(scope)) {
+    if (scope.initializer && ts.isVariableDeclarationList(scope.initializer)) recordDeclarationList(scope.initializer, out)
+    return true
+  }
+  if (!ts.isCatchClause(scope)) return false
+  if (scope.variableDeclaration) recordBindingNames(scope.variableDeclaration.name, 'mutable', out)
+  return true
+}
+
+/** The names `scope` itself declares, or null for a node that opens no scope. */
+function scopeDeclarations(scope: ts.Node): ReadonlyMap<string, Mutability> | null {
+  const cached = declarationsByScope.get(scope)
+  if (cached) return cached
+  const out = new Map<string, Mutability>()
+  if (!recordStatementScope(scope, out) && !recordBindingScope(scope, out)) return null
+  declarationsByScope.set(scope, out)
+  return out
+}
+
+/**
+ * The declaration a read of `id` sees, resolved lexically: the nearest
+ * enclosing scope that declares the name decides. A name no scope declares
+ * is a global, which a module's code does not reassign: `immutable`. A node
+ * with no parent chain (a re-parse without parents) resolves to `mutable`.
+ */
+function resolvedMutability(id: ts.Identifier): Mutability {
+  for (let node: ts.Node | undefined = id.parent; node; node = node.parent) {
+    const kind = scopeDeclarations(node)?.get(id.text)
+    if (kind) return kind
+    if (ts.isSourceFile(node)) return 'immutable'
+  }
+  return 'mutable'
+}
+
+/**
+ * Whether `body` reads a `let` or `var`, whose value at the call may be one
+ * assigned after its declaration, which the consumers of a const's
+ * initializer do not follow (they read the declared initializer). Each read
+ * is resolved to the declaration it sees (`resolvedMutability`), so a
+ * `const` or a prop named like an unrelated `let` elsewhere is not one. Only
+ * a name some `let` / `var` of the file spells is resolved at all.
+ */
 function readsMutableBinding(body: ts.Expression, sourceFile: ts.SourceFile): boolean {
   const mutable = mutableBindingNames(sourceFile)
   if (mutable.size === 0) return false
-  for (const name of extractFreeIdentifiersFromNode(body)) {
-    if (mutable.has(name)) return true
-  }
-  return false
+  return forEachReadIdentifier(body, id => mutable.has(id.text) && resolvedMutability(id) === 'mutable')
 }
 
 /** At most this many applied arrows are peeled off one initializer. */
@@ -209,7 +331,8 @@ export function repeatableAppliedArrowValue(init: ts.Expression, sourceFile: ts.
  * (`(() => { … })()`, `((x) => x)(v)`, `c ? (() => 1)() : 2`,
  * `` `${(() => 'v')()}` ``, `[(() => 1)()]`). A function stored in the value
  * is not entered, since it runs only when called; the callback of an array
- * iteration method (`xs.map(cb)`) is, since the method calls it in place.
+ * iteration method (`xs.map(cb)`) is, parameter defaults included
+ * (`xs.map((x = (() => 1)()) => x)`), since the method calls it in place.
  * Each node is visited once.
  */
 export function callsFunctionLiteralInPlace(init: ts.Expression): boolean {
@@ -223,11 +346,12 @@ export function callsFunctionLiteralInPlace(init: ts.Expression): boolean {
     if (ts.isFunctionLike(node) || ts.isClassLike(node)) return false
     return ts.forEachChild(node, child => (visit(child) ? true : undefined)) === true
   }
-  // An array iteration method's callback runs in place: walk its body.
+  // An array iteration method's callback runs in place: walk its parameters'
+  // defaults (destructured ones included) and its body.
   const visitBody = (arg: ts.Expression): boolean => {
     const fn = unwrapValueWrappers(arg)
     if (!ts.isArrowFunction(fn) && !ts.isFunctionExpression(fn)) return visit(arg)
-    return visit(fn.body)
+    return fn.parameters.some(param => visit(param)) || visit(fn.body)
   }
   return visit(init)
 }
