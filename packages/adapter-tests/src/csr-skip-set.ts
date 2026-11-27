@@ -178,6 +178,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
   'spread-open-bag-literal-case-alias',
+  'spread-open-bag-literal-alias-after',
+  'spread-open-bag-literal-other-spelling-after',
+  'spread-open-props-object-literal-alias-after',
+  // The CSR template renders a closed rest's `readOnly: true` as a bare
+  // boolean, and the open bag reaches its element only through
+  // `applyRestAttrs` (limitation `spread-bag-boolean-value`).
+  'spread-open-bag-boolean-values',
+  'spread-closed-rest-boolean-values',
   // A DOM serializes an HTML element's attribute names lowercased, so the
   // client-built element shows the closed rest's `tabIndex` as `tabindex`
   // where the reference writes the key's spelling; a browser reads both as

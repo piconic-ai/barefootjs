@@ -4717,6 +4717,7 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
   // Pattern 2: Props object - props: Type (SolidJS-style)
   if (ts.isIdentifier(param.name)) {
     ctx.propsObjectName = param.name.text
+    ctx.propsObjectTypeOpen = isOpenPropsType(param.type, ctx)
 
     // Extract properties from the type annotation
     if (param.type) {
@@ -4742,6 +4743,11 @@ function propsTypeInfo(typeNode: ts.TypeNode, sourceFile: ts.SourceFile): TypeIn
   const info = typeNodeToTypeInfo(typeNode, sourceFile)
   if (!info?.inherits) return info
   return { kind: 'object', raw: info.raw, inherits: info.inherits, inheritance: info.inheritance }
+}
+
+/** Whether a props object typed `annotation` may hold keys its type does not declare (`collectTypeKeys`). */
+function isOpenPropsType(annotation: ts.TypeNode | undefined, ctx: AnalyzerContext): boolean {
+  return annotation === undefined || collectTypeKeys(annotation, ctx) === null
 }
 
 /**

@@ -47,6 +47,16 @@ export const renderDivergences: RenderDivergences = {
   // after it, two spreads), and an explicit `null` bag value renders the
   // earlier literal.
   'attr-spread-key-overlap': { limitation: 'attr-spread-key-overlap' },
+  // An attribute after an open bag that carries it under another key
+  // (`htmlFor`, `crossOrigin`, `tabIndex`) renders beside the bag's value.
+  'spread-open-bag-literal-alias-after': { limitation: 'attr-spread-key-overlap' },
+  'spread-open-bag-literal-other-spelling-after': { limitation: 'attr-spread-key-overlap' },
+  // The undeclared `id` the open props object carries is dropped.
+  'spread-open-props-object-literal-alias-after': { limitation: 'whole-props-spread-undeclared-prop' },
+  // A boolean bag value outside the reference's boolean attribute set
+  // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
+  'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
