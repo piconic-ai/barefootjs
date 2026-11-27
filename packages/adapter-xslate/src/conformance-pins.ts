@@ -320,6 +320,7 @@ export const conformancePins: ConformancePins = {
   'const-literal-identity-positions': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'component-const-prop-object-identity': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'module-const-alias-identity': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'module-const-member-alias-identity': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-mixed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],

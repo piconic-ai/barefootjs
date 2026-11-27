@@ -7156,6 +7156,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -7377,6 +7383,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -7680,6 +7692,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -7972,6 +7990,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -8210,6 +8234,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -8425,6 +8455,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -8668,6 +8704,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -8895,6 +8937,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -9133,6 +9181,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -9758,6 +9812,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -10500,6 +10560,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -11341,6 +11407,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-member-signal-seed",
               "limitations": [
                 "module-const-object-member-signal-seed"
@@ -12173,6 +12245,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-call",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -12903,6 +12981,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-call",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -13618,6 +13702,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -14345,6 +14435,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-call",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -15054,6 +15150,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -15778,6 +15880,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -17845,6 +17953,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -18872,6 +18986,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -20097,6 +20217,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -21301,6 +21427,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -22325,6 +22457,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -23334,6 +23472,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -24355,6 +24499,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -25340,6 +25490,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -26358,6 +26514,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -27846,6 +28008,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -28681,6 +28849,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -29645,6 +29819,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -30630,6 +30810,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -31462,6 +31648,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -32291,6 +32483,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -33132,6 +33330,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -33937,6 +34141,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -34757,6 +34967,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -37459,6 +37675,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -38246,6 +38468,12 @@
               "fixture": "module-const-inherited-key-signal-seed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -39213,6 +39441,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -40087,6 +40321,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -40877,6 +41117,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -41652,6 +41898,12 @@
               "fixture": "module-const-inherited-key-signal-seed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -42445,6 +42697,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -43214,6 +43472,12 @@
               "fixture": "module-const-inherited-key-signal-seed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -44001,6 +44265,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -44624,6 +44894,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -45073,6 +45349,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -45545,6 +45827,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -46028,6 +46316,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -46477,6 +46771,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -46937,6 +47237,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -47408,6 +47714,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -47839,6 +48151,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -48293,6 +48611,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -53843,6 +54167,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -53968,6 +54298,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -54157,6 +54493,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -54317,6 +54659,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -54465,6 +54813,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -54590,6 +54944,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -54737,6 +55097,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -54879,6 +55245,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-helper-const-identity",
               "limitations": [
                 "module-scope-helper-call"
@@ -55016,6 +55388,12 @@
             },
             {
               "fixture": "module-const-literal-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
               "limitations": [
                 "array-self-equality"
               ]
@@ -59215,6 +59593,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -59930,6 +60314,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -60750,6 +61140,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -61603,6 +61999,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -62309,6 +62711,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -63006,6 +63414,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -63721,6 +64135,12 @@
               ]
             },
             {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
@@ -64406,6 +64826,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -65100,6 +65526,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-member-alias-identity",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {

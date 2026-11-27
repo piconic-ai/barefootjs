@@ -1771,6 +1771,7 @@ import { fixture as moduleConstLiteralIdentity } from './module-const-literal-id
 import { fixture as constLiteralIdentityPositions } from './const-literal-identity-positions'
 import { fixture as componentConstPropObjectIdentity } from './component-const-prop-object-identity'
 import { fixture as moduleConstAliasIdentity } from './module-const-alias-identity'
+import { fixture as moduleConstMemberAliasIdentity } from './module-const-member-alias-identity'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
 import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
@@ -3202,6 +3203,7 @@ export const jsxFixtures: JSXFixture[] = [
   constLiteralIdentityPositions,
   componentConstPropObjectIdentity,
   moduleConstAliasIdentity,
+  moduleConstMemberAliasIdentity,
   moduleConstObjectSpreadUnresolvedComputedProps,
   moduleConstObjectSpreadUnresolvedComputedLocal,
   moduleConstObjectSpreadUnresolvedComputedOptional,

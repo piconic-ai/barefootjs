@@ -14530,6 +14530,23 @@
         "text"
       ]
     },
+    "module-const-member-alias-identity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "module-const-member-key-hydrate": {
       "kinds": [
         "array-literal",

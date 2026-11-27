@@ -12899,6 +12899,125 @@
           }
         }
       },
+      "module-const-member-alias-identity": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
       "module-const-object-array-child-prop": {
         "blade": {
           "kind": "refusal",
@@ -21285,6 +21404,10 @@
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
       },
+      "module-const-member-alias-identity": {
+        "description": "a const holding an object literal const in a member holds the same object",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-member-alias-identity.ts"
+      },
       "module-const-object-array-child-prop": {
         "description": "a module array-of-objects const passed whole as a child prop reaches the child",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-array-child-prop.ts"
@@ -22153,7 +22276,7 @@
     "array-self-equality": {
       "title": "Strict equality between an object or array and itself",
       "kind": "refusal",
-      "given": "`===` / `!==` with the same object or array on both sides (`arr === arr`), including in a loop preamble `const` and on an element of an optional or nullable object array (`rows[0] === rows[0]`)",
+      "given": "`===` / `!==` with the same object or array on both sides (`arr === arr`), including in a loop preamble `const` on an element of an optional or nullable object array (`rows[0] === rows[0]`), and through a const that aliases an object const or holds it in a member (`C === B` with `const C = B`, `B.a === A` with `const B = { a: A }`)",
       "expected": "`===` is true and `!==` is false",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
@@ -22161,6 +22284,7 @@
         "const-literal-identity-positions",
         "module-const-alias-identity",
         "module-const-literal-identity",
+        "module-const-member-alias-identity",
         "strict-equality-nullable-array-element",
         "strict-equality-optional-array-element",
         "strict-equality-preamble-reference",

@@ -252,7 +252,17 @@ export function initCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['check']) + '"' : ''}></path></svg>`)(({
+hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['check']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -274,17 +284,7 @@ hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `${((__bf_const_st
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function CheckIcon(_p, __bfKey) { return createComponent('CheckIcon', _p, __bfKey) }
 export function initChevronDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -338,7 +338,17 @@ export function initChevronDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-down']) + '"' : ''}></path></svg>`)(({
+hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-down']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -360,17 +370,7 @@ hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `${((_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ChevronDownIcon(_p, __bfKey) { return createComponent('ChevronDownIcon', _p, __bfKey) }
 export function initChevronUpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -424,7 +424,17 @@ export function initChevronUpIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-up']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-up']) + '"' : ''}></path></svg>`)(({
+hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-up']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-up']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -446,17 +456,7 @@ hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `${((__bf_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ChevronUpIcon(_p, __bfKey) { return createComponent('ChevronUpIcon', _p, __bfKey) }
 export function initChevronLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -510,7 +510,17 @@ export function initChevronLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-left']) + '"' : ''}></path></svg>`)(({
+hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-left']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -532,17 +542,7 @@ hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `${((_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ChevronLeftIcon(_p, __bfKey) { return createComponent('ChevronLeftIcon', _p, __bfKey) }
 export function initChevronRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -596,7 +596,17 @@ export function initChevronRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-right']) + '"' : ''}></path></svg>`)(({
+hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-right']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -618,17 +628,7 @@ hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `${(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ChevronRightIcon(_p, __bfKey) { return createComponent('ChevronRightIcon', _p, __bfKey) }
 export function initXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -682,7 +682,17 @@ export function initXIcon(__scope, _p = {}) {
 
 }
 
-hydrate('XIcon', { init: initXIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['x']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['x']) + '"' : ''}></path></svg>`)(({
+hydrate('XIcon', { init: initXIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['x']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['x']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -704,17 +714,7 @@ hydrate('XIcon', { init: initXIcon, template: (_p) => `${((__bf_const_strokePath
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function XIcon(_p, __bfKey) { return createComponent('XIcon', _p, __bfKey) }
 export function initPlusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -768,7 +768,17 @@ export function initPlusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['plus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['plus']) + '"' : ''}></path></svg>`)(({
+hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['plus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['plus']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -790,17 +800,7 @@ hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `${((__bf_const_stro
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function PlusIcon(_p, __bfKey) { return createComponent('PlusIcon', _p, __bfKey) }
 export function initMinusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -854,7 +854,17 @@ export function initMinusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['minus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['minus']) + '"' : ''}></path></svg>`)(({
+hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['minus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['minus']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -876,17 +886,7 @@ hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `${((__bf_const_st
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function MinusIcon(_p, __bfKey) { return createComponent('MinusIcon', _p, __bfKey) }
 export function initSunIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -940,7 +940,17 @@ export function initSunIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SunIcon', { init: initSunIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['sun']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['sun']) + '"' : ''}></path></svg>`)(({
+hydrate('SunIcon', { init: initSunIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['sun']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['sun']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -962,17 +972,7 @@ hydrate('SunIcon', { init: initSunIcon, template: (_p) => `${((__bf_const_stroke
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function SunIcon(_p, __bfKey) { return createComponent('SunIcon', _p, __bfKey) }
 export function initMoonIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1026,7 +1026,17 @@ export function initMoonIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['moon']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['moon']) + '"' : ''}></path></svg>`)(({
+hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['moon']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['moon']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1048,17 +1058,7 @@ hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `${((__bf_const_stro
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function MoonIcon(_p, __bfKey) { return createComponent('MoonIcon', _p, __bfKey) }
 export function initMonitorIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1112,7 +1112,17 @@ export function initMonitorIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['monitor']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['monitor']) + '"' : ''}></path></svg>`)(({
+hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['monitor']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['monitor']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1134,17 +1144,7 @@ hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `${((__bf_cons
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function MonitorIcon(_p, __bfKey) { return createComponent('MonitorIcon', _p, __bfKey) }
 export function initCopyIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1198,7 +1198,17 @@ export function initCopyIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['copy']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['copy']) + '"' : ''}></path></svg>`)(({
+hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['copy']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['copy']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1220,17 +1230,7 @@ hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `${((__bf_const_stro
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function CopyIcon(_p, __bfKey) { return createComponent('CopyIcon', _p, __bfKey) }
 export function initClipboardIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1284,7 +1284,17 @@ export function initClipboardIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard']) + '"' : ''}></path></svg>`)(({
+hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1306,17 +1316,7 @@ hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `${((__bf_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ClipboardIcon(_p, __bfKey) { return createComponent('ClipboardIcon', _p, __bfKey) }
 export function initClipboardCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1370,7 +1370,17 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard-check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard-check']) + '"' : ''}></path></svg>`)(({
+hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard-check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard-check']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1392,17 +1402,7 @@ hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => 
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ClipboardCheckIcon(_p, __bfKey) { return createComponent('ClipboardCheckIcon', _p, __bfKey) }
 export function initMenuIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1456,7 +1456,17 @@ export function initMenuIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['menu']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['menu']) + '"' : ''}></path></svg>`)(({
+hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['menu']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['menu']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1478,17 +1488,7 @@ hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `${((__bf_const_stro
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function MenuIcon(_p, __bfKey) { return createComponent('MenuIcon', _p, __bfKey) }
 export function initArrowLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1542,7 +1542,17 @@ export function initArrowLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-left']) + '"' : ''}></path></svg>`)(({
+hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-left']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1564,17 +1574,7 @@ hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `${((__bf_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ArrowLeftIcon(_p, __bfKey) { return createComponent('ArrowLeftIcon', _p, __bfKey) }
 export function initArrowRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1628,7 +1628,17 @@ export function initArrowRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-right']) + '"' : ''}></path></svg>`)(({
+hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-right']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1650,17 +1660,7 @@ hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `${((__b
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ArrowRightIcon(_p, __bfKey) { return createComponent('ArrowRightIcon', _p, __bfKey) }
 export function initArrowUpDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1714,7 +1714,17 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-up-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-up-down']) + '"' : ''}></path></svg>`)(({
+hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-up-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-up-down']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1736,17 +1746,7 @@ hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `${((_
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function ArrowUpDownIcon(_p, __bfKey) { return createComponent('ArrowUpDownIcon', _p, __bfKey) }
 export function initEllipsisIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1777,7 +1777,7 @@ export function initEllipsisIcon(__scope, _p = {}) {
 
 }
 
-hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`)((_p.size ? { width: ({
+hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1787,7 +1787,7 @@ hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `${((__bf_co
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>` })
 export function EllipsisIcon(_p, __bfKey) { return createComponent('EllipsisIcon', _p, __bfKey) }
 export function initGitHubIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1818,7 +1818,7 @@ export function initGitHubIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>`)((_p.size ? { width: ({
+hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1828,7 +1828,7 @@ hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `${((__bf_const_
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>` })
 export function GitHubIcon(_p, __bfKey) { return createComponent('GitHubIcon', _p, __bfKey) }
 export function initSettingsIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1859,7 +1859,7 @@ export function initSettingsIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>`)((_p.size ? { width: ({
+hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1869,7 +1869,7 @@ hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `${((__bf_co
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>` })
 export function SettingsIcon(_p, __bfKey) { return createComponent('SettingsIcon', _p, __bfKey) }
 export function initGlobeIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1900,7 +1900,7 @@ export function initGlobeIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>`)((_p.size ? { width: ({
+hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1910,7 +1910,7 @@ hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `${((__bf_const_si
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>` })
 export function GlobeIcon(_p, __bfKey) { return createComponent('GlobeIcon', _p, __bfKey) }
 export function initLogOutIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1941,7 +1941,7 @@ export function initLogOutIcon(__scope, _p = {}) {
 
 }
 
-hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>`)((_p.size ? { width: ({
+hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1951,7 +1951,7 @@ hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `${((__bf_const_
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>` })
 export function LogOutIcon(_p, __bfKey) { return createComponent('LogOutIcon', _p, __bfKey) }
 export function initCircleHelpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1982,7 +1982,7 @@ export function initCircleHelpIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>`)((_p.size ? { width: ({
+hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1992,7 +1992,7 @@ hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `${((__b
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>` })
 export function CircleHelpIcon(_p, __bfKey) { return createComponent('CircleHelpIcon', _p, __bfKey) }
 export function initSearchIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2023,7 +2023,7 @@ export function initSearchIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>`)((_p.size ? { width: ({
+hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2033,7 +2033,7 @@ hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `${((__bf_const_
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>` })
 export function SearchIcon(_p, __bfKey) { return createComponent('SearchIcon', _p, __bfKey) }
 export function initCircleCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2064,7 +2064,7 @@ export function initCircleCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>`)((_p.size ? { width: ({
+hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2074,7 +2074,7 @@ hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `${((_
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>` })
 export function CircleCheckIcon(_p, __bfKey) { return createComponent('CircleCheckIcon', _p, __bfKey) }
 export function initCircleXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2105,7 +2105,7 @@ export function initCircleXIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>`)((_p.size ? { width: ({
+hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2115,7 +2115,7 @@ hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `${((__bf_cons
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>` })
 export function CircleXIcon(_p, __bfKey) { return createComponent('CircleXIcon', _p, __bfKey) }
 export function initTriangleAlertIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2146,7 +2146,7 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
 
 }
 
-hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>`)((_p.size ? { width: ({
+hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2156,7 +2156,7 @@ hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `$
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>` })
 export function TriangleAlertIcon(_p, __bfKey) { return createComponent('TriangleAlertIcon', _p, __bfKey) }
 export function initInfoIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2187,7 +2187,7 @@ export function initInfoIcon(__scope, _p = {}) {
 
 }
 
-hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>`)((_p.size ? { width: ({
+hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2197,7 +2197,7 @@ hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `${((__bf_const_size
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>` })
 export function InfoIcon(_p, __bfKey) { return createComponent('InfoIcon', _p, __bfKey) }
 export function initCalendarIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2228,7 +2228,7 @@ export function initCalendarIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>`)((_p.size ? { width: ({
+hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2238,7 +2238,7 @@ hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `${((__bf_co
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>` })
 export function CalendarIcon(_p, __bfKey) { return createComponent('CalendarIcon', _p, __bfKey) }
 export function initGripVerticalIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2269,7 +2269,7 @@ export function initGripVerticalIcon(__scope, _p = {}) {
 
 }
 
-hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>`)((_p.size ? { width: ({
+hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2279,7 +2279,7 @@ hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `${(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>` })
 export function GripVerticalIcon(_p, __bfKey) { return createComponent('GripVerticalIcon', _p, __bfKey) }
 export function initLoaderCircleIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2333,7 +2333,17 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
 
 }
 
-hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `${((__bf_const_strokePaths, __bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['loader-circle']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['loader-circle']) + '"' : ''}></path></svg>`)(({
+hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size], height: ({
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['loader-circle']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['loader-circle']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -2355,17 +2365,7 @@ hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `${(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-}), (_p.size ? { width: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size], height: ({
-  sm: 16,
-  md: 20,
-  lg: 24,
-  xl: 32,
-})[_p.size] } : {}))}` })
+}))}` })
 export function LoaderCircleIcon(_p, __bfKey) { return createComponent('LoaderCircleIcon', _p, __bfKey) }
 export function initPanelLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2396,7 +2396,7 @@ export function initPanelLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `${((__bf_const_sizeAttrs) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((__bf_const_sizeAttrs)), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>`)((_p.size ? { width: ({
+hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2406,7 +2406,7 @@ hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `${((__bf_
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {}))}` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>` })
 export function PanelLeftIcon(_p, __bfKey) { return createComponent('PanelLeftIcon', _p, __bfKey) }
 export function initIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2641,7 +2641,7 @@ export function initIcon(__scope, _p = {}) {
   initChild('PanelLeftIcon', _s2, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className","name"]))
 }
 
-hydrate('Icon', { init: initIcon, template: (_p) => `${((__bf_const_linecap) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
+hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className), ...forwardProps(_p, {}, ["name","size","className"])}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2661,7 +2661,7 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${((__bf_const_linecap) => 
   md: 20,
   lg: 24,
   xl: 32,
-})[(_p.size === undefined ? 'md' : _p.size)])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${((__bf_const_linecap)) != null ? 'stroke-linecap="' + escapeAttr((__bf_const_linecap)) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}`)((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round'))}` })
+})[(_p.size === undefined ? 'md' : _p.size)])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round')) != null ? 'stroke-linecap="' + escapeAttr((((['plus', 'minus'])).includes(_p.name) ? 'butt' : 'round')) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 export function initDataTableColumnHeader(__scope, _p = {}) {
   if (!__scope) return
@@ -3297,13 +3297,7 @@ export function initDataTableFilteringDemo(__scope, _p = {}) {
 
 }
 
-hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: (_p) => `${((__bf_const_paymentsExtended) => `<div class="w-full space-y-4"><input type="text" placeholder="Filter emails..." class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" ${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s0" />${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's1')}${renderChild('TableHead', {children: `Status`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${(((__bf_const_paymentsExtended).filter(row =>
-      row.email.toLowerCase().includes(('').toLowerCase())
-    )).slice((0) * (5), ((0) + 1) * (5))).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s7-->${escapeText(payment.id)}<!--/-->`}, undefined, 's8')}${renderChild('TableCell', {children: `<!--bf:^s9-->${escapeText(payment.status)}<!--/-->`}, undefined, 's10')}${renderChild('TableCell', {children: `<!--bf:^s11-->${escapeText(payment.email)}<!--/-->`}, undefined, 's12')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s13-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's14')}`}, payment.id, 's15', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's16')}`}, undefined, 's17')}${renderChild('DataTablePagination', {canPrev: (0) > 0, canNext: (0) < (Math.max(1, Math.ceil(((__bf_const_paymentsExtended).filter(row =>
-      row.email.toLowerCase().includes(('').toLowerCase())
-    )).length / (5)))) - 1, children: `Page <!--bf:^s18-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeTextOrMarkup((Math.max(1, Math.ceil(((__bf_const_paymentsExtended).filter(row =>
-      row.email.toLowerCase().includes(('').toLowerCase())
-    )).length / (5)))))}<!--/-->`}, undefined, 's20')}</div>`)(([
+hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: (_p) => `<div class="w-full space-y-4"><input type="text" placeholder="Filter emails..." class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" ${(('')) != null ? 'value="' + escapeAttr(('')) + '"' : ''} bf="s0" />${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's1')}${renderChild('TableHead', {children: `Status`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${((([
   ...([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
@@ -3318,7 +3312,43 @@ hydrate('DataTableFilteringDemo', { init: initDataTableFilteringDemo, template: 
   { id: 'PAY010', amount: 340, status: 'failed', email: 'sophia.l@example.com' },
   { id: 'PAY011', amount: 580, status: 'success', email: 'liam.b@example.com' },
   { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
-]))}` })
+]).filter(row =>
+      row.email.toLowerCase().includes(('').toLowerCase())
+    )).slice((0) * (5), ((0) + 1) * (5))).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s7-->${escapeText(payment.id)}<!--/-->`}, undefined, 's8')}${renderChild('TableCell', {children: `<!--bf:^s9-->${escapeText(payment.status)}<!--/-->`}, undefined, 's10')}${renderChild('TableCell', {children: `<!--bf:^s11-->${escapeText(payment.email)}<!--/-->`}, undefined, 's12')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s13-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's14')}`}, payment.id, 's15', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's16')}`}, undefined, 's17')}${renderChild('DataTablePagination', {canPrev: (0) > 0, canNext: (0) < (Math.max(1, Math.ceil((([
+  ...([
+  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
+  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
+  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
+  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
+  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
+]),
+  { id: 'PAY006', amount: 150, status: 'pending', email: 'derek@example.com' },
+  { id: 'PAY007', amount: 490, status: 'success', email: 'mia.johnson@example.com' },
+  { id: 'PAY008', amount: 125, status: 'processing', email: 'olivia.m@example.com' },
+  { id: 'PAY009', amount: 960, status: 'success', email: 'james.w@example.com' },
+  { id: 'PAY010', amount: 340, status: 'failed', email: 'sophia.l@example.com' },
+  { id: 'PAY011', amount: 580, status: 'success', email: 'liam.b@example.com' },
+  { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
+]).filter(row =>
+      row.email.toLowerCase().includes(('').toLowerCase())
+    )).length / (5)))) - 1, children: `Page <!--bf:^s18-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s19-->${escapeTextOrMarkup((Math.max(1, Math.ceil((([
+  ...([
+  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
+  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
+  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
+  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
+  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
+]),
+  { id: 'PAY006', amount: 150, status: 'pending', email: 'derek@example.com' },
+  { id: 'PAY007', amount: 490, status: 'success', email: 'mia.johnson@example.com' },
+  { id: 'PAY008', amount: 125, status: 'processing', email: 'olivia.m@example.com' },
+  { id: 'PAY009', amount: 960, status: 'success', email: 'james.w@example.com' },
+  { id: 'PAY010', amount: 340, status: 'failed', email: 'sophia.l@example.com' },
+  { id: 'PAY011', amount: 580, status: 'success', email: 'liam.b@example.com' },
+  { id: 'PAY012', amount: 210, status: 'pending', email: 'emma.d@example.com' },
+]).filter(row =>
+      row.email.toLowerCase().includes(('').toLowerCase())
+    )).length / (5)))))}<!--/-->`}, undefined, 's20')}</div>` })
 export function DataTableFilteringDemo(_p, __bfKey) { return createComponent('DataTableFilteringDemo', _p, __bfKey) }
 export function initDataTableSelectionDemo(__scope, _p = {}) {
   if (!__scope) return
