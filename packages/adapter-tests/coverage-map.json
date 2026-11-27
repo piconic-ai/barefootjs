@@ -2518,7 +2518,8 @@
       "axes": [
         "binary:===",
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "member:computed"
       ],
       "contexts": [
         "attribute",
@@ -2577,7 +2578,8 @@
       "axes": [
         "binary:===",
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "member:computed"
       ],
       "contexts": [
         "attribute",

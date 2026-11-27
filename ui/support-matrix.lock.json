@@ -66462,6 +66462,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
                 "array-equality-through-inlined-const"
