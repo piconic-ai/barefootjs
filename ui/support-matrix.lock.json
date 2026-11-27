@@ -43040,6 +43040,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -43447,6 +43453,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -43877,6 +43889,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -44324,6 +44342,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -44731,6 +44755,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -45149,6 +45179,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -45578,6 +45614,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -45967,6 +46009,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -46379,6 +46427,12 @@
             },
             {
               "fixture": "module-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -47538,6 +47592,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -47683,6 +47743,12 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -47834,6 +47900,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -47982,6 +48054,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -48127,6 +48205,12 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -48284,6 +48368,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -48429,6 +48519,12 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -48580,6 +48676,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -48725,6 +48827,12 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {

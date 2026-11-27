@@ -3136,6 +3136,20 @@
         "text"
       ]
     },
+    "component-const-iife-reads-const-named-like-let": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-const-iife-returns-function": {
       "kinds": [
         "arrow",
@@ -13703,7 +13717,9 @@
         "identifier",
         "literal",
         "member",
-        "template-literal"
+        "object-literal",
+        "template-literal",
+        "unsupported"
       ],
       "axes": [
         "binary:+",
@@ -13726,7 +13742,9 @@
         "identifier",
         "literal",
         "member",
-        "template-literal"
+        "object-literal",
+        "template-literal",
+        "unsupported"
       ],
       "axes": [
         "binary:+",
