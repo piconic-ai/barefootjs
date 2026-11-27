@@ -1738,6 +1738,8 @@ import { fixture as moduleConstIifeReadsModuleConst } from './module-const-iife-
 import { fixture as moduleConstIifeValues } from './module-const-iife-values'
 import { fixture as moduleConstIifeLoopChildSeed } from './module-const-iife-loop-child-seed'
 import { fixture as componentConstIife } from './component-const-iife'
+import { fixture as componentConstIifeReadsWrittenProp } from './component-const-iife-reads-written-prop'
+import { fixture as componentConstIifeReadsWrittenPropClient } from './component-const-iife-reads-written-prop-client'
 import { fixture as componentConstIifeReadsConstNamedLikeLet } from './component-const-iife-reads-const-named-like-let'
 import { fixture as componentConstIifeBlockBody } from './component-const-iife-block-body'
 import { fixture as componentConstIifeBlockBodyClient } from './component-const-iife-block-body-client'
@@ -3155,6 +3157,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstIifeValues,
   moduleConstIifeLoopChildSeed,
   componentConstIife,
+  componentConstIifeReadsWrittenProp,
+  componentConstIifeReadsWrittenPropClient,
   componentConstIifeReadsConstNamedLikeLet,
   componentConstIifeBlockBody,
   componentConstIifeBlockBodyClient,

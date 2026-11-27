@@ -28,6 +28,18 @@ function constantOf(moduleDecls: string, name: string, body = 'return <p />'): C
   return irFor(moduleDecls, body).metadata.localConstants.find(c => c.name === name)!
 }
 
+/** The const `B` of a component whose parameter list is `params`. */
+function constantOfComponent(params: string, body: string): ConstantInfo {
+  const ctx = analyzeComponent(`
+    'use client'
+    export function C(${params}) {
+      ${body}
+      return <p>{B.k}</p>
+    }
+  `, 'C.tsx', 'C')
+  return buildMetadata(ctx).localConstants.find(c => c.name === 'B')!
+}
+
 function errorsOf(moduleDecls: string, body: string): CompilerError[] {
   const errors: CompilerError[] = []
   refuseUnloweredIifeConsts(irFor(moduleDecls, body), { errors, componentName: 'C' })
@@ -72,6 +84,28 @@ describe('a const initialized by an applied zero-param arrow', () => {
     expect(constantOf(`var n = 1\nconst B = (() => ({ n }))()`, 'B').callsFunctionLiteral).toBe(true)
     const local = irFor(`const n = 1`, `let n = 2\n const B = (() => n)()\n return <p>{B}</p>`).metadata.localConstants.find(c => c.name === 'B')!
     expect(local.callsFunctionLiteral).toBe(true)
+  })
+
+  test('a read of a binding something writes keeps the call, a prop included', () => {
+    const unrelated = `function unrelated() { let label = 1; return label }`
+    const named = (decls: string, body: string) =>
+      irFor(decls, `${body}\n return <p>{B.k}</p>`).metadata.localConstants.find(c => c.name === 'B')!
+    // An unwritten prop named like an unrelated \`let\` lowers.
+    expect(named(unrelated, `const B = (() => ({ k: props.label }))()`).parsed?.kind).toBe('object-literal')
+    for (const write of [
+      `props = { label: 'x' }`,
+      `const set = () => { props = { label: 'x' } }`,
+    ]) expect(named(unrelated, `const B = (() => ({ k: props }))()\n ${write}`).callsFunctionLiteral).toBe(true)
+    // A destructured prop written in every form.
+    const destructured = (write: string) =>
+      constantOfComponent(`{ label }: { label: string }`, `const B = (() => ({ k: label }))()\n ${write}`)
+    for (const write of [
+      `label = 'updated'`, `label += '!'`, `;({ label } = { label: 'z' })`, `;[label] = ['z']`,
+      `for (label of ['a']) {}`, `const set = () => { label = 'x' }`, `label++`,
+    ]) expect(destructured(write).callsFunctionLiteral).toBe(true)
+    expect(destructured(`const other = label + '!'`).parsed?.kind).toBe('object-literal')
+    // A write to a same-named binding of another scope does not count.
+    expect(destructured(`const f = (label: string) => { label = 'x'; return label }`).parsed?.kind).toBe('object-literal')
   })
 
   test('`arguments`, `this` and the like as a key or a member name read nothing', () => {

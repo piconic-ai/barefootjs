@@ -23,6 +23,7 @@
 
 import ts from 'typescript'
 import { isArrayIterationCallee } from './in-place-function.ts'
+import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 
 /**
  * `node` without the wrappers that change nothing about its value:
@@ -142,28 +143,6 @@ function containsFunctionLiteral(node: ts.Node): boolean {
   return ts.forEachChild(node, child => (containsFunctionLiteral(child) ? true : undefined)) === true
 }
 
-/**
- * Names the file declares with `let` or `var`, anywhere: a read of any other
- * name cannot resolve to one, so {@link readsMutableBinding} resolves only
- * reads of these. Collected once per file.
- */
-const mutableNamesByFile = new WeakMap<ts.SourceFile, ReadonlySet<string>>()
-
-function mutableBindingNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
-  const cached = mutableNamesByFile.get(sourceFile)
-  if (cached) return cached
-  const names = new Set<string>()
-  const visit = (node: ts.Node): void => {
-    if (ts.isVariableDeclarationList(node) && isMutableDeclarationList(node)) {
-      for (const d of node.declarations) collectBindingNames(d.name, names)
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(sourceFile)
-  mutableNamesByFile.set(sourceFile, names)
-  return names
-}
-
 function isMutableDeclarationList(list: ts.VariableDeclarationList): boolean {
   return (list.flags & ts.NodeFlags.Const) === 0
 }
@@ -263,33 +242,77 @@ function scopeDeclarations(scope: ts.Node): ReadonlyMap<string, Mutability> | nu
   return out
 }
 
-/**
- * The declaration a read of `id` sees, resolved lexically: the nearest
- * enclosing scope that declares the name decides. A name no scope declares
- * is a global, which a module's code does not reassign: `immutable`. A node
- * with no parent chain (a re-parse without parents) resolves to `mutable`.
- */
-function resolvedMutability(id: ts.Identifier): Mutability {
-  for (let node: ts.Node | undefined = id.parent; node; node = node.parent) {
-    const kind = scopeDeclarations(node)?.get(id.text)
-    if (kind) return kind
-    if (ts.isSourceFile(node)) return 'immutable'
-  }
-  return 'mutable'
+/** The scope a name no scope declares resolves to (a global). */
+const GLOBAL_SCOPE = Symbol('global')
+
+/** Where a read or a write of `id` resolves (`resolveDeclaration`). */
+interface ResolvedBinding {
+  scope: ts.Node | typeof GLOBAL_SCOPE
+  kind: Mutability
 }
 
 /**
- * Whether `body` reads a `let` or `var`, whose value at the call may be one
- * assigned after its declaration, which the consumers of a const's
- * initializer do not follow (they read the declared initializer). Each read
- * is resolved to the declaration it sees (`resolvedMutability`), so a
- * `const` or a prop named like an unrelated `let` elsewhere is not one. Only
- * a name some `let` / `var` of the file spells is resolved at all.
+ * The declaration `id` refers to, resolved lexically: the nearest enclosing
+ * scope that declares the name decides. A name no scope declares is a
+ * global (`immutable` unless written). Null for a node with no parent chain
+ * (a re-parse without parents), which the caller treats as mutable.
+ */
+function resolveDeclaration(id: ts.Identifier): ResolvedBinding | null {
+  for (let node: ts.Node | undefined = id.parent; node; node = node.parent) {
+    const kind = scopeDeclarations(node)?.get(id.text)
+    if (kind) return { scope: node, kind }
+    if (ts.isSourceFile(node)) return { scope: GLOBAL_SCOPE, kind: 'immutable' }
+  }
+  return null
+}
+
+/**
+ * The bindings some statement of the file writes, by the scope each write
+ * resolves to: an assignment (plain or compound), `++` / `--`, a
+ * destructuring-assignment target (`({ label } = x)`, `[label] = y`) or a
+ * `for (x of …)` / `for (x in …)` head (`isAssignmentTargetIdentifier`),
+ * nested functions included. A parameter or a `const`-free name is
+ * reassignable without `let`, so a write is what makes it mutable. Collected
+ * once per file.
+ */
+const writesByFile = new WeakMap<ts.SourceFile, Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>>>()
+
+function writtenBindings(sourceFile: ts.SourceFile): Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>> {
+  const cached = writesByFile.get(sourceFile)
+  if (cached) return cached
+  const writes = new Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>>()
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && isAssignmentTargetIdentifier(node)) {
+      const at = resolveDeclaration(node)?.scope ?? GLOBAL_SCOPE
+      const names = writes.get(at) ?? new Set<string>()
+      names.add(node.text)
+      writes.set(at, names)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  writesByFile.set(sourceFile, writes)
+  return writes
+}
+
+/** Whether some statement writes the binding `id` resolves to, or it is a `let` / `var` / `catch` binding. */
+function isMutableRead(id: ts.Identifier, sourceFile: ts.SourceFile): boolean {
+  const resolved = resolveDeclaration(id)
+  if (!resolved || resolved.kind === 'mutable') return true
+  return writtenBindings(sourceFile).get(resolved.scope)?.has(id.text) === true
+}
+
+/**
+ * Whether `body` reads a binding whose value at the call may be one assigned
+ * after its declaration, which the consumers of a const's initializer do not
+ * follow (they read the declared initializer, or a prop as passed): a `let`
+ * or `var`, or any binding a statement writes, a parameter or prop included
+ * (`label = 'updated'` after `const B = (() => ({ label }))()`). Each read is
+ * resolved to the declaration it sees (`resolveDeclaration`), so a `const`
+ * or an unwritten prop named like an unrelated `let` is not one.
  */
 function readsMutableBinding(body: ts.Expression, sourceFile: ts.SourceFile): boolean {
-  const mutable = mutableBindingNames(sourceFile)
-  if (mutable.size === 0) return false
-  return forEachReadIdentifier(body, id => mutable.has(id.text) && resolvedMutability(id) === 'mutable')
+  return forEachReadIdentifier(body, id => isMutableRead(id, sourceFile))
 }
 
 /** At most this many applied arrows are peeled off one initializer. */

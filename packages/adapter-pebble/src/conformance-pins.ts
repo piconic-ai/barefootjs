@@ -289,6 +289,7 @@ export const conformancePins: ConformancePins = {
   'component-const-iife-returns-function': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-iife-write-body': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-iife-nested-call': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
+  'component-const-iife-reads-written-prop': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-literal-identity': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
