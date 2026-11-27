@@ -399,6 +399,8 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An element child a component reads into a signal: the CSR template
   // prints the signal's initial value as escaped text.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-seed': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
   // A module const whose immediately invoked arrow reads another module
   // const: the CSR template has no form for it, so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },

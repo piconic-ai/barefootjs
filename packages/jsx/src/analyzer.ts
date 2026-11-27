@@ -1836,6 +1836,33 @@ function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContex
 }
 
 /**
+ * Whether `seed` is `<prop> ?? <fallback>` over a prop declared `unknown` or
+ * `any` (`props.children ?? 'missing'`, or a destructured `children ??
+ * 'missing'`). Such a seed holds whatever the caller passes (markup
+ * children, a number), so its type is not the fallback's (#3987). Decided on
+ * the TS AST: `props.X` on the props object, or a bare identifier only when
+ * the props parameter is destructured, so a module binding named like a
+ * prop is never mistaken for it.
+ */
+function isNullishOverUntypedProp(seed: ts.Expression | undefined, ctx: AnalyzerContext): boolean {
+  const unwrap = (node: ts.Expression): ts.Expression => {
+    while (ts.isParenthesizedExpression(node)) node = node.expression
+    return node
+  }
+  const expr = seed && unwrap(seed)
+  if (!expr || !ts.isBinaryExpression(expr) || expr.operatorToken.kind !== ts.SyntaxKind.QuestionQuestionToken) return false
+  const left = unwrap(expr.left)
+  let param: ParamInfo | undefined
+  if (ts.isIdentifier(left) && ctx.propsObjectName === null) {
+    param = ctx.propsParams.find(p => !p.isRest && p.name === left.text)
+  } else if (ts.isPropertyAccessExpression(left) && ts.isIdentifier(left.expression) && left.expression.text === ctx.propsObjectName) {
+    const key = left.name.text
+    param = ctx.propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key)
+  }
+  return param?.type?.kind === 'unknown'
+}
+
+/**
  * A `createSignal` call's value type: its type argument, else inferred from
  * the initial value. A zero-arg call with a type argument is `T | undefined`
  * (the zero-arg overload's return type), not `T` — a typed backend would
@@ -1844,7 +1871,10 @@ function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContex
  */
 function signalTypeInfo(callExpr: ts.CallExpression, initialValue: string, ctx: AnalyzerContext): TypeInfo {
   const typeArg = callExpr.typeArguments?.[0]
-  if (!typeArg) return inferTypeFromValue(initialValue)
+  if (!typeArg) {
+    if (isNullishOverUntypedProp(callExpr.arguments[0], ctx)) return { kind: 'unknown', raw: 'unknown' }
+    return inferTypeFromValue(initialValue)
+  }
   const type = typeNodeToTypeInfo(typeArg, ctx.sourceFile) ?? { kind: 'unknown', raw: 'unknown' }
   return callExpr.arguments[0] ? type : withUndefined(type)
 }
