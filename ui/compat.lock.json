@@ -17699,6 +17699,56 @@
           }
         }
       },
+      "spread-bag-unsafe-attr-names": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-unsafe-attr-name"
+          ]
+        }
+      },
       "spread-closed-rest-boolean-case-keys": {
         "blade": {
           "kind": "render",
@@ -18543,6 +18593,20 @@
           ]
         }
       },
+      "spread-open-object-prop-bag": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "open-object-prop-bag-spread"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "spread-open-props-object-literal-alias-after": {
         "blade": {
           "kind": "render",
@@ -18599,11 +18663,59 @@
           ]
         }
       },
-      "spread-optional-bag-literal-before": {
+      "spread-record-prop-bag-boolean-value": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "record-prop-bag-spread"
+            "spread-bag-boolean-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "spread-bag-boolean-value"
           ]
         }
       },
@@ -21096,6 +21208,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-bag-unsafe-attr-names": {
+        "description": "Spread bag keys that are not one attribute name are dropped, valid keys render",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-bag-unsafe-attr-names.ts"
+      },
       "spread-closed-rest-boolean-case-keys": {
         "description": "Closed rest keys hidden and HIDDEN render as separate writes, beside a bare hidden",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-closed-rest-boolean-case-keys.ts"
@@ -21164,13 +21280,17 @@
         "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-renamed-elsewhere.ts"
       },
+      "spread-open-object-prop-bag": {
+        "description": "A destructured object prop with an index signature spread onto an element renders every entry",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-object-prop-bag.ts"
+      },
       "spread-open-props-object-literal-alias-after": {
         "description": "An attribute after a spread of an open props object carrying its htmlFor spread key renders once,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-props-object-literal-alias-after.ts"
       },
-      "spread-optional-bag-literal-before": {
-        "description": "A literal before an omitted optional bag spread renders",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-optional-bag-literal-before.ts"
+      "spread-record-prop-bag-boolean-value": {
+        "description": "A record prop spread with a boolean value outside the boolean attribute set renders its text",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-record-prop-bag-boolean-value.ts"
       },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
@@ -22196,6 +22316,7 @@
       "expected": "the key renders once, with the last write JS makes: the rest's value, else an intervening bag's, else the earlier write",
       "actual": "Renders the key once per expansion (`title=\"fallback\" title=\"fallback\"`), the rest's value ahead of the bag's, or drops the earlier write because a later expansion writes the omitted key as `undefined`",
       "fixtures": [
+        "spread-body-rest-repeated-omitted",
         "spread-closed-rest-repeated",
         "spread-closed-rest-repeated-after-bag",
         "spread-closed-rest-repeated-around-bag",
@@ -23334,6 +23455,22 @@
         "xslate"
       ]
     },
+    "open-object-prop-bag-spread": {
+      "title": "A destructured prop typed as an object type with an index signature, spread onto an element",
+      "kind": "refusal",
+      "given": "a destructured prop typed as an object type whose properties are not its whole key set (`bag: { title: string; [key: string]: string }`) spread onto an intrinsic element (`{...bag}`)",
+      "expected": "the element renders every entry the caller passes, an undeclared key included",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "spread-open-object-prop-bag"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "open-rest-spread-onto-child-component": {
       "title": "An open rest bag spread onto a child component",
       "kind": "silent",
@@ -23431,19 +23568,6 @@
       "diagnostics": [
         "BF101",
         "BF102"
-      ]
-    },
-    "record-prop-bag-spread": {
-      "title": "A destructured prop typed as a record, spread onto an element",
-      "kind": "silent",
-      "given": "a destructured prop typed as a record (`bag?: Record<string, string>`) spread onto an intrinsic element (`{...bag}`)",
-      "expected": "the element renders the bag's entries, or nothing for an omitted bag",
-      "actual": "Emits a program that does not build: the prop field and the spread field get different types",
-      "fixtures": [
-        "spread-optional-bag-literal-before"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "ref-effect-attr-state-ssr": {
@@ -23563,12 +23687,13 @@
     "spread-bag-boolean-value": {
       "title": "A boolean spread bag value for a key outside the boolean attribute set",
       "kind": "silent",
-      "given": "an open spread bag or a closed rest whose key is not in the reference's boolean attribute set (`readOnly`, `data-x`, `title`) and holds `true` or `false`",
+      "given": "an open spread bag (a destructured record prop included) or a closed rest whose key is not in the reference's boolean attribute set (`readOnly`, `data-x`, `title`) and holds `true` or `false`",
       "expected": "the key renders with the value's text (`readOnly=\"true\"`, `data-x=\"true\"`, `data-y=\"false\"`); a key in the boolean attribute set (`disabled`) renders bare for `true` and is dropped for `false`",
       "actual": "Renders `true` as a bare attribute and drops `false` (`read-only`, `data-x`), or spells `false` as `0`",
       "fixtures": [
         "spread-closed-rest-boolean-values",
-        "spread-open-bag-boolean-values"
+        "spread-open-bag-boolean-values",
+        "spread-record-prop-bag-boolean-value"
       ],
       "adapters": [
         "blade",
@@ -23600,6 +23725,26 @@
         "jinja",
         "minijinja",
         "mojolicious",
+        "twig",
+        "xslate"
+      ]
+    },
+    "spread-bag-unsafe-attr-name": {
+      "title": "A spread bag key that is not one attribute name",
+      "kind": "silent",
+      "given": "an open spread bag (a record prop, an index-signature rest, a signal getter) carrying a key with a space, `=`, `>`, `<`, `/` or a quote (`{ \"x onmouseover=alert(1)\": \"x\" }`)",
+      "expected": "the key is dropped, and the bag's valid keys render",
+      "actual": "Renders the key into the markup as it is, so it can close the attribute or add another one (`x onmouseover=alert(1)=\"x\"`)",
+      "fixtures": [
+        "spread-bag-unsafe-attr-names"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]

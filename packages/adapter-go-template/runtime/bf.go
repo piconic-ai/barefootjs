@@ -1007,6 +1007,15 @@ func SpreadAttrs(bag any) template.HTMLAttr {
 		if key == "children" {
 			continue
 		}
+		// The caller's keys are data: a key whose attribute name is not one
+		// name to the HTML parser is dropped, as the JS reference drops it
+		// (`SAFE_ATTR_NAME` in spread-attrs.ts), so it cannot close the
+		// attribute or open a new element. Every emit branch below writes
+		// this name.
+		name := toAttrName(key)
+		if !isSafeAttrName(name) {
+			continue
+		}
 		val := rv.MapIndex(reflect.ValueOf(key))
 		if !val.IsValid() {
 			continue
@@ -1030,7 +1039,7 @@ func SpreadAttrs(bag any) template.HTMLAttr {
 			if !v.Bool() {
 				continue
 			}
-			parts = append(parts, toAttrName(key))
+			parts = append(parts, name)
 			continue
 		}
 		// `style` routes through StyleToCss so object literals get a
@@ -1048,12 +1057,44 @@ func SpreadAttrs(bag any) template.HTMLAttr {
 		// otherwise prints bools and arbitrary stringer types the way the
 		// JS `String(value)` coercion does for the analogous cases.
 		s := String(v.Interface())
-		parts = append(parts, fmt.Sprintf(`%s="%s"`, toAttrName(key), template.HTMLEscapeString(s)))
+		parts = append(parts, fmt.Sprintf(`%s="%s"`, name, template.HTMLEscapeString(s)))
 	}
 	if len(parts) == 0 {
 		return ""
 	}
 	return template.HTMLAttr(strings.Join(parts, " "))
+}
+
+// isSafeAttrName reports whether the HTML parser reads name as one
+// attribute name: non-empty, with no whitespace, quote, `<`, `>`, `/` or
+// `=`. It mirrors `SAFE_ATTR_NAME` (`/^[^\s"'<>/=]+$/`) in
+// packages/client/src/runtime/spread-attrs.ts, with JS's `\s` set, so SSR
+// and CSR keep and drop the same keys.
+func isSafeAttrName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, r := range name {
+		switch r {
+		case '"', '\'', '<', '>', '/', '=':
+			return false
+		}
+		if isJSWhitespace(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// isJSWhitespace reports whether r is in a JS RegExp `\s` class: the
+// WhiteSpace and LineTerminator code points of ECMA-262 (U+FEFF and the
+// Unicode Zs category included, U+0085 not).
+func isJSWhitespace(r rune) bool {
+	switch r {
+	case '\t', '\n', '\v', '\f', '\r', ' ', 0xA0, 0x1680, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF:
+		return true
+	}
+	return r >= 0x2000 && r <= 0x200A
 }
 
 // Omit builds a `map[string]any` residual bag from a struct or map value,

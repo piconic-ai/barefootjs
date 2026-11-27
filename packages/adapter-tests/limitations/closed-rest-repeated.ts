@@ -14,5 +14,6 @@ export default defineLimitation({
     'spread-closed-rest-repeated-around-bag',
     'spread-closed-rest-repeated-both',
     'spread-closed-rest-repeated-after-bag',
+    'spread-body-rest-repeated-omitted',
   ],
 })

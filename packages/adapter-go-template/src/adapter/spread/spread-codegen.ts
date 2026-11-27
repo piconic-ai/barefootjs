@@ -12,7 +12,7 @@
 
 import ts from 'typescript'
 
-import { parseExpression, parseRecordIndexAccess } from '@barefootjs/jsx'
+import { inlineIntersectionMembers, parseExpression, parseRecordIndexAccess } from '@barefootjs/jsx'
 import type {
   ComponentIR,
   IRNode,
@@ -30,6 +30,7 @@ import type {
 import type { GoEmitContext } from '../emit-context.ts'
 import { restBagBinding, restBagField, type SpreadSlotInfo } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { resolvePropGoType } from '../props/prop-types.ts'
 
 /** A raw top-level intrinsic-element spread attr, before bag-source classification. */
 interface RawSpreadAttr {
@@ -279,9 +280,7 @@ export function buildSpreadInitializer(
     // 1. Destructured-from-props parameter `function({ extras }: P)` →
     //    `{...extras}` resolves to `in.Extras`.
     const param = ir.metadata.propsParams.find(p => p.name === trimmed)
-    if (param) {
-      return `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-    }
+    if (param) return destructuredPropBag(ctx, param, ir)
     // 2. SolidJS-style props object: `function(props: P)` → spread
     //    `{...props}` enumerates all propsParams into a `map[string]any`
     //    literal; every Input field becomes a bag key. When `propsParams` is
@@ -321,6 +320,46 @@ export function buildSpreadInitializer(
     }
   }
   return null
+}
+
+/**
+ * The `map[string]any` bag a spread of the destructured prop `param`
+ * (`{ bag }: P` with `{...bag}`) reads: its input field, as it is when the
+ * field is typed so, else through `bf.Omit` with no excluded key, which
+ * copies a map's keys and a struct's members under their JS names, and
+ * reads nil or an omitted prop as an empty bag, as JSX spreads it.
+ *
+ * An `interface{}` field (a record, an optional object prop) holds the
+ * caller's JS value, so any key reaches it. A struct field holds only the
+ * members its type declares: it is read only for a closed object type
+ * ({@link isClosedObjectType}). Null (BF101) for any other field, whose
+ * keys the Go value does not carry.
+ */
+function destructuredPropBag(
+  ctx: GoEmitContext,
+  param: ComponentIR['metadata']['propsParams'][number],
+  ir: ComponentIR,
+): string | null {
+  const field = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+  const goType = resolvePropGoType(ctx, param, ctx.state.propTypeOverrides)
+  if (goType === 'map[string]any' || goType === 'map[string]interface{}') return field
+  if (goType === 'interface{}' || (param.type !== undefined && isClosedObjectType(param.type, ir))) return `bf.Omit(${field})`
+  return null
+}
+
+/**
+ * Whether `type` is an object type whose declared properties are its whole
+ * key set: an inline object type with only plain properties, an inline
+ * intersection whose members are all known (`inlineIntersectionMembers`,
+ * which the struct is synthesized from), or a named type declared in this
+ * file as one, inheriting nothing.
+ */
+function isClosedObjectType(type: NonNullable<ComponentIR['metadata']['propsParams'][number]['type']>, ir: ComponentIR): boolean {
+  if (type.kind === 'object') return !type.openMembers && !type.inherits
+  if (type.inherits) return inlineIntersectionMembers(type, ir.metadata) !== null
+  if (type.kind !== 'interface') return false
+  const def = (ir.metadata.typeDefinitions ?? []).find(d => d.name === type.raw)
+  return def !== undefined && def.properties !== undefined && !def.openMembers && !def.inherits
 }
 
 /**

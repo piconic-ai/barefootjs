@@ -506,4 +506,7 @@ export const conformancePins: ConformancePins = {
   // passed it: the row's JSX is the value when the key is absent.
   'jsx-prop-loop-row-element-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
   'jsx-prop-loop-row-component-spread-optional': [{ code: 'BF101', severity: 'error', limitation: 'loop-row-dynamic-jsx-prop', unescapable: true }],
+  // A struct holds only the members the prop's type declares, so an object
+  // type with an index signature has no Go value that carries every key.
+  'spread-open-object-prop-bag': [{ code: 'BF101', severity: 'error', limitation: 'open-object-prop-bag-spread', unescapable: true }],
 }

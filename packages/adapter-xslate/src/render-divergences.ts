@@ -35,6 +35,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A bag key that is not one attribute name is written as it is
+  // (`x onmouseover=alert(1)="x"`), where the reference drops it.
+  'spread-bag-unsafe-attr-names': { limitation: 'spread-bag-unsafe-attr-name' },
   // A children fallback const read in a loop row whose parameter shadows a
   // name its initializer reads: the row renders empty.
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
@@ -59,6 +62,7 @@ export const renderDivergences: RenderDivergences = {
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
   'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-record-prop-bag-boolean-value': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).
@@ -208,6 +212,12 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // A caller that passes the key renders it once per expansion of the
+  // repeated body rest (`id="x" id="x"`).
+  'spread-body-rest-repeated-omitted:gen:id:empty': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:markup': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:multibyte': { limitation: 'closed-rest-repeated' },
+
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the seed applied a destructure default to an explicit `null`. It now
   // applies only to an absent or `undefined` prop (#3848 U5).
