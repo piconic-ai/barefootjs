@@ -3150,6 +3150,32 @@
         "text"
       ]
     },
+    "component-const-iife-reads-written-prop": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-reads-written-prop-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-const-iife-returns-function": {
       "kinds": [
         "arrow",

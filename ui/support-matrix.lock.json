@@ -4101,6 +4101,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -4411,6 +4417,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -4698,6 +4710,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -5019,6 +5037,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -5324,6 +5348,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -5639,6 +5669,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -5932,6 +5968,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -6247,6 +6289,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -6557,6 +6605,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -6835,10 +6889,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L190"
       },
       "example": {
-        "fixture": "component-helper-signal-child-prop",
-        "description": "a child prop reading a const built by a zero-param component helper over a signal renders the child on a client mount (#3975)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-helper-signal-child-prop.ts",
-        "code": "() => name()"
+        "fixture": "component-const-iife-reads-written-prop",
+        "description": "a component IIFE const reading props the body later writes renders the values at the call",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop.ts",
+        "code": "() => ({ label, n })"
       }
     },
     "binary": {
@@ -9047,6 +9101,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -9771,6 +9831,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -10472,6 +10538,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -11357,6 +11429,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -12046,6 +12124,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -12745,6 +12829,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -13427,6 +13517,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -14092,6 +14188,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -14786,6 +14888,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -16735,6 +16843,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -17747,6 +17861,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -18718,6 +18838,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -20071,6 +20197,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -21048,6 +21180,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -22041,6 +22179,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -23011,6 +23155,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -23940,6 +24090,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -24928,6 +25084,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -35833,6 +35995,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -36623,6 +36791,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -37372,6 +37546,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -38389,6 +38569,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -39150,6 +39336,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -39927,6 +40119,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -40681,6 +40879,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -41418,6 +41622,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -42190,6 +42400,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -42992,6 +43208,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -43410,6 +43632,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -43817,6 +44045,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -44294,6 +44528,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -44712,6 +44952,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -45125,6 +45371,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -45566,6 +45818,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -45961,6 +46219,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -46379,6 +46643,12 @@
             },
             {
               "fixture": "component-const-iife-block-body",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
               "limitations": [
                 "const-iife-unlowered"
               ]

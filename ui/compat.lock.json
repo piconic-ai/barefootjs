@@ -4049,6 +4049,125 @@
           }
         }
       },
+      "component-const-iife-reads-written-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-iife-unlowered"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "component-const-iife-reads-written-prop-client"
+          }
+        }
+      },
       "component-const-iife-returns-function": {
         "blade": {
           "kind": "refusal",
@@ -20142,6 +20261,10 @@
         "description": "a component const initialized by an immediately invoked arrow with a block body renders what the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-block-body.ts"
       },
+      "component-const-iife-reads-written-prop": {
+        "description": "a component IIFE const reading props the body later writes renders the values at the call",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop.ts"
+      },
       "component-const-iife-returns-function": {
         "description": "a component const holding the anonymous arrow an immediately invoked arrow returns keeps its empty…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-returns-function.ts"
@@ -21017,6 +21140,10 @@
       "component-const-iife-block-body-client": {
         "description": "The client-directive escape of component-const-iife-block-body",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-block-body-client.ts"
+      },
+      "component-const-iife-reads-written-prop-client": {
+        "description": "The client-directive escape of component-const-iife-reads-written-prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop-client.ts"
       },
       "component-const-iife-returns-function-client": {
         "description": "The client-directive escape of component-const-iife-returns-function",
@@ -22037,11 +22164,12 @@
     "const-iife-unlowered": {
       "title": "A const initialized by a function literal call no template evaluates, read on the server",
       "kind": "refusal",
-      "given": "a module or component const (or a module `let`) whose initializer calls a function literal in place, at any depth, other than a zero-param arrow with an expression body that repeats, writes nothing, holds no function and reads no `let` / `var` it sees (a read of `arguments`, `this` and the like as a key or a member name is not one): a block body (`(() => { return { k: 'a' } })()`, `(function () { return … })()`, also under `!`), an argument (`((x) => ({ k: x }))('v')`), a body that constructs or samples a value (`(() => ({ k: new Date(0).toISOString() }))()`), writes (`(() => delete o.k)()`, `(() => (p.n = 5))()`, `(() => p.n++)()`) or returns a function (`(() => () => 1)()`), or a call below the top of the initializer (`(() => (() => 1)() + 2)()`, `c ? (() => 'c')() : 'd'`, a template literal, an array literal, an array iteration callback or the default of its parameter, `[undefined].map((x = (() => 1)()) => x)`), read by the server render (`{B.k}`)",
+      "given": "a module or component const (or a module `let`) whose initializer calls a function literal in place, at any depth, other than a zero-param arrow with an expression body that repeats, writes nothing, holds no function and reads no binding it sees that is declared with `let` / `var` or written anywhere, a prop included (`label = 'updated'`, `[n] = [9]`) (a read of `arguments`, `this` and the like as a key or a member name is not one): a block body (`(() => { return { k: 'a' } })()`, `(function () { return … })()`, also under `!`), an argument (`((x) => ({ k: x }))('v')`), a body that constructs or samples a value (`(() => ({ k: new Date(0).toISOString() }))()`), writes (`(() => delete o.k)()`, `(() => (p.n = 5))()`, `(() => p.n++)()`) or returns a function (`(() => () => 1)()`), or a call below the top of the initializer (`(() => (() => 1)() + 2)()`, `c ? (() => 'c')() : 'd'`, a template literal, an array literal, an array iteration callback or the default of its parameter, `[undefined].map((x = (() => 1)()) => x)`), read by the server render (`{B.k}`)",
       "expected": "the value the function returns (`a`)",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "component-const-iife-block-body",
+        "component-const-iife-reads-written-prop",
         "component-const-iife-returns-function",
         "module-const-iife-block-body",
         "module-const-iife-nested-call",

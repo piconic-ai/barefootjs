@@ -2745,6 +2745,94 @@
       }
     }
   ],
+  "component-const-iife-reads-written-prop": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "hi",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "hi",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "hi",
+        "n": 1234567890
+      }
+    }
+  ],
+  "component-const-iife-reads-written-prop-client": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 1
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "hi",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "hi",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "hi",
+        "n": 1234567890
+      }
+    }
+  ],
   "component-prop-undefined-literal-positions": [
     {
       "name": "gen:label:absent",
