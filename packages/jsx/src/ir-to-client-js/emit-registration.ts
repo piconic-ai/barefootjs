@@ -10,7 +10,7 @@ import { PROPS_PARAM, componentDefScopeFlags, initFunctionName } from './utils.t
 import { collectReactiveGetterNames } from '../analyzer-context.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
-import { templateBoundConstNames } from './template-const-bindings.ts'
+import { templateBindingPlan } from './template-const-bindings.ts'
 import { csrSubstitute, type CsrEnv } from './csr-substitute.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { nameForRegistryRef } from './component-scope.ts'
@@ -199,7 +199,7 @@ export function emitRegistrationAndHydration(
   // path can carry `++start` into module scope, where `start` does not exist.
   if (!writesAnyBinding(ctx) && canGenerateStaticTemplate(_ir.root, reactiveGetterNames, inlinableConstants, unsafeLocalNames)) {
     const markupSlotIds = markupSlotIdsOf(ctx)
-    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName, templateBoundConstNames(ctx.localConstants))
+    const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName, templateBindingPlan(ctx))
     if (templateHtml) {
       defParts.push(buildTemplateDefPart(ctx, templateHtml))
     }

@@ -2843,6 +2843,13 @@ export interface IRMetadata {
    * Phase 2 builds itself (a template, a rewritten handler) has no entry.
    */
   sourceFacts?: Record<string, SourceFacts>
+  /**
+   * Every identifier spelling in the source file that starts with `__bf_`
+   * (`generatedPrefixSpellings`), sorted; absent when there is none. Phase 2
+   * picks the names it generates into emitted code outside this set, so a
+   * source binding can never capture a generated read (#4021).
+   */
+  generatedNameSpellings?: string[]
 }
 
 // =============================================================================

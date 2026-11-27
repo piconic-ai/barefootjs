@@ -113,4 +113,49 @@ describe('#4021 — a fresh-per-evaluation const is bound once per template eval
     expect(occurrences(html, '0.1')).toBe(2)
     expect(html).not.toContain('0.2')
   })
+
+  /** Evaluate a template lambda with no runtime helper beyond string escaping. */
+  function renderPlain(template: string): string {
+    const lambda = template.match(/template: (\(_p\) => `.*`) \}\)/)?.[1]
+    expect(lambda).toBeDefined()
+    const helpers = ['escapeAttr', 'escapeText', 'escapeTextOrMarkup']
+    return new Function(...helpers, `return ${lambda}`)(String, String, String)({})
+  }
+
+  test.each([
+    ['a map callback', `[1, 2].map(__bf_const_B => B.k + __bf_const_B).join(',')`, '43,44'],
+    ['a filter callback', `[1, 2, 3].filter(__bf_const_B => __bf_const_B > 1).map(x => B.k + x).join(',')`, '44,45'],
+    ['a reduce callback', `[1, 2].reduce((acc, __bf_const_B) => acc + B.k + __bf_const_B, 0)`, '87'],
+    ['a nested callback', `[1].map(a => [2].map(__bf_const_B => B.k + a + __bf_const_B).join('')).join('')`, '45'],
+    ['a destructured parameter', `[{ v: 1 }].map(({ v: __bf_const_B }) => B.k + __bf_const_B).join('')`, '43'],
+    ['a parameter default', `[undefined].map((__bf_const_B = 5) => B.k + __bf_const_B).join('')`, '47'],
+    ['a parameter suffixed like a second choice', `[1].map((__bf_const_B, __bf_const_B_1) => B.k + __bf_const_B).join('')`, '43'],
+  ])('a source binding spelled like the generated parameter in %s is not captured', (_label, expr, expected) => {
+    const template = templateOf(host(`const B = { k: 42 }`, '', `<p>{${expr}}</p>`))
+    expect(renderPlain(template)).toContain(`>${expected}<`)
+  })
+
+  test('a const that reads another fresh const is still spliced, so the two keep main\'s values', () => {
+    // Its substituted value is chain-closed (`{ a: Math.random() }`), so
+    // binding it would sample `A` a second time while looking bound; it is
+    // left to the splice (the `module-const-alias-identity` limitation).
+    const template = templateOf(host(`const A = Math.random()\nconst B = { a: A }`, '', '<p>{String(A)}{String(B.a)}</p>'))
+    expect(template).toContain('__bf_const_A')
+    expect(template).not.toContain('__bf_const_B')
+  })
+
+  test.each([
+    ['through an alias', `const A = { k: 'v' }\nconst X = A\nconst B = { x: X }`],
+    ['through a helper that reads it', `const A = { k: 'v' }\nconst mk = () => ({ a: A })\nconst B = mk()`],
+    ['through a chain', `const A = { k: 'v' }\nconst C = { a: A }\nconst B = { c: C }`],
+  ])('a const reading a fresh const %s is not bound', (_label, pre) => {
+    const template = templateOf(host(pre, '', '<p>{String(B === B)}</p>'))
+    expect(template).not.toContain('__bf_const_B')
+  })
+
+  test('a const reading a primitive const is bound', () => {
+    const template = templateOf(host(`const A = 'v'\nconst B = { a: A }`, '', '<p>{String(B === B)}{B.a}</p>'))
+    expect(template).toContain('__bf_const_B')
+    expect(renderPlain(template)).toContain('true')
+  })
 })
