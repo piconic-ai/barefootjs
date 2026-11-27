@@ -35,6 +35,7 @@ import { stringifyBranchLoops } from './branch-loop.ts'
 import { emitListenerLine } from './event-listener.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { codeSafeStringLiteral, codeSafeStringArray } from '../../../js-string-literal.ts'
 
 export interface StringifyInsertOptions {
   /** Indent on the `insert(` line itself. */
@@ -56,7 +57,7 @@ export function stringifyInsert(
   // so the profiler attributes its re-runs to source (resolved from the
   // `conditional` domBinding). Empty when off → byte-identical (SR8).
   const condBfId = plan.profileComponentName
-    ? `, ${JSON.stringify(`${plan.profileComponentName}#binding:${plan.slotId}`)}`
+    ? `, ${codeSafeStringLiteral(`${plan.profileComponentName}#binding:${plan.slotId}`)}`
     : ''
   lines.push(`${leadingIndent}insert(${scopeVar}, '${plan.slotId}', () => ${plan.condition}, {`)
   emitArm(lines, plan.arms[0], plan.eventNameMode, armIndent, bodyIndent, plan.profileComponentName)
@@ -94,7 +95,7 @@ function emitArmBody(
   // Profile mode (#1690, SR4): a branch binding effect's id, resolved from its
   // text/attribute `domBinding`. Empty when off → byte-identical (SR8).
   const bindingBfId = (slotId: string): string =>
-    profileComponentName ? `, ${JSON.stringify(`${profileComponentName}#binding:${slotId}`)}` : ''
+    profileComponentName ? `, ${codeSafeStringLiteral(`${profileComponentName}#binding:${slotId}`)}` : ''
   // 1. Combine event-bearing slots and ref slots into a single `$()` query.
   //    Order: events-first, then refs (matches legacy emitter).
   const allSlotIds = new Set<string>()
@@ -166,7 +167,7 @@ function emitArmBody(
     // the lookup can cross into their scopes without resolving another
     // component's same-numbered forwarded element (#3324).
     const receivers = attrs[0].receiverSlotIds
-    const receiverArg = receivers && receivers.length > 0 ? `, ${JSON.stringify(receivers)}` : ''
+    const receiverArg = receivers && receivers.length > 0 ? `, ${codeSafeStringArray(receivers)}` : ''
     lines.push(`${indent}{ const ${elVar} = qsa(__branchScope, '[bf="${slotId}"]'${receiverArg})`)
     lines.push(`${indent}${DEDUP_STORE_DECL}`)
     lines.push(`${indent}if (${elVar}) {`)

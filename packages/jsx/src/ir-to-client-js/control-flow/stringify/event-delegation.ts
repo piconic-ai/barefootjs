@@ -55,6 +55,7 @@ import type {
   LoopChildEvent,
 } from '../plan/types.ts'
 import type { JsSourceText } from '../../../types.ts'
+import { codeSafeStringLiteral } from '../../../js-string-literal.ts'
 
 /**
  * Profile mode (#1690, SR3): bracket a delegated handler call with turn
@@ -64,7 +65,7 @@ import type { JsSourceText } from '../../../types.ts'
  */
 function withTurn(call: string, componentName: string | undefined, childSlotId: string, eventName: string): string {
   if (!componentName) return call
-  const id = JSON.stringify(`${componentName}#handler:${childSlotId}:${eventName}`)
+  const id = codeSafeStringLiteral(`${componentName}#handler:${childSlotId}:${eventName}`)
   return `beginTurn(${id}); try { ${call} } finally { endTurn() }`
 }
 

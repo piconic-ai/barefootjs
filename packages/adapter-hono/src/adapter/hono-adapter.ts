@@ -113,7 +113,7 @@ const HYDRATION_PROPS_TYPE = `{ ${HYDRATION_PROP_DECLS.join('; ')} }`
  */
 function bodyRestDeclaration(restName: string | null, omittedKeys: readonly string[] | null | undefined, propsObjectName: string): string {
   if (!restName || !omittedKeys) return ''
-  const omitted = omittedKeys.map((key, i) => `${JSON.stringify(key)}: _bfOmit${i}, `).join('')
+  const omitted = omittedKeys.map((key, i) => `${codeSafeStringLiteral(key)}: _bfOmit${i}, `).join('')
   return `\n  const { ${omitted}...${restName} } = ${propsObjectName}`
 }
 
@@ -140,7 +140,7 @@ function hydrationPayloadAssignments(ir: ComponentIR, clientUsedProps: ReadonlyS
   }
   // #3845: a closed-type rest key the client reads as `_p.<key>`.
   for (const key of restPropsName ? (analysis?.usedRestKeys ?? []) : []) {
-    lines.push(hydratePropAssignment(JSON.stringify(key), `${restPropsName}[${JSON.stringify(key)}]`))
+    lines.push(hydratePropAssignment(codeSafeStringLiteral(key), `${restPropsName}[${codeSafeStringLiteral(key)}]`))
   }
   for (const p of ir.metadata.propsParams) {
     // Skip event-handler-shaped and internal props (`isHydrationPayloadPropName`).
@@ -870,7 +870,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     const valueExpr = (() => {
       const v = node.valueProp.value
       switch (v.kind) {
-        case 'literal': return JSON.stringify(v.value)
+        case 'literal': return codeSafeStringLiteral(v.value)
         case 'expression': return this.expressionValueToJs(v)
         case 'spread': return v.expr
         case 'template': return this.renderTemplateLiteralParts(v.parts)
@@ -902,7 +902,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * end tag can be spelled across parts: `{'<'}{v}`).
    */
   private renderRawTextContent(tag: RawTextTag, parts: readonly (IRText | IRExpression)[]): string {
-    const values = parts.map(part => (part.type === 'text' ? JSON.stringify(part.value) : `(${part.expr})`))
+    const values = parts.map(part => (part.type === 'text' ? codeSafeStringLiteral(part.value) : `(${part.expr})`))
     return `{bfRawText("${tag}", [${values.join(', ')}])}`
   }
 
@@ -1657,7 +1657,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
 
   private attrValueToJsExpr(value: AttrValue): string {
     switch (value.kind) {
-      case 'literal': return JSON.stringify(value.value)
+      case 'literal': return codeSafeStringLiteral(value.value)
       case 'expression': return this.expressionValueToJs(value)
       case 'spread': return value.expr
       case 'template': return this.renderTemplateLiteralParts(value.parts)

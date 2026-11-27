@@ -11,6 +11,7 @@
  */
 
 import type { IRTemplatePart } from './types.ts'
+import { codeSafeStringLiteral, escapeScriptUnsafe } from './js-string-literal.ts'
 
 export interface TemplatePartsToJsOptions {
   /**
@@ -54,7 +55,7 @@ export function lookupPartToJsExpr(
 ): string {
   const key = (opts?.useTemplate && part.templateKey) ? part.templateKey : part.key
   const obj = '{' + Object.entries(part.cases).map(
-    ([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`
+    ([k, v]) => `${codeSafeStringLiteral(k)}: ${codeSafeStringLiteral(v)}`
   ).join(', ') + '}'
   const typed = opts?.typed ? ' as Record<string, string>' : ''
   return `(${obj}${typed})[${key}]`
@@ -65,9 +66,10 @@ export function lookupPartToJsExpr(
  * carries it — as a single-quoted JS string literal. The cooked value of
  * `'a\nb'` holds a real newline and that of `"it's"` a bare quote, so
  * wrapping it in quotes unescaped yields an unterminated or unbalanced
- * literal. Escapes only what a single-quoted literal cannot hold raw (the
- * backslash, the quote and the line terminators), so a branch without
- * them prints exactly as before.
+ * literal. Escapes what a single-quoted literal cannot hold raw (the
+ * backslash, the quote, CR and LF), then the same script-unsafe set every
+ * emitted string literal gets (`escapeScriptUnsafe`: `<`, U+2028 and
+ * U+2029), so a branch without them prints exactly as before.
  */
 function singleQuotedJsString(value: string): string {
   const body = value
@@ -75,9 +77,7 @@ function singleQuotedJsString(value: string): string {
     .replace(/'/g, "\\'")
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029')
-  return `'${body}'`
+  return `'${escapeScriptUnsafe(body)}'`
 }
 
 /** Convert a `template` variant's parts into a JS template-literal string. */

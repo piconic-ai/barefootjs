@@ -18,6 +18,7 @@ import { tsNodeToParsedExpr } from '../expression-parser.ts'
 import type { LoweringMatcher } from '../lowering-registry.ts'
 import { rewriteBarePropRefs } from '../prop-rewrite.ts'
 import { livePropReadExpr, keepsDeclaredValue } from '../props-binding.ts'
+import { codeSafeStringLiteral } from '../js-string-literal.ts'
 
 /**
  * Profile mode (#1690, SR3/SR4): the id appended to a DOM-binding effect so the
@@ -28,7 +29,7 @@ import { livePropReadExpr, keepsDeclaredValue } from '../props-binding.ts'
  */
 function bindingIdArg(ctx: ClientJsContext, slotId: string | undefined): string {
   if (!ctx.profile || !slotId) return ''
-  return `, ${JSON.stringify(`${ctx.componentName}#binding:${slotId}`)}`
+  return `, ${codeSafeStringLiteral(`${ctx.componentName}#binding:${slotId}`)}`
 }
 
 /**
@@ -457,7 +458,7 @@ function lowerToLocaleCallsInReactiveExpr(expr: string, matcher: LoweringMatcher
       result,
       matchText,
       () =>
-        `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)}${namesJs !== null ? `, ${namesJs}` : ''})`,
+        `formatDate(${receiverText}, ${patternJs}, ${codeSafeStringLiteral(String(tzArg.value))}${namesJs !== null ? `, ${namesJs}` : ''})`,
     )
   }
   return restore(result)

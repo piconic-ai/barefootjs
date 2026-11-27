@@ -51,6 +51,7 @@ import type {
   StaticArrayChildInitPlan,
   StaticArrayChildInitsPlan,
 } from './static-array-child-init.ts'
+import { codeSafeStringLiteral } from '../../js-string-literal.ts'
 
 export function buildStaticArrayChildInitsPlan(
   ctx: ClientJsContext,
@@ -290,7 +291,7 @@ function buildComponentRootedInnerLoopPlan(
  * Differs from `buildComponentPropsExpr` in `control-flow/shared.ts`:
  *   - Static-array context has no loop-param `wrap` (forEach binds the
  *     param as a plain value, not a signal accessor).
- *   - Literal props are emitted as `name: JSON.stringify(value)` (a plain
+ *   - Literal props are emitted as `name: codeSafeStringLiteral(value)` (a plain
  *     property, NOT a getter), matching the legacy emitter byte-for-byte.
  */
 function buildStaticPropsExpr(props: readonly LoopChildCompProp[]): PropsExpr {
@@ -302,7 +303,7 @@ function buildStaticPropsExpr(props: readonly LoopChildCompProp[]): PropsExpr {
     }
     switch (p.value.kind) {
       case 'literal':
-        return { expr: JSON.stringify(p.value.value), getter: false }
+        return { expr: codeSafeStringLiteral(p.value.value), getter: false }
       case 'boolean-shorthand':
       case 'boolean-attr':
         return { expr: 'true', getter: false }

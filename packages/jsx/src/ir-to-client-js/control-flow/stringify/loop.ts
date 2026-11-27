@@ -39,6 +39,7 @@ import { stringifyCompositeLoop } from './composite-loop.ts'
 import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import { stringifyLazyRowLoop } from './lazy-row.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
+import { codeSafeStringLiteral, codeSafeStringArray } from '../../../js-string-literal.ts'
 
 /**
  * Emit `(callback)(__rf)` for each ref on a per-item slot, looking up the
@@ -105,7 +106,7 @@ export function emitRowPortalClaim(
   if (slots.length === 0) return
   // A mapArray row claims only when hydrating (`__existing`); a static row
   // is always the SSR one, or a fresh clone the claim finds nothing for.
-  const claim = `claimRowPortals(${opts.rowVar ?? '__existing'}, __scopeId, ${JSON.stringify(slots)}, ${opts.containerVar})`
+  const claim = `claimRowPortals(${opts.rowVar ?? '__existing'}, __scopeId, ${codeSafeStringArray(slots)}, ${opts.containerVar})`
   lines.push(opts.rowVar ? `${opts.indent}${claim}` : `${opts.indent}if (__existing) ${claim}`)
 }
 
@@ -197,7 +198,7 @@ export function stringifyPlainLoop(
   // element wholesale via `patchLeaf` (flatMap leaves carry no per-slot
   // wiring by construction — the compiler refuses leaves that would).
   if (plan.flatMapLeafItem) {
-    const loopBfIdArg = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
+    const loopBfIdArg = plan.profileLoopId ? `, ${codeSafeStringLiteral(plan.profileLoopId)}` : ''
     lines.push(`${topIndent}mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (__bfD, ${indexParam}, __existing) => {`)
     lines.push(`${topIndent}  let __el = __existing`)
     lines.push(`${topIndent}  if (!__el) { const __tpl = document.createElement('template'); __tpl.innerHTML = __bfD().h; __el = __tpl.content.firstElementChild }`)
@@ -261,7 +262,7 @@ export function stringifyPlainLoop(
   // `childRefs` need `__el` as a handle to invoke the user's callback inside
   // the factory, so non-empty refs force the multi-line layout the same way
   // reactive effects do (#1244).
-  const loopBfId = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
+  const loopBfId = plan.profileLoopId ? `, ${codeSafeStringLiteral(plan.profileLoopId)}` : ''
   // Preamble-patched regions (#2389) need `__el` as a query root for their
   // effect, so non-empty regions force the multi-line layout — same
   // precedent as `childRefs` above.
@@ -396,7 +397,7 @@ function stringifyAnchoredLoop(
     stringifyReactiveEffects(lines, reactiveEffects, { indent: bodyIndent, elVar: '__anchor', bodyIsMultiRoot: false })
   }
   lines.push(`${bodyIndent}return __frag ?? __anchor`)
-  const loopBfId = plan.profileLoopId ? `, ${JSON.stringify(plan.profileLoopId)}` : ''
+  const loopBfId = plan.profileLoopId ? `, ${codeSafeStringLiteral(plan.profileLoopId)}` : ''
   lines.push(`${topIndent}}, '${markerId}'${loopBfId})`)
 }
 
