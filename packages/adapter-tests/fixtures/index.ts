@@ -1758,6 +1758,7 @@ import { fixture as childrenRenamedParam } from './children-renamed-param'
 import { fixture as childrenRenamedParamFallbackShapes } from './children-renamed-param-fallback-shapes'
 import { fixture as childrenRenamedParamConditional } from './children-renamed-param-conditional'
 import { fixture as childrenLocalBindsOtherProp } from './children-local-binds-other-prop'
+import { fixture as childrenBodyConstFallbackRead } from './children-body-const-fallback-read'
 import { fixture as childrenAliasHop } from './children-alias-hop'
 import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fragment-root'
 import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
@@ -3190,6 +3191,7 @@ export const jsxFixtures: JSXFixture[] = [
   childrenRenamedParamConditional,
   childrenLocalBindsOtherProp,
   childrenAliasHop,
+  childrenBodyConstFallbackRead,
   childrenAliasHopFragmentRoot,
   childrenRenamedBesideChildrenLocal,
   childrenAliasLoopShadow,

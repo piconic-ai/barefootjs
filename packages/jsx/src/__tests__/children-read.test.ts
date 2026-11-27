@@ -193,6 +193,35 @@ export function Box({ children, rows }: { children?: unknown; rows: string[] }) 
 `)).toEqual(['bare', undefined, 'bare', undefined])
   })
 
+  test('a const holding a fallback read of the children prop reads as that fallback read', () => {
+    expect(childrenReads(`
+export function Box(props: { children?: unknown; rows: string[] }) {
+  const a = props.children ?? '<b>x</b>'
+  const b = props.children || '<b>x</b>'
+  const e = props.children ?? ''
+  const d = a
+  return <div>{a}{b}{e}{d}<ul>{props.rows.map(a => <li key={a}>{a}{d}</li>)}</ul></div>
+}
+`)).toEqual(['nullish-fallback', 'or-fallback', 'nullish-empty', 'nullish-fallback', undefined, 'nullish-fallback'])
+    expect(childrenReads(`
+export function Box({ children, label }: { children?: unknown; label?: string }) {
+  const a = children ?? label
+  const b = label ?? children
+  const c = a ?? 'x'
+  return <div>{a}{b}{c}</div>
+}
+`)).toEqual(['nullish-fallback', undefined, undefined])
+  })
+
+  test('a let holding a fallback read of the children prop is not a children read', () => {
+    expect(childrenReads(`
+export function Box({ children }: { children?: unknown }) {
+  let c = children ?? 'x'
+  return <div>{c}</div>
+}
+`)).toEqual([undefined])
+  })
+
   test('a let alias of the children prop is not a children read', () => {
     expect(childrenReads(`
 export function Box({ children }: { children?: unknown }) {

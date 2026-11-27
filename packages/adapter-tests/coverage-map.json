@@ -2334,6 +2334,27 @@
         "text"
       ]
     },
+    "children-body-const-fallback-read": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",

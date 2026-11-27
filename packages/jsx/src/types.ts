@@ -615,7 +615,9 @@ export interface IRExpression {
    * a bare read (`children` bound by the props destructure, renamed or not,
    * `<propsObject>.children`, or a body alias such as `const { children: kids }
    * = props`), that read on the left of `?? ''`, on the
-   * left of `?? <other fallback>`, or on the left of `|| <fallback>` (#3554).
+   * left of `?? <other fallback>`, or on the left of `|| <fallback>` (#3554),
+   * read directly or through a component-scope const that holds it
+   * (`const label = props.children ?? 'x'`, `{label}`).
    * Decided once in Phase 1 from the binding,
    * so a local `const children`, a loop row named `children`, or another
    * object's `.children` is never mistaken for the prop. The children value

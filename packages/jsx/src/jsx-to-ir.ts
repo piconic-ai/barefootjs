@@ -1153,7 +1153,9 @@ function isEmptyStringFallback(fallback: ParsedExpr): boolean {
  * `?? ''`, on the left of another `?? fallback`, or on the left of
  * `|| fallback` (#3554). A chained
  * `(children ?? '<b>x</b>') ?? ''` reads as `children ?? ('<b>x</b>' ?? '')`
- * (`nullishChainParts`), so its inner fallback stays escaped text. A name the enclosing loop rows bind
+ * (`nullishChainParts`), so its inner fallback stays escaped text. A
+ * component-scope const holding one of the fallback reads
+ * (`childrenFallbackConstRead`) reads as it. A name the enclosing loop rows bind
  * (item, index, destructured names and preamble locals, through `scope`)
  * shadows the prop; a component-body `const children` cannot coexist with a
  * destructured `children` param, so the destructure is the binding when it
@@ -1164,20 +1166,59 @@ function childrenReadOf(
   analyzer: AnalyzerContext,
   scope: BindingScope,
 ): IRExpression['childrenRead'] | null {
+  const fallback = childrenFallbackReadOf(parsed, analyzer, scope)
+  if (fallback) return fallback
+  if (isBareChildrenRead(parsed, analyzer, scope)) return 'bare'
+  // A component-scope const holding a fallback read of the prop
+  // (`const label = props.children ?? 'x'`) reads as that fallback read.
+  // Shadowing is checked once, for the name the expression itself reads.
+  if (parsed.kind !== 'identifier' || scope.isBound(parsed.name)) return null
+  return childrenFallbackConstRead(parsed.name, analyzer)
+}
+
+/**
+ * A `??` / `||` read whose head is a bare read of the children prop
+ * (`isBareChildrenRead`): `children ?? ''`, `children ?? fallback`,
+ * `children || fallback`; `null` for anything else.
+ */
+function childrenFallbackReadOf(
+  parsed: ParsedExpr,
+  analyzer: AnalyzerContext,
+  scope: BindingScope,
+): Exclude<IRExpression['childrenRead'], 'bare' | undefined> | null {
   const chain = nullishChainParts(parsed)
   if (chain) {
-    if (childrenReadOf(chain.head, analyzer, scope) !== 'bare') return null
+    if (!isBareChildrenRead(chain.head, analyzer, scope)) return null
     return isEmptyStringFallback(chain.fallback) ? 'nullish-empty' : 'nullish-fallback'
   }
   const orChain = fallbackChainParts(parsed, '||')
-  if (orChain) return childrenReadOf(orChain.head, analyzer, scope) === 'bare' ? 'or-fallback' : null
-  // Shadowing is checked once, for the name the expression itself reads.
-  if (parsed.kind === 'identifier') {
-    return !scope.isBound(parsed.name) && isChildrenBinding(parsed.name, analyzer) ? 'bare' : null
-  }
+  if (orChain) return isBareChildrenRead(orChain.head, analyzer, scope) ? 'or-fallback' : null
+  return null
+}
+
+/** A name holding the children prop (`isChildrenBinding`) or `<propsObject>.children`, not shadowed by `scope`. */
+function isBareChildrenRead(parsed: ParsedExpr, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  if (parsed.kind === 'identifier') return !scope.isBound(parsed.name) && isChildrenBinding(parsed.name, analyzer)
   const readsProps =
     parsed.kind === 'member' && parsed.object.kind === 'identifier' && !scope.isBound(parsed.object.name)
-  return readsProps && isPropsChildrenMember(parsed, analyzer) ? 'bare' : null
+  return readsProps && isPropsChildrenMember(parsed, analyzer)
+}
+
+/**
+ * The fallback read a component-scope const holds, reached through const
+ * alias hops (`const label = props.children ?? 'x'`, `const d = label`).
+ * The initializer resolves in the component scope it was declared in, so
+ * a loop row binding a name at the use site does not shadow it there.
+ */
+function childrenFallbackConstRead(
+  name: string,
+  analyzer: AnalyzerContext,
+): Exclude<IRExpression['childrenRead'], 'bare' | undefined> | null {
+  const consts = childrenHopConstants(analyzer)
+  return resolveAliasOrigin(childrenAliasHops(analyzer), name, n => {
+    const init = consts.get(n)
+    return init ? childrenFallbackReadOf(init, analyzer, BindingScope.EMPTY) : null
+  })
 }
 
 /**

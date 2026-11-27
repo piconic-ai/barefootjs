@@ -641,7 +641,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   private childrenAwareOutput(expr: IRExpression, rubyExpr: string): string {
     if (expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty') return rubyExpr
     const op = expr.childrenRead === 'nullish-fallback' ? '??' : expr.childrenRead === 'or-fallback' ? '||' : null
-    const chain = op && expr.parsed ? fallbackChainParts(expr.parsed, op) : null
+    // A const holding the read (`const label = props.children ?? 'x'`) is
+    // split through its initializer, the tree `convertExpressionToRuby`
+    // spells for it.
+    const read = op && expr.parsed ? inlineComputedConsts(expr.parsed, this.computedConsts) : null
+    const chain = op && read ? fallbackChainParts(read, op) : null
     if (chain) {
       const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
       const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
