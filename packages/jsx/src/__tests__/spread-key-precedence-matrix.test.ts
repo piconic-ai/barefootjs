@@ -212,3 +212,105 @@ export function C({ ...rest }: { ${key}?: string }) { return <K {...rest} /> }`,
     })
   }
 })
+
+describe('a write after an open bag: the JSX runtimes clear the bag keys that alias the attribute', () => {
+  // The keys are the JSX runtimes' (the reference, the client JS), so they do
+  // not depend on the target adapter's spread helper: the client JS is one
+  // artifact for every adapter.
+  const expectedShadows: Record<string, string[] | undefined> = {
+    className: undefined,
+    htmlFor: ['htmlFor'],
+    crossOrigin: ['crossOrigin'],
+    httpEquiv: ['httpEquiv'],
+    itemProp: ['itemProp'],
+    fetchPriority: ['fetchPriority'],
+    noModule: ['noModule'],
+    formAction: ['formAction'],
+  }
+  for (const [key, attr] of keys) {
+    for (const [label, adapter] of [['default', new TestAdapter()], ['renames all', new RenamesAllAdapter()]] as const) {
+      test(`${key} literal (${label})`, () => {
+        const el = elementOf(`type P = { [key: string]: unknown }
+export function C({ ...rest }: P) { return <x-el {...rest} ${key}="lit">x</x-el> }`, adapter)
+        expect(attrNamed(el, attr).map(a => a.spreadAliasShadows)).toEqual([expectedShadows[key]])
+      })
+    }
+  }
+  test('an expression value, a prop bag, and a key in another letter case', () => {
+    const el = elementOf(`type P = { a?: Record<string, unknown>; v?: string }
+export function C({ a, v }: P) { return <x-el {...a} htmlFor={v} tabIndex={1} title="t">x</x-el> }`, new TestAdapter())
+    expect(attrNamed(el, 'for')[0].spreadAliasShadows).toEqual(['htmlFor'])
+    expect(attrNamed(el, 'tabindex')[0].spreadAliasShadows).toEqual(['tabIndex'])
+    expect(attrNamed(el, 'title')[0].spreadAliasShadows).toBeUndefined()
+  })
+  test('a write before the bag, a rest that took the key, and a closed rest key stay unmarked', () => {
+    const before = elementOf(`type P = { [key: string]: unknown }
+export function C({ ...rest }: P) { return <x-el htmlFor="lit" {...rest}>x</x-el> }`, new TestAdapter())
+    expect(attrNamed(before, 'for')[0].spreadAliasShadows).toBeUndefined()
+    const taken = elementOf(`type P = { htmlFor?: string; [key: string]: unknown }
+export function C({ htmlFor, ...rest }: P) { return <x-el {...rest} htmlFor="lit">{htmlFor}</x-el> }`, new TestAdapter())
+    expect(attrNamed(taken, 'for')[0].spreadAliasShadows).toBeUndefined()
+    const closed = elementOf(`type P = { htmlFor?: string; bag?: Record<string, string> }
+export function C({ bag, ...rest }: P) { return <x-el {...bag} {...rest}>x</x-el> }`, new TestAdapter())
+    expect(closed.attrs.filter(a => a.restExpandedKey).map(a => a.spreadAliasShadows)).toEqual([undefined])
+  })
+})
+
+describe('a write after an open bag: the client JS keeps the later write', () => {
+  const clientJs = (source: string, adapter: TestAdapter): string =>
+    compileJSX(source, 'Component.tsx', { adapter }).files.find(f => f.type === 'clientJs')?.content ?? ''
+  const source = `'use client'
+type P = { a?: Record<string, unknown>; v?: string; [key: string]: unknown }
+export function C({ a, v, ...rest }: P) {
+  return <div><x-el {...rest} crossOrigin="lit">x</x-el><p {...a} htmlFor={v}>y</p></div>
+}`
+  test('hydration does not apply the cleared rest keys, and the client template clears the bag key', () => {
+    const js = clientJs(source, new TestAdapter())
+    expect(js).toContain('"crossorigin","crossOrigin"]')
+    // `void 0`: the author's scope may bind `undefined`.
+    expect(js).toContain('"for": _p.v, "htmlFor": void 0')
+  })
+  test('the client JS is the same whatever the target adapter renames', () => {
+    expect(clientJs(source, new RenamesAllAdapter())).toBe(clientJs(source, new TestAdapter()))
+  })
+  test('a spread after the attribute keeps its key: only the spreads before it exclude the cleared keys', () => {
+    const js = clientJs(`'use client'
+type P = { a?: Record<string, string>; [key: string]: unknown }
+export function C({ a, ...rest }: P) { return <div><x-el {...a} htmlFor="lit" {...rest}>x</x-el><p {...rest} htmlFor="lit">y</p></div> }`, new TestAdapter())
+    expect(js).toContain('applyRestAttrs(_s0, _p, ["a","for"])')
+    expect(js).toContain('applyRestAttrs(_s1, _p, ["a","for","htmlFor"])')
+  })
+})
+
+describe('a write after an open bag: the bags that may carry the aliasing key', () => {
+  test('an SVG attribute kept in camelCase also clears its lowercase spelling', () => {
+    const el = elementOf(`type P = { [key: string]: unknown }
+export function C({ ...rest }: P) { return <x-el {...rest} viewBox="0 0 1 1">x</x-el> }`, new TestAdapter())
+    expect(attrNamed(el, 'viewBox')[0].spreadAliasShadows).toEqual(['viewbox'])
+  })
+  test('a props object whose type admits undeclared keys may carry the key; a closed one only when it declares it', () => {
+    for (const type of ['Record<string, unknown>', '{ [key: string]: unknown }', '{ id?: string; [key: string]: unknown }']) {
+      const el = elementOf(`export function C(props: ${type}) { return <x-el {...props} htmlFor="lit">x</x-el> }`, new TestAdapter())
+      expect(attrNamed(el, 'for')[0].spreadAliasShadows).toEqual(['htmlFor'])
+    }
+    const closed = elementOf(`export function C(props: { id?: string }) { return <x-el {...props} htmlFor="lit">x</x-el> }`, new TestAdapter())
+    expect(attrNamed(closed, 'for')[0].spreadAliasShadows).toBeUndefined()
+    const declared = elementOf(`export function C(props: { htmlFor?: string }) { return <x-el {...props} htmlFor="lit">x</x-el> }`, new TestAdapter())
+    expect(attrNamed(declared, 'for')[0].spreadAliasShadows).toEqual(['htmlFor'])
+  })
+  test('the literal before an open props object keeps main\'s guard, which reads no undeclared prop', () => {
+    const el = elementOf(`export function C(props: Record<string, unknown>) { return <x-el htmlFor="lit" {...props}>x</x-el> }`, new TestAdapter())
+    expect(attrNamed(el, 'for')[0].spreadOverridable).toBeUndefined()
+  })
+  test('a const or inline object spread carries only the keys it spells', () => {
+    const constBag = elementOf(`export function C({ size }: { size?: number }) {
+  const sizeAttrs = size ? { width: size } : {}
+  return <x-el {...sizeAttrs} viewBox="0 0 1 1">x</x-el>
+}`, new TestAdapter())
+    expect(attrNamed(constBag, 'viewBox')[0].spreadAliasShadows).toBeUndefined()
+    const inline = elementOf(`export function C({ on }: { on?: boolean }) {
+  return <x-el {...(on && { htmlFor: 'f' })} {...(on ? { title: 't' } : {})} htmlFor="lit">y</x-el>
+}`, new TestAdapter())
+    expect(attrNamed(inline, 'for')[0].spreadAliasShadows).toEqual(['htmlFor'])
+  })
+})

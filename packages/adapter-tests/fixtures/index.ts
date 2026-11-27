@@ -608,6 +608,11 @@ import { fixture as spreadClosedRestAttrNames } from './spread-closed-rest-attr-
 import { fixture as spreadClosedRestAttrNamesOverlap } from './spread-closed-rest-attr-names-overlap'
 import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-literal-alias-before'
 import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
+import { fixture as spreadOpenBagLiteralAliasAfter } from './spread-open-bag-literal-alias-after'
+import { fixture as spreadOpenBagLiteralOtherSpellingAfter } from './spread-open-bag-literal-other-spelling-after'
+import { fixture as spreadOpenPropsObjectLiteralAliasAfter } from './spread-open-props-object-literal-alias-after'
+import { fixture as spreadOpenBagBooleanValues } from './spread-open-bag-boolean-values'
+import { fixture as spreadClosedRestBooleanValues } from './spread-closed-rest-boolean-values'
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
 import { fixture as spreadOpenBagLiteralCaseAlias } from './spread-open-bag-literal-case-alias'
 import { fixture as spreadClosedRestLiteralCaseAlias } from './spread-closed-rest-literal-case-alias'
@@ -2288,6 +2293,11 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestAttrNamesOverlap,
   spreadOpenBagLiteralAliasBefore,
   spreadClosedRestLiteralAliasAfter,
+  spreadOpenBagLiteralAliasAfter,
+  spreadOpenBagLiteralOtherSpellingAfter,
+  spreadOpenPropsObjectLiteralAliasAfter,
+  spreadOpenBagBooleanValues,
+  spreadClosedRestBooleanValues,
   spreadOpenBagLiteralRenamedElsewhere,
   spreadOpenBagLiteralCaseAlias,
   spreadClosedRestLiteralCaseAlias,

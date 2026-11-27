@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, spreadKeysAliasingAttr, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -8156,6 +8156,7 @@ function processAttributes(
     })
   }
   markAttrsOverridableBySpread(attrs, ctx)
+  markAttrsShadowingSpreadAliases(attrs, ctx)
 
   // The ref callback is resolved once, for both the SSR-portal recognition
   // and BF063. BF063 runs after the loop so it sees every attribute this
@@ -8228,6 +8229,83 @@ function markAttrsOverridableBySpread(
     }
     if (tests.aliasOverriders.length > 0) attr.spreadAliasOverriders = tests.aliasOverriders
   })
+}
+
+/**
+ * Sets `IRAttribute.spreadAliasShadows` on each attribute written after an
+ * open spread whose bag may carry the same attribute under a key a JSX
+ * runtime keeps apart from the attribute's own (`htmlFor` beside `for`,
+ * `tabIndex` beside `tabindex`, `spreadKeysAliasingAttr`). Only the JSX
+ * runtimes (the reference, the client JS) read it, so the keys are theirs,
+ * whatever the target adapter's spread helper renames. JS keeps the
+ * last write, so `<label {...rest} htmlFor="y">` renders one `for`, the
+ * literal's; a JSX runtime that writes the literal as `for` and the bag key
+ * as `htmlFor` holds two props and renders both.
+ *
+ * A closed rest key (`restExpandedKey`) is left as it is: when the rest
+ * lacks the key at render time, the earlier bag's value is the last write.
+ */
+function markAttrsShadowingSpreadAliases(attrs: IRAttribute[], ctx: TransformContext): void {
+  const firstSpread = attrs.findIndex(attr => attr.value.kind === 'spread')
+  if (firstSpread < 0) return
+  attrs.forEach((attr, index) => {
+    if (index <= firstSpread || attr.value.kind === 'spread' || attr.restExpandedKey) return
+    const aliasKeys = spreadKeysAliasingAttr(toSpreadAttrName(attr.name))
+    if (aliasKeys.length === 0) return
+    const shadowed = new Set<string>()
+    for (const spread of attrs.slice(0, index)) {
+      if (spread.value.kind !== 'spread') continue
+      for (const key of keysBagMayClear(spread.value.expr, aliasKeys, ctx)) shadowed.add(key)
+    }
+    if (shadowed.size > 0) attr.spreadAliasShadows = [...shadowed]
+  })
+}
+
+/**
+ * {@link keysBagMayCarry} for a key a JSX runtime only clears, never reads:
+ * a props object whose type admits undeclared keys (`props: Record<string,
+ * unknown>`) may carry any of them. The literal guard keeps the narrower
+ * answer, as reading an undeclared prop off it fails on a template adapter.
+ */
+function keysBagMayClear(spreadExpr: string, keys: readonly string[], ctx: TransformContext): readonly string[] {
+  const name = spreadExpr.trim()
+  if (name === ctx.analyzer.propsObjectName && !ctx.scope.isBound(name) && ctx.analyzer.propsObjectTypeOpen) return keys
+  const literal = literalBagKeys(constBagInitializer(parseExpression(name), ctx))
+  if (literal !== null) return keys.filter(key => literal.has(key))
+  return keysBagMayCarry(spreadExpr, keys, ctx)
+}
+
+/**
+ * A spread of a component `const` (`const sizeAttrs = size ? {…} : {}`)
+ * read as its initializer, one hop; any other expression as it is.
+ */
+function constBagInitializer(parsed: ParsedExpr | null, ctx: TransformContext): ParsedExpr | null {
+  if (parsed?.kind !== 'identifier' || ctx.scope.isBound(parsed.name)) return parsed
+  const constant = constantsByName(ctx).get(parsed.name)
+  return (constant?.declarationKind === 'const' && constant.parsed) || parsed
+}
+
+/**
+ * The keys an inline object spread can carry when it spells them all
+ * (`{...(size ? { width: size } : {})}`, `{...(on && { title: 't' })}`), or
+ * null when it may carry others (a nested spread, any other expression).
+ */
+function literalBagKeys(parsed: ParsedExpr | null): Set<string> | null {
+  if (parsed === null) return null
+  switch (parsed.kind) {
+    case 'object-literal':
+      return parsed.properties.every(p => p.kind === 'prop')
+        ? new Set(parsed.properties.map(p => (p.kind === 'prop' ? p.key : '')))
+        : null
+    case 'conditional': {
+      const consequent = literalBagKeys(parsed.consequent)
+      const alternate = consequent && literalBagKeys(parsed.alternate)
+      return consequent && alternate ? new Set([...consequent, ...alternate]) : null
+    }
+    // A falsy left side spreads nothing.
+    case 'logical': return parsed.op === '&&' ? literalBagKeys(parsed.right) : null
+    default: return null
+  }
 }
 
 /**
