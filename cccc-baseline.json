@@ -79,7 +79,7 @@
     },
     "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {
       "buildSpreadInitializer": [
-        31
+        30
       ],
       "collectRawSpreadAttrs": [
         39
