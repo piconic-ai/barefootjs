@@ -56,9 +56,11 @@ export interface ServerRead {
    */
   refusedCalls: readonly string[]
   /**
-   * The names it reads when its expression has no analyzable tree (a
-   * block-bodied memo, an object-literal memo body): the analyzer's free set
-   * the walk follows instead. Unset when the tree says what it reads.
+   * The names its evaluation reads when its expression has no analyzable
+   * tree (a block-bodied memo, an object-literal memo body): for a memo, its
+   * free names less those read only in a nested function it never calls
+   * (`MemoInfo.evaluatedFreeIdentifiers`); else the analyzer's free set the
+   * walk follows. Unset when the tree says what it reads.
    */
   untreedNames: ReadonlySet<string> | undefined
 }
@@ -79,6 +81,8 @@ interface Followed {
   block?: readonly ParsedStatement[]
   /** The names the declaration reads when its expression has no tree. */
   fallback: ReadonlySet<string> | undefined
+  /** Of `fallback`, those its evaluation reads (a memo's `evaluatedFreeIdentifiers`). */
+  evaluated?: ReadonlySet<string>
 }
 
 /** What {@link walkServerReads} reports besides the declarations, and where it starts. */
@@ -112,7 +116,8 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     seen.add(binding)
     const reads = readsOf(followed.expr, followed.fallback, { scope: BindingScope.EMPTY, from: binding.scope }, ctx)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
-    const untreedNames = reads.expr ? undefined : new Set(reads.names)
+    // An IR that went through JSON holds no `Set`: the free names stand in.
+    const untreedNames = reads.expr ? undefined : new Set(followed.evaluated instanceof Set ? followed.evaluated : reads.names)
     const read: ServerRead = { name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls, untreedNames }
     visit(read)
     if (!followsThrough || followsThrough(read)) pending.push({ reads, from: binding.scope })
@@ -157,7 +162,7 @@ function followedDeclaration(binding: LocalBinding): Followed | null {
       const m = binding.info
       if (m.isModule) return null
       const block = m.parsed ? undefined : m.parsedBlock
-      return { kind: 'memo', loc: m.loc, expr: m.parsed, block, fallback: m.computationFreeIdentifiers }
+      return { kind: 'memo', loc: m.loc, expr: m.parsed, block, fallback: m.computationFreeIdentifiers, evaluated: m.evaluatedFreeIdentifiers }
     }
     case 'const': {
       const c = binding.info

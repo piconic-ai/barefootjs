@@ -96,6 +96,14 @@ describe('refuseUnloweredOperators', () => {
       expect(refused(`${decl}; const m = ${memo}; return <p>{m().n}</p>`)).toEqual([`'o' is initialized from`])
     }
     expect(refused(`${decl}; const [s] = createSignal({ n: o.n }); return <p>{s().n}</p>`)).toEqual([`'o' is initialized from`])
+    // A block memo reads the const where its evaluation does: not in a
+    // function it only creates, whose value the static evaluator computes.
+    for (const body of ['const unused = () => o.kind; return false', 'function g() { return o.kind } return false']) {
+      expect(refused(`${decl}; const m = createMemo(() => { ${body} }); return <p>{m() ? 'y' : 'n'}{o.n}</p>`)).toEqual([])
+    }
+    for (const body of ['const f = () => o.kind; return f()', 'function g() { return o.kind } return g()', 'const xs = [1].map(() => o.kind); return xs.join()', 'const cfg = { f: () => o.kind }; return cfg.f()']) {
+      expect(refused(`${decl}; const m = createMemo(() => { ${body} }); return <p>{m()}{o.n}</p>`)).toEqual([`'o' is initialized from`])
+    }
     // A block memo that does not name the const leaves it to the template reads.
     expect(refused(`${decl}; const m = createMemo(() => { const v = 2; return v }); return <p>{m()}{o.n}</p>`)).toEqual([])
     expect(refused(`${decl}; const m = createMemo(() => ({ n: o.n })); return <p>{/* @client */ m().n}</p>`)).toEqual([])

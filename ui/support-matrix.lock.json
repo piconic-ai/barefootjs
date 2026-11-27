@@ -4263,6 +4263,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -4570,6 +4576,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -4907,6 +4919,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -5232,6 +5250,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -5563,6 +5587,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -5876,6 +5906,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -6207,6 +6243,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -6535,6 +6577,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -6854,6 +6902,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -9869,6 +9923,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -10692,6 +10752,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -11596,6 +11662,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -12539,6 +12611,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -13353,6 +13431,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -14152,6 +14236,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -14963,6 +15053,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -15756,6 +15852,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -16564,6 +16666,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -18703,6 +18811,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -19820,6 +19934,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -21120,6 +21240,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -22441,6 +22567,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -23555,6 +23687,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -24654,6 +24792,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -25765,6 +25909,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -26840,6 +26990,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -27948,6 +28104,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -29526,6 +29688,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -30385,6 +30553,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -31361,6 +31535,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -32394,6 +32574,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -33250,6 +33436,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -34103,6 +34295,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -34968,6 +35166,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -35797,6 +36001,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -36641,6 +36851,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -39403,6 +39619,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -40244,6 +40466,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -41253,6 +41481,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -42199,6 +42433,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -43043,6 +43283,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -43872,6 +44118,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -44719,6 +44971,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -45542,6 +45800,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -46383,6 +46647,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -47048,6 +47318,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -47529,6 +47805,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -48031,6 +48313,12 @@
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -48542,6 +48830,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -49023,6 +49317,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -49513,6 +49813,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50012,6 +50318,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -50475,6 +50787,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50959,6 +51277,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52266,6 +52590,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52498,6 +52828,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -52727,6 +53063,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -52968,6 +53310,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -53197,6 +53545,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -53438,6 +53792,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -53667,6 +54027,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -53902,6 +54268,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-block-return-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -54131,6 +54503,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -60306,6 +60684,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -60541,6 +60925,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -60821,6 +61211,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -61116,6 +61512,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -61357,6 +61759,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -61616,6 +62024,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -61872,6 +62286,12 @@
               ]
             },
             {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -62101,6 +62521,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -62345,6 +62771,12 @@
               "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "memo-block-called-function-reads-typeof-const",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {

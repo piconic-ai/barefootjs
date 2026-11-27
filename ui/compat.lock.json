@@ -9575,6 +9575,125 @@
           }
         }
       },
+      "memo-block-called-function-reads-typeof-const": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "server-read-unlowered-operator"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-block-called-function-reads-typeof-const-client"
+          }
+        }
+      },
       "memo-block-return-reads-typeof-const": {
         "blade": {
           "kind": "refusal",
@@ -22889,6 +23008,10 @@
         "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
       },
+      "memo-block-called-function-reads-typeof-const": {
+        "description": "A block memo calling a function over a typeof const member renders the type name (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-called-function-reads-typeof-const.ts"
+      },
       "memo-block-return-reads-typeof-const": {
         "description": "A memo reading a const member that applies typeof renders the type name (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-return-reads-typeof-const.ts"
@@ -23692,6 +23815,10 @@
       "markup-uninlinable-local-function-named-like-prop-client": {
         "description": "The /* @client */ escape of a local function call a template cannot inline",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop-client.ts"
+      },
+      "memo-block-called-function-reads-typeof-const-client": {
+        "description": "The client-directive escape of a block memo calling a function over a typeof const member",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-called-function-reads-typeof-const-client.ts"
       },
       "memo-block-return-reads-typeof-const-client": {
         "description": "The client-directive escape of memo-block-return-reads-typeof-const",
@@ -25920,6 +26047,7 @@
       "fixtures": [
         "child-prop-typeof",
         "const-typeof-prop",
+        "memo-block-called-function-reads-typeof-const",
         "memo-block-return-reads-typeof-const",
         "memo-exponent-operator",
         "memo-object-body-reads-typeof-const",

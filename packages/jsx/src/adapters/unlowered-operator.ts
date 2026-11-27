@@ -29,6 +29,7 @@ import { isEventHandlerName } from '../event-handler-name.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads, type ServerRead } from '../server-read-walk.ts'
 import { walkTemplatePositions } from '../template-position-walk.ts'
+import { evaluateSeeds, UNRESOLVED } from '../ssr-defaults.ts'
 import type { ComponentIR, SourceLocation } from '../types.ts'
 import { childPropReads } from './unlowered-array-element.ts'
 import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
@@ -62,12 +63,7 @@ export function refuseUnloweredOperators(ir: ComponentIR, sink: UninlinableSeedC
   }
   const literalConsts = literalConstNames(reads)
   const constPaths = readPathsByName(sources, literalConsts, ctx)
-  // A declaration whose reads come from the analyzer's free set rather than
-  // a tree (a block-bodied or object-literal memo body) reads each const it
-  // names whole, as far as anything here can tell.
-  for (const read of reads) {
-    for (const name of read.untreedNames ?? []) if (literalConsts.has(name)) constPaths.set(name, [...(constPaths.get(name) ?? []), []])
-  }
+  for (const name of untreedConstReads(ir, reads, literalConsts, valueOf)) constPaths.set(name, [...(constPaths.get(name) ?? []), []])
   for (const read of reads) {
     // A module-scope declaration is out of scope, as for the array-element refusal.
     if (read.scope === 'module') continue
@@ -81,6 +77,33 @@ export function refuseUnloweredOperators(ir: ComponentIR, sink: UninlinableSeedC
     const node = firstOf(reached, e => firstUnloweredOperator(e, at, ctx))
     if (node !== null) record(read, operatorText(node), !readByProp(read), sink)
   }
+}
+
+/**
+ * The literal consts a signal or memo with no tree to walk (a block-bodied
+ * memo with more than one statement) reads whole: the names the analyzer
+ * found in it (`ServerRead.untreedNames`), for a declaration whose value
+ * the static evaluator cannot compute (`evaluateSeeds`). A value it does
+ * compute is the server value whatever the body names, a function it only
+ * stores included; one it cannot compute renders empty already, and a const
+ * it names is the read the refusal can point at.
+ */
+function untreedConstReads(
+  ir: ComponentIR,
+  reads: readonly ServerRead[],
+  literalConsts: ReadonlySet<string>,
+  valueOf: (read: ServerRead) => ParsedExpr | undefined,
+): Set<string> {
+  const names = new Set<string>()
+  const untreed = reads.filter(r => (r.kind === 'signal' || r.kind === 'memo') && !valueOf(r) && r.untreedNames && [...r.untreedNames].some(n => literalConsts.has(n)))
+  if (untreed.length === 0) return names
+  const seeds = evaluateSeeds(ir.metadata)
+  for (const read of untreed) {
+    const seed = (read.kind === 'memo' ? seeds.memos : seeds.signals).get(read.name)
+    if (seed !== undefined && seed !== UNRESOLVED) continue
+    for (const name of read.untreedNames ?? []) if (literalConsts.has(name)) names.add(name)
+  }
+  return names
 }
 
 /** An expression the server render evaluates, and where. */

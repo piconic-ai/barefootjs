@@ -12558,6 +12558,40 @@
         "text"
       ]
     },
+    "memo-block-called-function-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-called-function-reads-typeof-const-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-block-return-reads-typeof-const": {
       "kinds": [
         "call",
@@ -12581,6 +12615,26 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-uncalled-function-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },

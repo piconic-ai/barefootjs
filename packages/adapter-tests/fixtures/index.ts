@@ -1220,6 +1220,9 @@ import { fixture as constTypeofPropClient } from './const-typeof-prop-client'
 import { fixture as memoTypeofChildProp } from './memo-typeof-child-prop'
 import { fixture as childPropTypeof } from './child-prop-typeof'
 import { fixture as memoVoidNullishFallback } from './memo-void-nullish-fallback'
+import { fixture as memoBlockUncalledFunctionReadsTypeofConst } from './memo-block-uncalled-function-reads-typeof-const'
+import { fixture as memoBlockCalledFunctionReadsTypeofConst } from './memo-block-called-function-reads-typeof-const'
+import { fixture as memoBlockCalledFunctionReadsTypeofConstClient } from './memo-block-called-function-reads-typeof-const-client'
 import { fixture as memoObjectBodyReadsTypeofConst } from './memo-object-body-reads-typeof-const'
 import { fixture as memoObjectBodyReadsTypeofConstClient } from './memo-object-body-reads-typeof-const-client'
 import { fixture as memoBlockReturnReadsTypeofConst } from './memo-block-return-reads-typeof-const'
@@ -3464,6 +3467,9 @@ export const jsxFixtures: JSXFixture[] = [
   memoTypeofChildProp,
   childPropTypeof,
   memoVoidNullishFallback,
+  memoBlockUncalledFunctionReadsTypeofConst,
+  memoBlockCalledFunctionReadsTypeofConst,
+  memoBlockCalledFunctionReadsTypeofConstClient,
   memoObjectBodyReadsTypeofConst,
   memoObjectBodyReadsTypeofConstClient,
   memoBlockReturnReadsTypeofConst,

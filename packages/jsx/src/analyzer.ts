@@ -7,7 +7,7 @@
  */
 
 import ts from 'typescript'
-import { extractFreeIdentifiersFromNode } from './free-identifiers.ts'
+import { extractEvaluatedFreeIdentifiers, extractFreeIdentifiersFromNode } from './free-identifiers.ts'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
 import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo, ConstantInfo } from './types.ts'
@@ -2137,7 +2137,7 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
 function memoStructuredBody(
   callback: ts.Expression | undefined,
   ctx: AnalyzerContext,
-): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete' | 'unparsedValue'> {
+): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete' | 'unparsedValue' | 'evaluatedFreeIdentifiers'> {
   // Structured parse of the arrow BODY, so adapters can shape-match the memo
   // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
   // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
@@ -2180,7 +2180,8 @@ function memoStructuredBody(
   const parsedBlockComplete =
     parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
   const unparsedValue = memoUnparsedValue(parsedBody, blockBody, ctx)
-  return { parsed, parsedBlock, parsedBlockComplete, ...(unparsedValue && { unparsedValue }) }
+  const evaluatedFreeIdentifiers = callback ? extractEvaluatedFreeIdentifiers(callback) : undefined
+  return { parsed, parsedBlock, parsedBlockComplete, ...(unparsedValue && { unparsedValue }), ...(evaluatedFreeIdentifiers && { evaluatedFreeIdentifiers }) }
 }
 
 /**
@@ -2286,7 +2287,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     }
   }
 
-  const { parsed, parsedBlock, parsedBlockComplete, ...rootOperator } = memoStructuredBody(callExpr.arguments[0], ctx)
+  const { parsed, parsedBlock, parsedBlockComplete, ...readFacts } = memoStructuredBody(callExpr.arguments[0], ctx)
 
   const bodyFields = body ? memoBodyFields(body, ctx) : {}
 
@@ -2298,7 +2299,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
-    ...rootOperator,
+    ...readFacts,
     bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(callExpr.arguments[0]),
     type,
     deps,

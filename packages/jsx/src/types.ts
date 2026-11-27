@@ -2232,6 +2232,13 @@ export interface MemoInfo {
    * propagation in `ir-to-client-js` (#1277).
    */
   computationFreeIdentifiers?: ReadonlySet<string>
+  /**
+   * The names evaluating the computation reads: `computationFreeIdentifiers`
+   * less those read only inside a nested function it creates and never calls
+   * (`extractEvaluatedFreeIdentifiers`). Read by the server-read refusal of an
+   * operator no template lowers, for a memo with no tree to walk.
+   */
+  evaluatedFreeIdentifiers?: ReadonlySet<string>
   /** Same semantics as `SignalInfo.isModule`. */
   isModule?: boolean
   /** When true, the declaration carries an `export` keyword. */

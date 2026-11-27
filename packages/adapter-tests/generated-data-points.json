@@ -11673,6 +11673,46 @@
       }
     }
   ],
+  "memo-block-called-function-reads-typeof-const": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-block-called-function-reads-typeof-const-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
   "memo-block-return-reads-typeof-const": [
     {
       "name": "gen:x:empty",
@@ -11694,6 +11734,26 @@
     }
   ],
   "memo-block-return-reads-typeof-const-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-block-uncalled-function-reads-typeof-const": [
     {
       "name": "gen:x:empty",
       "props": {
