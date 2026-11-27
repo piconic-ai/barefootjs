@@ -42,5 +42,5 @@ export function initLoopRowFragmentRootChild(__scope, _p = {}) {
 
 }
 
-hydrate('LoopRowFragmentRootChild', { init: initLoopRowFragmentRootChild, template: (_p) => `<div bf="s4"><!--bf-loop:l0-->${(['a', 'b']).map((opt) => `${renderChild('Tag__a3cb3a83', {children: `<b><!--bf:^s0-->${escapeText(opt)}<!--/--></b>`}, opt, 's1', true)}`).join('')}<!--bf-/loop:l0--><button type="button" class="toggle" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(('a'))}<!--/--></button></div>` })
+hydrate('LoopRowFragmentRootChild', { init: initLoopRowFragmentRootChild, template: (_p) => `${((__bf_const_opts) => `<div bf="s4"><!--bf-loop:l0-->${(__bf_const_opts).map((opt) => `${renderChild('Tag__a3cb3a83', {children: `<b><!--bf:^s0-->${escapeText(opt)}<!--/--></b>`}, opt, 's1', true)}`).join('')}<!--bf-/loop:l0--><button type="button" class="toggle" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(('a'))}<!--/--></button></div>`)((['a', 'b']))}` })
 export function LoopRowFragmentRootChild(_p, __bfKey) { return createComponent('LoopRowFragmentRootChild', _p, __bfKey) }

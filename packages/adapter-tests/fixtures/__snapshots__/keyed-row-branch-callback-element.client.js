@@ -114,7 +114,7 @@ export function initCallbackRows(__scope, _p = {}) {
 
 }
 
-hydrate('CallbackRows__18f8ff83', { init: initCallbackRows, template: (_p) => `<div><button type="button" class="relabel" bf="s0">relabel</button><ul class="direct" bf="s5"><!--bf-loop:l0-->${([
+hydrate('CallbackRows__18f8ff83', { init: initCallbackRows, template: (_p) => `${((__bf_const_shout) => `<div><button type="button" class="relabel" bf="s0">relabel</button><ul class="direct" bf="s5"><!--bf-loop:l0-->${([
     { id: 1, label: 'a' },
     { id: 2, label: 'b' },
   ]).map((item) => `<li data-key="${escapeAttr(item.id)}" bf="s4">${_p.renderItem ? `<!--bf-cond-start:s1--><!--bf:s2-->${escapeText(_p.renderItem(item))}<!--/--><!--bf-cond-end:s1-->` : `<span bf-c="s1"><!--bf:s3-->${escapeText(item.label)}<!--/--></span>`}</li>`).join('')}<!--bf-/loop:l0--></ul><ul class="bracket" bf="s10"><!--bf-loop:l1-->${([
@@ -126,7 +126,7 @@ hydrate('CallbackRows__18f8ff83', { init: initCallbackRows, template: (_p) => `<
   ]).map((item) => `<li data-key="${escapeAttr(item.id)}" bf="s14">${_p.renderItem ? `<!--bf-cond-start:s11--><!--bf:s12-->${''}<!--/--><!--bf-cond-end:s11-->` : `<span bf-c="s11"><!--bf:s13-->${escapeText(item.label)}<!--/--></span>`}</li>`).join('')}<!--bf-/loop:l2--></ul><ul class="scalar" bf="s18"><!--bf-loop:l3-->${([
     { id: 1, label: 'a' },
     { id: 2, label: 'b' },
-  ]).map((item) => `<li data-key="${escapeAttr(item.id)}">${item.id > 0 ? `<!--bf-cond-start:s16--><!--bf:s17-->${escapeText(((((shout))))(item.label))}<!--/--><!--bf-cond-end:s16-->` : `<!--bf-cond-start:s16-->${escapeText('none')}<!--bf-cond-end:s16-->`}</li>`).join('')}<!--bf-/loop:l3--></ul></div>`, name: 'CallbackRows' })
+  ]).map((item) => `<li data-key="${escapeAttr(item.id)}">${item.id > 0 ? `<!--bf-cond-start:s16--><!--bf:s17-->${escapeText((__bf_const_shout)(item.label))}<!--/--><!--bf-cond-end:s16-->` : `<!--bf-cond-start:s16-->${escapeText('none')}<!--bf-cond-end:s16-->`}</li>`).join('')}<!--bf-/loop:l3--></ul></div>`)(((((shout)))))}`, name: 'CallbackRows' })
 export function CallbackRows(_p, __bfKey) { return createComponent('CallbackRows__18f8ff83', _p, __bfKey) }
 export function initKeyedRowBranchCallbackElement(__scope, _p = {}) {
   if (!__scope) return

@@ -88,27 +88,20 @@ export function initToggle(__scope, _p = {}) {
   if (_s0) _s0.addEventListener('click', handleClick)
 }
 
-hydrate('Toggle', { init: initToggle, template: (_p) => `<button data-slot="toggle" ${(`${((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false)) ? 'on' : 'off'}`) != null ? 'data-state="' + escapeAttr(`${((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false)) ? 'on' : 'off'}`) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false))) != null ? 'aria-pressed="' + escapeAttr(((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false))) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(((() => {
+hydrate('Toggle', { init: initToggle, template: (_p) => `${((__bf_const_variantClasses, __bf_const_sizeClasses) => `<button data-slot="toggle" ${(`${((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false)) ? 'on' : 'off'}`) != null ? 'data-state="' + escapeAttr(`${((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false)) ? 'on' : 'off'}`) + '"' : ''} ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false))) != null ? 'aria-pressed="' + escapeAttr(((_p.pressed !== undefined) ? (_p.pressed ?? undefined) : (_p.defaultPressed ?? false))) + '"' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${(((() => {
     const variant = _p.variant ?? 'default'
     const size = _p.size ?? 'default'
-    return `${('inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground')} ${({
-  default: 'bg-transparent',
-  outline: 'border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground',
-})[variant]} ${({
-  default: 'h-9 px-2 min-w-9',
-  sm: 'h-8 px-1.5 min-w-8',
-  lg: 'h-10 px-2.5 min-w-10',
-})[size]} ${_p.className ?? ''}`
+    return `${('inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground')} ${(__bf_const_variantClasses)[variant]} ${(__bf_const_sizeClasses)[size]} ${_p.className ?? ''}`
   })())) != null ? 'class="' + escapeAttr(((() => {
     const variant = _p.variant ?? 'default'
     const size = _p.size ?? 'default'
-    return `${('inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground')} ${({
+    return `${('inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*="size-"])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive whitespace-nowrap data-[state=on]:bg-accent data-[state=on]:text-accent-foreground hover:bg-muted hover:text-muted-foreground')} ${(__bf_const_variantClasses)[variant]} ${(__bf_const_sizeClasses)[size]} ${_p.className ?? ''}`
+  })())) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>`)(({
   default: 'bg-transparent',
   outline: 'border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground',
-})[variant]} ${({
+}), ({
   default: 'h-9 px-2 min-w-9',
   sm: 'h-8 px-1.5 min-w-8',
   lg: 'h-10 px-2.5 min-w-10',
-})[size]} ${_p.className ?? ''}`
-  })())) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</button>` })
+}))}` })
 export function Toggle(_p, __bfKey) { return createComponent('Toggle', _p, __bfKey) }

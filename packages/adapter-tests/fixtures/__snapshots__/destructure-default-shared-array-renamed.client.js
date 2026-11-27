@@ -17,5 +17,5 @@ export function initDestructureDefaultSharedArrayRenamed(__scope, _p = {}) {
 
 }
 
-hydrate('DestructureDefaultSharedArrayRenamed', { init: initDestructureDefaultSharedArrayRenamed, template: (_p) => `<p data-slot="count" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(((_p.a ?? []).push('x') && (_p.b ?? (_p.a ?? [])).length))}<!--/--></p>` })
+hydrate('DestructureDefaultSharedArrayRenamed', { init: initDestructureDefaultSharedArrayRenamed, template: (_p) => `${((__bf_const_n) => `<p data-slot="count" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((__bf_const_n))}<!--/--></p>`)(((_p.a ?? []).push('x') && (_p.b ?? (_p.a ?? [])).length))}` })
 export function DestructureDefaultSharedArrayRenamed(_p, __bfKey) { return createComponent('DestructureDefaultSharedArrayRenamed', _p, __bfKey) }

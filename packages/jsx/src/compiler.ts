@@ -27,6 +27,7 @@ import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-pref
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
+import { generatedPrefixSpellings } from './generated-name-spellings.ts'
 import { componentScopeNames } from './adapters/computed-const.ts'
 import { checkRichTypeMethodCalls, checkRichTypePropSerialization } from './rich-type-refusal.ts'
 import { checkAuthoredFormatDateCalls } from './format-date-refusal.ts'
@@ -710,6 +711,8 @@ export function buildMetadata(
   // Computed from the assembled metadata (not `ctx`): the plan reads the
   // exact fields adapters see, so the two can never disagree.
   metadata.ssrSeedPlan = computeSsrSeedPlan(metadata)
+  const reserved = generatedPrefixSpellings(ctx.sourceFile)
+  if (reserved.length > 0) metadata.generatedNameSpellings = reserved
   return metadata
 }
 

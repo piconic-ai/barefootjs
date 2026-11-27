@@ -2,7 +2,8 @@
  * Regression test for #3235: a CSR `template()` call re-runs a local's
  * initializer when that local is read in JSX (`const value = follow(props.source);
  * return <p>{value()}</p>` inlines to `(follow(_p.source))()` in the compiled
- * template — see `csr-substitute.ts` / `compute-inlinability.ts`). That
+ * template; since #4021 the template binds it once per evaluation,
+ * `((__bf_const_value) => …(__bf_const_value)()…)((follow(_p.source)))` — see `csr-substitute.ts` / `compute-inlinability.ts`). That
  * duplicate call is BY DESIGN for CSR (it mirrors Hono SSR's own contract —
  * `CSRAdapter.acceptsTemplateCall` deliberately accepts any call, see
  * `packages/adapter-tests/src/csr-skip-set.ts`'s `opaque-local-accessor-call`
@@ -98,10 +99,15 @@ describe('#3235 — CSR template does not leak a template-inlined initializer', 
     if (!clientJs) throw new Error('No client JS emitted for LeakProbe.tsx')
 
     // Sanity check on the premise this test protects: the template DOES
-    // inline the initializer call (the duplicate-execution half of the bug,
-    // which is by-design/unchanged — see file docstring). If this ever stops
+    // run the initializer call (the duplicate-execution half of the bug,
+    // which is by-design/unchanged — see file docstring). The template binds
+    // the const once per template evaluation (#4021), so the call is the
+    // binding's value and the read calls the binding. If this ever stops
     // being true the test below would pass for the wrong reason.
-    expect(clientJs).toContain('(follow(_p.source))()')
+    expect(clientJs).toContain(')((follow(_p.source)))')
+    expect(clientJs).toContain('(__bf_const_value)()')
+    const template = clientJs.split('\n').find(l => l.startsWith("hydrate('LeakProbe'")) ?? ''
+    expect(template.split('follow(_p.source)').length - 1).toBe(1)
 
     writeFileSync(join(dir, 'leak-helper.ts'), HELPER_SOURCE)
     writeFileSync(

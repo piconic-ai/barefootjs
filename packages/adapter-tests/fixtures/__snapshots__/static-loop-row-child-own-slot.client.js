@@ -145,8 +145,8 @@ export function initStaticLoopRowChildOwnSlot(__scope, _p = {}) {
 
 }
 
-hydrate('StaticLoopRowChildOwnSlot', { init: initStaticLoopRowChildOwnSlot, template: (_p) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><div class="flat" bf="s3"><!--bf-loop:l0-->${(['a', 'b', 'c']).map((t) => `${renderChild('Badge__73d3b413', {label: t}, t, 's2', true)}`).join('')}<!--bf-/loop:l0--></div><div class="grouped" bf="s6"><!--bf-loop:l2-->${([
+hydrate('StaticLoopRowChildOwnSlot', { init: initStaticLoopRowChildOwnSlot, template: (_p) => `${((__bf_const_FLAT, __bf_const_GROUPS) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><div class="flat" bf="s3"><!--bf-loop:l0-->${(__bf_const_FLAT).map((t) => `${renderChild('Badge__73d3b413', {label: t}, t, 's2', true)}`).join('')}<!--bf-/loop:l0--></div><div class="grouped" bf="s6"><!--bf-loop:l2-->${(__bf_const_GROUPS).map((g) => `${renderChild('Group__73d3b413', {name: g.name, children: `<!--bf-loop:l1-->${g.tags.map((t) => `${renderChild('Badge__73d3b413', {label: t}, t, 's4', true)}`).join('')}<!--bf-/loop:l1-->`}, g.name, 's5', true)}`).join('')}<!--bf-/loop:l2--></div></div>`)((['a', 'b', 'c']), ([
   { name: 'x', tags: ['a', 'b'] },
   { name: 'y', tags: ['c'] },
-]).map((g) => `${renderChild('Group__73d3b413', {name: g.name, children: `<!--bf-loop:l1-->${g.tags.map((t) => `${renderChild('Badge__73d3b413', {label: t}, t, 's4', true)}`).join('')}<!--bf-/loop:l1-->`}, g.name, 's5', true)}`).join('')}<!--bf-/loop:l2--></div></div>` })
+]))}` })
 export function StaticLoopRowChildOwnSlot(_p, __bfKey) { return createComponent('StaticLoopRowChildOwnSlot', _p, __bfKey) }

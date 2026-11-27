@@ -3,11 +3,11 @@ import { createFixture } from '../src/types'
 /**
  * #3975: a const built by a zero-param module helper that reads a module
  * const, compared with itself (`B === B`). The server evaluates `mk()` once,
- * so the comparison is true. The CSR template splices the helper's applied
- * arrow at each read, so each read is a separate object and the comparison
- * renders `false` on a client mount, as it does for an object literal const
- * (`module-const-literal-identity`). The template adapters refuse the
- * read (BF101), so this fixture is CSR-skipped.
+ * so the comparison is true. The CSR template binds the const once per
+ * template evaluation (#4021), so every read is the one object and the
+ * comparison renders `true` on a client mount too, as it does for an object
+ * literal const (`module-const-literal-identity`). The template adapters
+ * refuse the read (BF101).
  */
 export const fixture = createFixture({
   id: 'module-helper-const-identity',
