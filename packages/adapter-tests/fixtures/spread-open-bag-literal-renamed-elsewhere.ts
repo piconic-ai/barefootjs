@@ -3,7 +3,8 @@ import { createFixture } from '../src/types'
 /**
  * A literal `crossOrigin` before an open rest bag that also carries
  * `crossOrigin`. JSX keeps the last write, so the element renders one
- * `crossorigin`, the bag's.
+ * `crossorigin`, the bag's. The literal spelled as the attribute itself
+ * (`crossorigin`) is the same write.
  *
  * The reference and Pebble rename the bag's `crossOrigin` to `crossorigin`
  * (`spreadKeyRenames`), so the literal is guarded against it there and
@@ -18,11 +19,19 @@ export const fixture = createFixture({
   source: `
 type P = { [key: string]: unknown }
 export function SpreadOpenBagLiteralRenamedElsewhere({ ...rest }: P) {
-  return <img crossOrigin="anonymous" {...rest} />
+  return (
+    <div>
+      <img crossOrigin="anonymous" {...rest} />
+      <img crossorigin="anonymous" {...rest} />
+    </div>
+  )
 }
 `,
   props: { crossOrigin: 'use-credentials' },
   expectedHtml: `
-    <img bf-s="test" bf="s0" crossorigin="use-credentials">
+    <div bf-s="test">
+      <img bf="s0" crossorigin="use-credentials">
+      <img bf="s1" crossorigin="use-credentials">
+    </div>
   `,
 })

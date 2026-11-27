@@ -4442,6 +4442,14 @@
           }
         }
       },
+      "component-open-rest-key-override": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-rest-spread-onto-child-component"
+          ]
+        }
+      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -21028,6 +21036,10 @@
         "description": "a component const object built from a prop is the same object at two reads",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-prop-object-identity.ts"
       },
+      "component-open-rest-key-override": {
+        "description": "A component prop beside an open rest carrying the same htmlFor / crossOrigin key renders the last…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-open-rest-key-override.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -24022,6 +24034,7 @@
       "expected": "every key the rest carries reaches the child, merged with the call's explicit props in source order",
       "actual": "drops the spread: the child receives only the call's explicit props",
       "fixtures": [
+        "component-open-rest-key-override",
         "open-rest-spread-child",
         "open-rest-spread-child-omits-keys"
       ],

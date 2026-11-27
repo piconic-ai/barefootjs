@@ -3169,6 +3169,22 @@
         "text"
       ]
     },
+    "component-closed-rest-key-override": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "component-const-iife": {
       "kinds": [
         "binary",
@@ -3325,6 +3341,19 @@
       ],
       "contexts": [
         "text"
+      ]
+    },
+    "component-open-rest-key-override": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "component-prop-bare-getter": {
