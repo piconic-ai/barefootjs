@@ -943,6 +943,8 @@ import { fixture as memoReduceParamShadowsNullableProp } from './memo-reduce-par
 import { fixture as restMemberTernary } from './rest-member-ternary'
 import { fixture as restMemberTernaryShapes } from './rest-member-ternary-shapes'
 import { fixture as componentRestSpreadExplicitOverride } from './component-rest-spread-explicit-override'
+import { fixture as componentClosedRestKeyOverride } from './component-closed-rest-key-override'
+import { fixture as componentOpenRestKeyOverride } from './component-open-rest-key-override'
 import { fixture as restSpreadExplicitBeforeClosedRest } from './rest-spread-explicit-before-closed-rest'
 import { fixture as restBindingShadowedByLoopRow } from './rest-binding-shadowed-by-loop-row'
 import { fixture as bodyRestMemberRead } from './body-rest-member-read'
@@ -2612,6 +2614,8 @@ export const jsxFixtures: JSXFixture[] = [
   restMemberTernary,
   restMemberTernaryShapes,
   componentRestSpreadExplicitOverride,
+  componentClosedRestKeyOverride,
+  componentOpenRestKeyOverride,
   restSpreadExplicitBeforeClosedRest,
   restBindingShadowedByLoopRow,
   bodyRestMemberRead,
