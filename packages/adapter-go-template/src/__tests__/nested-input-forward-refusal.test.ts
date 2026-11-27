@@ -163,6 +163,53 @@ function Inner(props: { children?: unknown }) {
   }
 })
 
+const mid = `
+function Mid(props: { forwarded?: unknown; seed?: unknown }) {
+  return <Kid seed={props.forwarded} {...props} />
+}`
+
+describe('a fallback a props spread overrides only when passed (#3986 review)', () => {
+  const twoCalls = (first: string, second: string) => source(`${mid}
+function Inner(props: { children?: unknown }) {
+  return <p>${first}${second}</p>
+}`, '<Inner>{props.label}</Inner>')
+  const overriding = '<Mid forwarded={props.children} seed="override" />'
+  const falling = '<Mid forwarded={props.children} />'
+
+  test('a call that falls back is refused after a call that overrides', () => {
+    expect(bf101(twoCalls(overriding, falling))).toHaveLength(1)
+  })
+  test('a call that falls back is refused before a call that overrides', () => {
+    expect(bf101(twoCalls(falling, overriding))).toHaveLength(1)
+  })
+  test('a call that always overrides is not refused', () => {
+    expect(bf101(twoCalls(overriding, ''))).toEqual([])
+  })
+
+  const spreadCall = (callerProps: string) => `
+'use client'
+import { createSignal } from '@barefootjs/client'
+${kid}
+${mid}
+export function C(props: ${callerProps}) {
+  return <div><Mid {...props} forwarded={<i>{props.label}</i>} /></div>
+}
+`
+  test('a spread that does not carry the overriding key is refused', () => {
+    expect(bf101(spreadCall('{ label: string }'))).toHaveLength(1)
+  })
+  test('a spread of an optional overriding param is refused: it may omit it', () => {
+    expect(bf101(spreadCall('{ label: string; seed?: string }'))).toHaveLength(1)
+  })
+  test('a spread of a required overriding param is not refused', () => {
+    expect(bf101(spreadCall('{ label: string; seed: string }'))).toEqual([])
+  })
+  test('an explicit overriding prop is not refused', () => {
+    const src = spreadCall('{ label: string }').replace('<Mid {...props} forwarded={<i>{props.label}</i>} />', '<Mid forwarded={<i>{props.label}</i>} seed="x" />')
+    expect(bf101(src)).toEqual([])
+  })
+})
+
 const root = mkdtempSync(join(tmpdir(), 'bf-go-nested-forward-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 

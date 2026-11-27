@@ -1515,7 +1515,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const nested = nestedDerivedReading(
       declaredName,
       propName,
-      callWrites(comp),
+      callWrites(comp, { propsObjectName: this.state.propsObjectName, propsParams: this.state.currentPropsParams }),
       (component) => this.childNestedInputForwards.get(component),
       (component, prop) => derivedFieldReading(this.lateDeliveryDerivedDeps(component), prop),
     )

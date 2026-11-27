@@ -47,18 +47,40 @@ export interface NestedInputForward {
    */
   readonly fallbackReads: ReadonlySet<string>
   readonly unlessPassed: ReadonlySet<string>
-  /** The keys this call may pass to `child`: `'any'` when it spreads an object. */
+  /** The keys this call definitely passes to `child` ({@link callWrites}). */
   readonly writes: CallWrites
 }
 
-/** The keys a component call may pass: `'any'` when it spreads an object. */
-export type CallWrites = ReadonlySet<string> | 'any'
+/** The keys a component call definitely passes. */
+export type CallWrites = ReadonlySet<string>
 
-/** The keys `comp`'s call may pass to the component it calls. */
-export function callWrites(comp: Pick<IRComponent, 'props' | 'children'>): CallWrites {
-  if (comp.props.some(p => p.value.kind === 'spread')) return 'any'
-  const keys = new Set(comp.props.map(p => p.name))
+/**
+ * The keys `comp`'s call definitely passes to the component it calls, as
+ * far as the compiler can tell: an explicit prop (or JSX children), and a
+ * key a `{...props}` spread carries from a REQUIRED param of the calling
+ * component (`callerProps`), which its own caller always passes. A key a
+ * spread carries only when passed, and any key of a spread whose keys are
+ * unknown, is not definite: a fallback that such a key would override still
+ * counts (`reaches`).
+ */
+export function callWrites(
+  comp: Pick<IRComponent, 'props' | 'children'>,
+  callerProps: Pick<ComponentIR['metadata'], 'propsObjectName' | 'propsParams'>,
+): CallWrites {
+  const keys = new Set<string>()
+  for (const p of comp.props) if (p.value.kind !== 'spread') keys.add(p.name)
   if (comp.children.length > 0) keys.add('children')
+  if (!comp.props.some(p => p.value.kind === 'spread')) return keys
+  const params = callerProps.propsParams ?? []
+  const resolved = resolveComponentPropKeys(planComponentProps(
+    { props: comp.props, children: comp.children, slotId: null },
+    { propsObjectName: callerProps.propsObjectName ?? null, propsParams: params },
+  ))
+  for (const key of resolved ?? []) {
+    if (key.base?.kind !== 'props-param') continue
+    const baseName = key.base.name
+    if (params.find(p => p.name === baseName)?.optional === false) keys.add(key.key)
+  }
   return keys
 }
 
@@ -100,7 +122,7 @@ export function collectNestedInputForwards(ir: { metadata: Meta; root: IRNode })
   const forwards: NestedInputForward[] = []
   const visitComponent = (comp: IRComponent, scope: BindingScope): void => {
     const child = aliases.get(comp.name) ?? comp.name
-    const writes = callWrites(comp)
+    const writes = callWrites(comp, meta)
     for (const [prop, r] of callKeyReads(comp, meta, reader, scope)) {
       if (r.reads.size > 0 || r.fallbackReads.size > 0) forwards.push({ child, prop, writes, ...r })
     }
@@ -272,7 +294,10 @@ export function nestedDerivedReading(
       if (!reaches(f, field, writes)) continue
       const direct = derivedReading(f.child, f.prop)
       if (direct !== undefined) return { child: f.child, prop: f.prop, owner: f.child, field: direct }
-      const key = `${f.child}\0${f.prop}`
+      // Keyed by the keys the call passes too: whether a fallback of the
+      // next component reaches depends on them, so the same (component,
+      // prop) reached through two calls is followed for each.
+      const key = `${f.child}\0${f.prop}\0${[...f.writes].sort().join('\0')}`
       if (seen.has(key)) continue
       seen.add(key)
       const deeper = follow(f.child, f.prop, f.writes)
@@ -286,11 +311,10 @@ export function nestedDerivedReading(
 /**
  * Whether `field` reaches `f`'s nested prop when the component holding `f`
  * is called with `writes`: always for a plain read, and for a fallback read
- * only when that call can pass none of the keys that override it.
+ * unless that call definitely passes one of the keys that override it.
  */
 function reaches(f: NestedInputForward, field: string, writes: CallWrites): boolean {
   if (f.reads.has(field)) return true
   if (!f.fallbackReads.has(field)) return false
-  if (writes === 'any') return false
   return ![...f.unlessPassed].some(k => writes.has(k))
 }

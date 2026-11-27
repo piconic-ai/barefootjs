@@ -10,7 +10,8 @@ import { createFixture } from '../src/types'
  * static children, a const read in a loop row whose own parameter shadows
  * the const, and through `{...props}`: a static JSX-valued prop the spread
  * carries, and an explicit writer the spread replaces (a required param, or
- * an optional one the call passes). The twin of
+ * an optional one the call passes, including an explicit override of a
+ * fallback the next component's spread replaces). The twin of
  * `children-forwarded-into-child-prop-seed`.
  */
 export const fixture = createFixture({
@@ -55,6 +56,12 @@ function SpreadRequired(props: { children?: unknown; seed: unknown }) {
 function SpreadPassed(props: { children?: unknown; seed?: unknown }) {
   return <Kid seed={props.children} {...props} />
 }
+function Mid(props: { forwarded?: unknown; seed?: unknown }) {
+  return <Kid seed={props.forwarded} {...props} />
+}
+function Overrides(props: { children?: unknown }) {
+  return <Mid forwarded={props.children} seed="override" />
+}
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -70,6 +77,8 @@ export function Host(props: { label: string; items: string[] }) {
       <SpreadSeed seed={<em>own</em>} />
       <SpreadRequired seed="x">{props.label}</SpreadRequired>
       <SpreadPassed seed="x">{props.label}</SpreadPassed>
+      <Overrides>{props.label}</Overrides>
+      <Mid forwarded={<em>{props.label}</em>} seed="x" />
     </div>
   )
 }
@@ -98,6 +107,8 @@ export function Host(props: { label: string; items: string[] }) {
       <b bf-s="test_s13_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s15_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s17_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s19_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s22_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
     </div>
   `,
 })

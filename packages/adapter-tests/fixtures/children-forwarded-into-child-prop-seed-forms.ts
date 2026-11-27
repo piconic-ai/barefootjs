@@ -15,7 +15,9 @@ import { createFixture } from '../src/types'
  * forwarding components in a row, and through `{...props}`: a JSX-valued
  * prop the spread carries, children the spread carries, an explicit writer
  * the spread overrides only when passed (called without it), and an
- * explicit writer after the spread.
+ * explicit writer after the spread; a fallback a spread overrides only
+ * when passed, reached by a call that falls back after and before one that
+ * passes the overriding key, and by a spread that does not carry it.
  */
 export const fixture = createFixture({
   id: 'children-forwarded-into-child-prop-seed-forms',
@@ -107,6 +109,15 @@ function Hop10(props: { seed?: unknown }) {
 function ViaHops(props: { children?: unknown }) {
   return <Hop1 seed={props.children} />
 }
+function Mid(props: { forwarded?: unknown; seed?: unknown }) {
+  return <Kid seed={props.forwarded} {...props} />
+}
+function OverrideFirst(props: { children?: unknown }) {
+  return <p><Mid forwarded={props.children} seed="override" /><Mid forwarded={props.children} /></p>
+}
+function OverrideSecond(props: { children?: unknown }) {
+  return <p><Mid forwarded={props.children} /><Mid forwarded={props.children} seed="override" /></p>
+}
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -125,6 +136,9 @@ export function Host(props: { label: string; items: string[] }) {
       <SpreadFallback>{props.label}</SpreadFallback>
       <SpreadThenExplicit seed="x">{props.label}</SpreadThenExplicit>
       <ViaHops>{props.label}</ViaHops>
+      <OverrideFirst>{props.label}</OverrideFirst>
+      <OverrideSecond>{props.label}</OverrideSecond>
+      <Mid {...props} forwarded={<em>{props.label}</em>} />
     </div>
   )
 }
@@ -168,7 +182,7 @@ export function Leaf(props: { seed?: unknown }) {
         <li data-key="a"><b bf-s="test_s12_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></li>
         <li data-key="b"><b bf-s="test_s12_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></li>
       </ul>
-      <p bf-s="test_s14"><s bf-s="test_s14_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></s></p>
+      <p bf-s="test_s14"><b bf-s="test_s14_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></p>
       <b bf-s="test_s17_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s19_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <ul bf-s="test_s21" bf="s1">
@@ -180,6 +194,15 @@ export function Leaf(props: { seed?: unknown }) {
       <b bf-s="test_s28_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s30_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
       <b bf-s="test_s32_s0_s0_s0_s0_s0_s0_s0_s0_s0_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <p bf-s="test_s34">
+        <b bf-s="test_s34_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+        <b bf-s="test_s34_s1_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      </p>
+      <p bf-s="test_s36">
+        <b bf-s="test_s36_s0_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+        <b bf-s="test_s36_s1_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      </p>
+      <b bf-s="test_s39_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
     </div>
   `,
 })
