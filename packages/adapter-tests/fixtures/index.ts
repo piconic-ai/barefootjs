@@ -1745,6 +1745,12 @@ import { fixture as moduleConstIifeBlockBodyClient } from './module-const-iife-b
 import { fixture as moduleConstIifeWithArgument } from './module-const-iife-with-argument'
 import { fixture as moduleConstIifeWithArgumentClient } from './module-const-iife-with-argument-client'
 import { fixture as moduleConstIifeSamplingBody } from './module-const-iife-sampling-body'
+import { fixture as componentConstIifeReturnsFunction } from './component-const-iife-returns-function'
+import { fixture as componentConstIifeReturnsFunctionClient } from './component-const-iife-returns-function-client'
+import { fixture as moduleConstIifeWriteBody } from './module-const-iife-write-body'
+import { fixture as moduleConstIifeWriteBodyClient } from './module-const-iife-write-body-client'
+import { fixture as moduleConstIifeNestedCall } from './module-const-iife-nested-call'
+import { fixture as moduleConstIifeNestedCallClient } from './module-const-iife-nested-call-client'
 import { fixture as moduleConstIifeSamplingBodyClient } from './module-const-iife-sampling-body-client'
 import { fixture as moduleConstObjectMemberSignalSeed } from './module-const-object-member-signal-seed'
 import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
@@ -3155,6 +3161,12 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstIifeWithArgument,
   moduleConstIifeWithArgumentClient,
   moduleConstIifeSamplingBody,
+  componentConstIifeReturnsFunction,
+  componentConstIifeReturnsFunctionClient,
+  moduleConstIifeWriteBody,
+  moduleConstIifeWriteBodyClient,
+  moduleConstIifeNestedCall,
+  moduleConstIifeNestedCallClient,
   moduleConstIifeSamplingBodyClient,
   moduleConstObjectMemberSignalSeed,
   componentHelperSignalChildProp,

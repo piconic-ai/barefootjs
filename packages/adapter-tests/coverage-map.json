@@ -2280,40 +2280,6 @@
         "text"
       ]
     },
-    "children-absent-forwarded": {
-      "kinds": [
-        "binary",
-        "identifier",
-        "literal",
-        "member"
-      ],
-      "axes": [
-        "binary:===",
-        "literal:string"
-      ],
-      "contexts": [
-        "condition",
-        "text"
-      ]
-    },
-    "children-absent-read-into-state": {
-      "kinds": [
-        "binary",
-        "call",
-        "identifier",
-        "literal",
-        "member"
-      ],
-      "axes": [
-        "binary:===",
-        "literal:null",
-        "literal:string"
-      ],
-      "contexts": [
-        "condition",
-        "text"
-      ]
-    },
     "children-alias-hop": {
       "kinds": [
         "identifier",
@@ -2386,22 +2352,6 @@
       "contexts": [
         "attribute",
         "loop",
-        "text"
-      ]
-    },
-    "children-body-default-nullish-seed": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
         "text"
       ]
     },
@@ -2538,54 +2488,6 @@
         "text"
       ]
     },
-    "children-markup-nullish-memo": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
-        "text"
-      ]
-    },
-    "children-markup-nullish-seed": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
-        "text"
-      ]
-    },
-    "children-markup-nullish-seed-bindings": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
-        "text"
-      ]
-    },
     "children-named-local-escaped": {
       "kinds": [
         "array-method",
@@ -2680,21 +2582,6 @@
       "axes": [
         "literal:string",
         "logical:||"
-      ],
-      "contexts": [
-        "text"
-      ]
-    },
-    "children-param-default-nullish-seed": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical"
-      ],
-      "axes": [
-        "literal:string",
-        "logical:??"
       ],
       "contexts": [
         "text"
@@ -16517,23 +16404,6 @@
         "attribute",
         "condition",
         "loop",
-        "text"
-      ]
-    },
-    "nullish-seed-over-unknown-prop": {
-      "kinds": [
-        "call",
-        "identifier",
-        "literal",
-        "logical",
-        "member"
-      ],
-      "axes": [
-        "literal:number",
-        "literal:string",
-        "logical:??"
-      ],
-      "contexts": [
         "text"
       ]
     },

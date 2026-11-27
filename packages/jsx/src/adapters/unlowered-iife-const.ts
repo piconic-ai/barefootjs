@@ -1,18 +1,22 @@
 /**
  * BF101 for a const or `let`, module or component scope, the server render
- * reads whose initializer calls a function literal where it stands, in a form the
- * analyzer cannot record as the value it returns (#4022): a block body
- * (`(() => { return x })()`, `(function () { … })()`), a parameter
- * (`((a) => …)(v)`), a body that does not evaluate to the same value each
- * time (`(() => new Date(0))()`), or any such call in a `let`.
+ * reads whose initializer calls a function literal where it stands, at any
+ * depth, in a form the analyzer cannot record as the value it returns
+ * (`ConstantInfo.callsFunctionLiteral`, #4022): a block body (`(() => {
+ * return x })()`, `(function () { … })()`), an argument (`((a) => …)(v)`), a
+ * body that does not evaluate to the same value each time or writes
+ * (`(() => new Date(0))()`, `(() => delete o.k)()`), a body returning a
+ * function, a call under an operator, a conditional or a literal (`(() =>
+ * 1)() + 2`, `c ? (() => 1)() : 2`, `[(() => 1)()]`), or any such call in a
+ * `let`.
  *
  * The template receives the props, not the component's or the module's
  * consts, and no template evaluates the call, so every read of the const
  * rendered empty (or failed the render) where JS renders what the function
- * returns. A repeatable applied zero-param arrow
- * initializing a `const` (`(() => ({ k: V }))()`) is not refused: the
- * analyzer records the const as its body (`repeatableAppliedArrowValue`),
- * which the adapters lower like any other initializer.
+ * returns. A repeatable applied zero-param arrow initializing a `const`
+ * (`(() => ({ k: V }))()`) is not refused: the analyzer records the const as
+ * its body (`repeatableAppliedArrowValue`), which the adapters lower like any
+ * other initializer.
  *
  * Only a value the server render reads is refused (`walkServerReads`): a
  * `/* @client *\/` read and an event handler read none.
@@ -53,7 +57,7 @@ function record(read: ServerRead, deferrable: boolean, sink: UninlinableSeedCall
   const same = (e: { loc: typeof loc }): boolean => e.loc.start.line === loc.start.line && e.loc.start.column === loc.start.column
   const message =
     `'${name}' is initialized by calling a function literal in place, which no template evaluates ` +
-    `(a block body, a parameter, or a body that does not give the same value each time). ` +
+    `(only a zero-param arrow returning an expression that holds no function and gives the same value each time is read as that expression). ` +
     `The server render would show '${name}' empty where JS shows what the function returns.`
   if (sink.errors.some(e => e.code === 'BF101' && e.message === message && same(e))) return
   const rewrite = `Write the value the function returns as the initializer (\`const ${name} = value\`)`

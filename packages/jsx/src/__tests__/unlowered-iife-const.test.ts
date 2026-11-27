@@ -51,10 +51,13 @@ describe('a const initialized by an applied zero-param arrow', () => {
     expect(c.typedValue).toBe('(() => ({ k: V }))()')
   })
 
-  test('peels nested arrows, parentheses and type assertions', () => {
+  test('peels nested arrows and the value-transparent TS wrappers, at the callee and the result', () => {
     expect(constantOf(`const B = ((() => (() => 'n')())())`, 'B').value).toBe("'n'")
     expect(constantOf(`const B = ((() => ({ k: 't' }))() as { k: string })`, 'B').value).toBe("({ k: 't' })")
     expect(constantOf(`const B = (() => ['a'])() satisfies string[]`, 'B').value).toBe("['a']")
+    expect(constantOf(`const B = (() => ({ k: 'v' }))()!`, 'B').value).toBe("({ k: 'v' })")
+    expect(constantOf(`const B = ((() => ({ k: 'v' })) as () => { k: string })()`, 'B').value).toBe("({ k: 'v' })")
+    expect(constantOf(`const B = ((() => ({ k: 'v' }))!)()`, 'B').value).toBe("({ k: 'v' })")
   })
 
   test('a component-scope const takes the same decision', () => {
@@ -62,8 +65,25 @@ describe('a const initialized by an applied zero-param arrow', () => {
     expect(c.parsed?.kind).toBe('object-literal')
   })
 
-  test('keeps the call for a body that does not repeat, a block body, a parameter or async', () => {
+  test('keeps the call for a body that does not repeat, writes, returns a function or still calls one', () => {
     for (const decl of [
+      // A write (#4022 review): the body runs once in JS.
+      `const o: { k?: string } = { k: 'v' }\nconst B = (() => delete o.k)()`,
+      `const o = { n: 1 }\nconst B = (() => (o.n = 2))()`,
+      `const o = { n: 1 }\nconst B = (() => (o.n += 2))()`,
+      `const o = { n: 1 }\nconst B = (() => o.n++)()`,
+      `const o = { n: 1 }\nconst B = (() => --o.n)()`,
+      // A returned anonymous function takes the const's name once substituted.
+      `const B = (() => () => 1)()`,
+      `const B = (() => function () { return 1 })()`,
+      `const B = (() => class {})()`,
+      `const B = (() => ({ f: () => 1 }))()`,
+      // An applied arrow left under an operator after the peel.
+      `const B = (() => (() => 1)() + 2)()`,
+      // A read of a \`let\` may see a later assignment.
+      `let n = 1\nn = 2\nconst B = (() => n)()`,
+      // A block body under a non-null assertion.
+      `const B = (() => { return { k: 'v' } })()!`,
       `const B = (() => ({ k: new Date(0).toISOString() }))()`,
       `const B = (() => ({ k: String(Math.random()) }))()`,
       'const B = (() => ({ k: `${String.raw`x`}` }))()',
@@ -73,7 +93,29 @@ describe('a const initialized by an applied zero-param arrow', () => {
       `const B = (async () => ({ k: 'v' }))()`,
     ]) {
       const c = constantOf(decl, 'B')
-      expect(c.parsed?.kind).not.toBe('object-literal')
+      expect(c.containsArrow || c.callsFunctionLiteral).toBe(true)
+      expect(c.callsFunctionLiteral).toBe(true)
+    }
+  })
+
+  test('flags a call of a function literal anywhere the initializer runs it', () => {
+    for (const decl of [
+      `const B = (() => 1)() + 2`,
+      `const c = true\nconst B = c ? (() => 1)() : 2`,
+      'const B = `${(() => "v")()}`',
+      `const B = [(() => 1)()]`,
+      `const B = { k: (() => 'v')() }`,
+      `const B = [1].map(x => (() => x + 1)())`,
+      `const B = (function* () { yield 1 })()`,
+    ]) expect(constantOf(decl, 'B').callsFunctionLiteral).toBe(true)
+    // A function stored in the value runs only when called.
+    expect(constantOf(`const H = { safe: 'x', f: () => (() => 1)() }`, 'H').callsFunctionLiteral).toBeUndefined()
+    expect(constantOf(`const H = [1].map(x => x + 1)`, 'H').callsFunctionLiteral).toBeUndefined()
+  })
+
+  test('reads of the enclosing function keep the call', () => {
+    for (const body of ['typeof this', 'arguments.length', 'typeof new.target']) {
+      const c = irFor('', `const B = (() => ${body})()\n return <p>{B}</p>`).metadata.localConstants.find(c => c.name === 'B')!
       expect(c.callsFunctionLiteral).toBe(true)
     }
   })

@@ -282,11 +282,15 @@ export const conformancePins: ConformancePins = {
   'module-function-reads-module-const': [{ code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' }],
   'module-helper-const-identity': [{ code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' }],
   // #4022: a const initialized by a function literal call no template
-  // evaluates (a block body, an argument, a body that constructs a value).
+  // evaluates (a block body, an argument, a body that constructs a value or
+  // writes, a returned function, a call below the top of the initializer).
   'module-const-iife-block-body': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-iife-with-argument': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-iife-sampling-body': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'component-const-iife-block-body': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
+  'component-const-iife-returns-function': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
+  'module-const-iife-write-body': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
+  'module-const-iife-nested-call': [{ code: 'BF101', severity: 'error', limitation: 'const-iife-unlowered' }],
   'module-const-literal-identity': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],

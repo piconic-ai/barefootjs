@@ -47,7 +47,7 @@ import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
 import { isFunctionScope, isInvokedInPlace, runsInPlace } from './in-place-function.ts'
 import { classifyValueUses } from './value-uses.ts'
-import { isFunctionLiteralCall, repeatableAppliedArrowValue } from './applied-arrow.ts'
+import { callsFunctionLiteralInPlace, repeatableAppliedArrowValue } from './applied-arrow.ts'
 import { expandModuleArraySpreads, recordModuleArraySpread } from './module-array-spread.ts'
 import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
@@ -4431,7 +4431,7 @@ function collectConstant(
 
   const isModule = _isModule
   const name = node.name.text
-  const initializer = constantInitializer(node, declarationKind)
+  const initializer = constantInitializer(node, declarationKind, ctx.sourceFile)
   let value = initializer
     ? ctx.getJS(initializer)
     : undefined
@@ -4682,14 +4682,14 @@ function collectConstant(
  * template folds `B.k`, #4022). Only a body that evaluates to the same value
  * each time (`repeatableAppliedArrowValue`), and only for a `const`.
  */
-function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let'): ts.Expression | undefined {
+function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let', sourceFile: ts.SourceFile): ts.Expression | undefined {
   if (!node.initializer || declarationKind !== 'const') return node.initializer
-  return repeatableAppliedArrowValue(node.initializer) ?? node.initializer
+  return repeatableAppliedArrowValue(node.initializer, sourceFile) ?? node.initializer
 }
 
 /** `ConstantInfo.callsFunctionLiteral` for the recorded initializer (`constantInitializer`). */
 function callsFunctionLiteralFlag(initializer: ts.Expression | undefined): true | undefined {
-  if (initializer === undefined || !isFunctionLiteralCall(initializer)) return undefined
+  if (initializer === undefined || !callsFunctionLiteralInPlace(initializer)) return undefined
   return true
 }
 

@@ -39,6 +39,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // pinned under `const-iife-unlowered`), and the CSR template has no value
   // for the const either, so `{B.k}` renders empty there too.
   'component-const-iife-block-body',
+  // The same for a component const holding the anonymous arrow an IIFE
+  // returns (`{B.name}` renders empty), and for module consts whose IIFE
+  // writes (`(() => delete o.k)()`, renders `no||`) or sits in a conditional
+  // (`c ? (() => 'c')() : 'd'`, renders empty); the CSR output is the same as
+  // before #4022.
+  'component-const-iife-returns-function',
+  'module-const-iife-write-body',
+  'module-const-iife-nested-call',
   // #3954: a memo calling a literal const's method that spreads a prop
   // (`api.add()`). SSR refuses it on the template adapters (BF101, pinned under
   // `array-literal-element-spread`), and the CSR template does not carry a

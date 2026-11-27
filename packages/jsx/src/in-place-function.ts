@@ -55,7 +55,7 @@ export function isInvokedInPlace(fn: ts.Node): boolean {
 }
 
 /** `<receiver>.<method>` where `method` is an array iteration method that calls its callback in place. */
-function isArrayIterationCallee(callee: ts.Expression): boolean {
+export function isArrayIterationCallee(callee: ts.Expression): boolean {
   if (!ts.isPropertyAccessExpression(callee)) return false
   const method = callee.name.text
   return CALLBACK_METHODS.has(method) || method === 'forEach'

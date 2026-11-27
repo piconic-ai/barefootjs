@@ -12,11 +12,12 @@ export const fixture = createFixture({
 'use client'
 const A = (() => { return { k: 'a' } })()
 const F = (function () { return { k: 'f' } })()
+const N = (() => { return { k: 'n' } })()!
 export function ModuleConstIifeBlockBodyClient() {
-  return <p>{/* @client */ A.k}|{/* @client */ F.k}</p>
+  return <p>{/* @client */ A.k}|{/* @client */ F.k}|{/* @client */ N.k}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/--></p>
+    <p bf-s="test"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/-->|<!--bf:s2--><!--/--></p>
   `,
 })

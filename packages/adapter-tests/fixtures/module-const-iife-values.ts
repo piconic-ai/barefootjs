@@ -5,8 +5,9 @@ import { createFixture } from '../src/types'
  * const initialized by an immediately invoked zero-param arrow that reads no
  * other module const holds what the arrow returns, as `const B = body` would.
  * Results: an object read in text and in an attribute, a string, a number,
- * an array read by index, an arrow nested in the arrow, and a call under a
- * type assertion.
+ * an array read by index, an arrow nested in the arrow, and the
+ * value-transparent TS wrappers at the result and at the callee (`as`,
+ * `!`).
  */
 export const fixture = createFixture({
   id: 'module-const-iife-values',
@@ -19,15 +20,17 @@ const NUM = (() => 1 + 2)()
 const ARR = (() => ['a', 'b'])()
 const NESTED = (() => (() => ({ k: 'n' }))())()
 const TYPED = ((() => ({ k: 't' }))() as { k: string })
+const CALLEE = ((() => ({ k: 'c' })) as () => { k: string })()
+const NONNULL = (() => ({ k: 'x' }))()!
 export function ModuleConstIifeValues() {
   return (
     <p title={OBJ.k}>
-      {OBJ.k}|{STR}|{NUM}|{ARR[1]}|{NESTED.k}|{TYPED.k}
+      {OBJ.k}|{STR}|{NUM}|{ARR[1]}|{NESTED.k}|{TYPED.k}|{CALLEE.k}|{NONNULL.k}
     </p>
   )
 }
 `,
   expectedHtml: `
-    <p bf-s="test" title="v">v|s|3|b|n|t</p>
+    <p bf-s="test" title="v">v|s|3|b|n|t|c|x</p>
   `,
 })

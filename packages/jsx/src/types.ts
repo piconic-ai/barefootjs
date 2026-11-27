@@ -2617,11 +2617,11 @@ export interface ConstantInfo {
    */
   isFunctionValue?: boolean
   /**
-   * When true, the initializer (parentheses and type assertions removed)
-   * calls a function literal where it stands (`(() => { return x })()`,
-   * `(function () { … })()`, `((a) => …)(v)`), which the analyzer could not
-   * record as the body it returns (`repeatableAppliedArrowValue`). No template
-   * evaluates the call. Computed from the AST (`isFunctionLiteralCall`).
+   * When true, evaluating the recorded initializer calls a function literal
+   * where it stands, at any depth (`(() => { return x })()`, `((a) => …)(v)`,
+   * `c ? (() => 1)() : 2`), which the analyzer could not record as the body
+   * it returns (`repeatableAppliedArrowValue`). No template evaluates the
+   * call. Computed from the AST (`callsFunctionLiteralInPlace`).
    */
   callsFunctionLiteral?: boolean
   /**

@@ -14,11 +14,12 @@ export const fixture = createFixture({
 'use client'
 const A = (() => { return { k: 'a' } })()
 const F = (function () { return { k: 'f' } })()
+const N = (() => { return { k: 'n' } })()!
 export function ModuleConstIifeBlockBody() {
-  return <p>{A.k}|{F.k}</p>
+  return <p>{A.k}|{F.k}|{N.k}</p>
 }
 `,
   expectedHtml: `
-    <p bf-s="test">a|f</p>
+    <p bf-s="test">a|f|n</p>
   `,
 })
