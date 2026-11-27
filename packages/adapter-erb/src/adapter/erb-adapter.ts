@@ -598,6 +598,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
+    // A `children ?? fallback` / `children || fallback` read prints the
+    // children markup or the fallback, each as it prints alone, so the
+    // display plan applies to the fallback only (`childrenFallbackOutput`).
+    const fallbackRead = rawTextPart ? null : this.childrenFallbackOutput(expr)
+    if (fallbackRead) return this.wrapTextSlot(expr, fallbackRead)
     // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`).
     const display = expr.parsed ? planTextDisplay(expr.parsed, this.operandTypingAt()) : 'plain'
     const converted = this.convertExpressionToRuby(expr.expr, expr.parsed)
@@ -621,38 +626,47 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // structurally; a component reading its OWN `children` back as a text
     // expression was the one position still falling through the generic
     // escape-everything path. Emitting the same `bf.h(...)` wrap here would
-    // double-encode markup the runtime already rendered. A non-empty
-    // `?? fallback` is text, so only that branch is escaped.
-    const wrapped = this.childrenAwareOutput(expr, rubyExpr)
+    // double-encode markup the runtime already rendered. A `?? fallback` /
+    // `|| fallback` read took `childrenFallbackOutput` above.
+    const wrapped = expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty' ? rubyExpr : `bf.h(${rubyExpr})`
+    return this.wrapTextSlot(expr, wrapped)
+  }
 
+  /** `<%= value %>`, between the text slot's markers when the expression has one. */
+  private wrapTextSlot(expr: IRExpression, value: string): string {
     if (expr.slotId) {
-      return `<%= bf.text_start("${expr.slotId}") %><%= ${wrapped} %><%= bf.text_end %>`
+      return `<%= bf.text_start("${expr.slotId}") %><%= ${value} %><%= bf.text_end %>`
     }
-
-    return `<%= ${wrapped} %>`
+    return `<%= ${value} %>`
   }
 
   /**
-   * The Ruby value an expression child prints: the `children` prop's markup
-   * as it is, a `children ?? fallback` / `children || fallback` read with
-   * only the fallback escaped, and anything else escaped
-   * (`IRExpression.childrenRead`, #3539, #3554).
+   * The Ruby value a `children ?? fallback` / `children || fallback` read
+   * prints (`IRExpression.childrenRead`, #3539, #3554): the children markup
+   * as it is when present, else the fallback as it prints alone (escaped
+   * text, or nothing for a boolean). A const holding the read (`const label
+   * = props.children ?? 'x'`) is split through its initializer, the tree
+   * `convertExpressionToRuby` spells for it. `null` for any other
+   * expression, and for a const the inliner leaves as a name (limitation
+   * `children-fallback-const-shadowed-read`), which prints as before.
    */
-  private childrenAwareOutput(expr: IRExpression, rubyExpr: string): string {
-    if (expr.childrenRead === 'bare' || expr.childrenRead === 'nullish-empty') return rubyExpr
+  private childrenFallbackOutput(expr: IRExpression): string | null {
     const op = expr.childrenRead === 'nullish-fallback' ? '??' : expr.childrenRead === 'or-fallback' ? '||' : null
-    // A const holding the read (`const label = props.children ?? 'x'`) is
-    // split through its initializer, the tree `convertExpressionToRuby`
-    // spells for it.
     const read = op && expr.parsed ? inlineComputedConsts(expr.parsed, this.computedConsts) : null
     const chain = op && read ? fallbackChainParts(read, op) : null
-    if (chain) {
-      const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
-      const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
-      if (op === '??') return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
-      return `(${truthyTest(this.testPlan(chain.head), children)} ? ${children} : bf.h(${fallback}))`
-    }
-    return `bf.h(${rubyExpr})`
+    if (!chain) return null
+    const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
+    const fallback = this.fallbackTextOutput(chain.fallback)
+    if (op === '??') return `((${children}).nil? ? ${fallback} : ${children})`
+    return `(${truthyTest(this.testPlan(chain.head), children)} ? ${children} : ${fallback})`
+  }
+
+  /** The Ruby value a fallback prints as a text child on its own: escaped text, or nothing for a boolean (`planTextDisplay`). */
+  private fallbackTextOutput(fallback: ParsedExpr): string {
+    const display = planTextDisplay(fallback, this.operandTypingAt())
+    if (display === 'empty') return "''"
+    const ruby = this.convertExpressionToRuby(stringifyParsedExpr(fallback), fallback)
+    return `bf.h(${display === 'display' ? `bf.display(${ruby})` : ruby})`
   }
 
   // ===========================================================================

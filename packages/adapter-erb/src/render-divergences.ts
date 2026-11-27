@@ -40,6 +40,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A children fallback const read in a loop row whose parameter shadows a
+  // name its initializer reads: the inliner leaves the const as a name the
+  // template has no value for, so the row renders empty.
+  'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
   // #3975: a module const initialized by an immediately invoked arrow that
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.
