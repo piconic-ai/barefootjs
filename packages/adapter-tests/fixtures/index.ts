@@ -1210,6 +1210,7 @@ import { fixture as constTypeofProp } from './const-typeof-prop'
 import { fixture as constTypeofPropClient } from './const-typeof-prop-client'
 import { fixture as memoTypeofChildProp } from './memo-typeof-child-prop'
 import { fixture as childPropTypeof } from './child-prop-typeof'
+import { fixture as memoVoidNullishFallback } from './memo-void-nullish-fallback'
 import { fixture as destructureDefaultSpreadConstSignalSeed } from './destructure-default-spread-const-signal-seed'
 import { fixture as destructureDefaultSpreadConstSignalSeedClient } from './destructure-default-spread-const-signal-seed-client'
 import { fixture as destructureDefaultSpreadConstChildProp } from './destructure-default-spread-const-child-prop'
@@ -3378,4 +3379,5 @@ export const jsxFixtures: JSXFixture[] = [
   constTypeofPropClient,
   memoTypeofChildProp,
   childPropTypeof,
+  memoVoidNullishFallback,
 ]

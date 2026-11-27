@@ -2135,6 +2135,18 @@
         "attribute"
       ]
     },
+    "child-prop-typeof": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "child-rest-bag-generated-field-name": {
       "kinds": [
         "array-literal",
@@ -4349,6 +4361,26 @@
       ],
       "contexts": [
         "condition"
+      ]
+    },
+    "const-typeof-prop": {
+      "kinds": [
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "const-typeof-prop-client": {
+      "kinds": [
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
       ]
     },
     "context-provider": {
@@ -12383,6 +12415,42 @@
         "text"
       ]
     },
+    "memo-exponent-operator": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "unary:~"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-exponent-operator-client": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "unary:~"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-filter-prop-capture": {
       "kinds": [
         "array-method",
@@ -13002,6 +13070,103 @@
         "text"
       ]
     },
+    "memo-typeof-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-filter-callback": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-filter-callback-client": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-prop-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-through-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-through-memo-client": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-uninlinable-local-function-named-like-prop": {
       "kinds": [
         "call",
@@ -13018,6 +13183,22 @@
         "identifier"
       ],
       "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-void-nullish-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
       "contexts": [
         "text"
       ]
@@ -21211,6 +21392,26 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-typeof-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-typeof-prop-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

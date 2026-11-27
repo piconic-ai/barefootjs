@@ -4157,6 +4157,46 @@
       }
     }
   ],
+  "const-typeof-prop": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "const-typeof-prop-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
   "controlled-signal": [
     {
       "name": "gen:value:zero",
@@ -11430,6 +11470,46 @@
       }
     }
   ],
+  "memo-exponent-operator": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "memo-exponent-operator-client": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
   "memo-function-expression": [
     {
       "name": "gen:base:zero",
@@ -11976,6 +12056,102 @@
           "a",
           "b"
         ]
+      }
+    }
+  ],
+  "memo-typeof-filter-callback": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "memo-typeof-filter-callback-client": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "memo-typeof-prop": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-prop-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-through-memo": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-through-memo-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
       }
     }
   ],
@@ -20793,6 +20969,46 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "signal-seed-typeof-prop": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "signal-seed-typeof-prop-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
       }
     }
   ],

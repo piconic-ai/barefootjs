@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A memo body falling back from `void 0`: the constructor has no value
+  // for the memo, so the slot renders empty.
+  'memo-void-nullish-fallback': { limitation: 'memo-void-operand' },
   // Markup children read through a `props.children ?? 'missing'` memo: the
   // memo is typed as the fallback's string, so its text slot escapes the markup.
   'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
