@@ -4251,6 +4251,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -4544,6 +4550,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -4871,6 +4883,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -5182,6 +5200,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -5503,6 +5527,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -5802,6 +5832,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -6123,6 +6159,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -6439,6 +6481,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -6749,6 +6797,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -6892,7 +6946,7 @@
         "fixture": "component-const-iife-reads-written-prop",
         "description": "a component IIFE const reading props the body later writes renders the values at the call",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-const-iife-reads-written-prop.ts",
-        "code": "() => ({ label, n })"
+        "code": "() => ({ label, n, m })"
       }
     },
     "binary": {
@@ -9365,6 +9419,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -10072,6 +10132,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -10885,6 +10951,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -11693,6 +11765,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -12393,6 +12471,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -13076,6 +13160,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -13775,6 +13865,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -14452,6 +14548,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -15146,6 +15248,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -17173,6 +17281,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -18162,6 +18276,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -19353,6 +19473,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -20527,6 +20653,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -21515,6 +21647,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -22486,6 +22624,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -23473,6 +23617,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -24420,6 +24570,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -25402,6 +25558,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -26868,6 +27030,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -27677,6 +27845,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -28617,6 +28791,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -29586,6 +29766,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -30394,6 +30580,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -31197,6 +31389,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -32016,6 +32214,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -32795,6 +32999,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -33591,6 +33801,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -36277,6 +36493,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -37044,6 +37266,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -37995,6 +38223,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -38851,6 +39085,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -39623,6 +39863,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -40378,6 +40624,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -41155,6 +41407,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -41904,6 +42162,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -42675,6 +42939,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -43268,6 +43538,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -43687,6 +43963,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -44129,6 +44411,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -44588,6 +44876,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -45007,6 +45301,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -45437,6 +45737,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -45878,6 +46184,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-sampling-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -46279,6 +46591,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -46703,6 +47021,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -47784,6 +48108,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-child-prop",
               "limitations": [
                 "array-literal-element-spread"
@@ -47935,6 +48265,12 @@
               "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -48092,6 +48428,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-child-prop",
               "limitations": [
                 "array-literal-element-spread"
@@ -48243,6 +48585,12 @@
               "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -48400,6 +48748,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-child-prop",
               "limitations": [
                 "array-literal-element-spread"
@@ -48551,6 +48905,12 @@
               "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -48714,6 +49074,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-child-prop",
               "limitations": [
                 "array-literal-element-spread"
@@ -48868,6 +49234,12 @@
               ]
             },
             {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "destructure-default-spread-const-child-prop",
               "limitations": [
                 "array-literal-element-spread"
@@ -49019,6 +49391,12 @@
               "fixture": "body-statement-write-sibling-getter-spread",
               "limitations": [
                 "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "component-const-iife-reads-written-prop",
+              "limitations": [
+                "const-iife-unlowered"
               ]
             },
             {
@@ -57331,6 +57709,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -58020,6 +58404,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -58816,6 +59206,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -59653,6 +60049,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -60335,6 +60737,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -61006,6 +61414,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -61699,6 +62113,12 @@
               ]
             },
             {
+              "fixture": "module-const-iife-read-name-written-in-switch",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
               "fixture": "module-const-iife-with-argument",
               "limitations": [
                 "const-iife-unlowered"
@@ -62358,6 +62778,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]
@@ -63028,6 +63454,12 @@
             },
             {
               "fixture": "module-const-iife-nested-call",
+              "limitations": [
+                "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "module-const-iife-read-name-written-in-switch",
               "limitations": [
                 "const-iife-unlowered"
               ]

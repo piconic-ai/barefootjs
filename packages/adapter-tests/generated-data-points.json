@@ -2750,42 +2750,72 @@
       "name": "gen:label:empty",
       "props": {
         "label": "",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:label:markup",
       "props": {
         "label": "<b>&\"'</b>",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:label:multibyte",
       "props": {
         "label": "日本語",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:zero",
       "props": {
         "label": "hi",
-        "n": 0
+        "n": 0,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:negative",
       "props": {
         "label": "hi",
-        "n": -7
+        "n": -7,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:large",
       "props": {
         "label": "hi",
-        "n": 1234567890
+        "n": 1234567890,
+        "m": "mm"
+      }
+    },
+    {
+      "name": "gen:m:empty",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": ""
+      }
+    },
+    {
+      "name": "gen:m:markup",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:m:multibyte",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": "日本語"
       }
     }
   ],
@@ -2794,42 +2824,72 @@
       "name": "gen:label:empty",
       "props": {
         "label": "",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:label:markup",
       "props": {
         "label": "<b>&\"'</b>",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:label:multibyte",
       "props": {
         "label": "日本語",
-        "n": 1
+        "n": 1,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:zero",
       "props": {
         "label": "hi",
-        "n": 0
+        "n": 0,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:negative",
       "props": {
         "label": "hi",
-        "n": -7
+        "n": -7,
+        "m": "mm"
       }
     },
     {
       "name": "gen:n:large",
       "props": {
         "label": "hi",
-        "n": 1234567890
+        "n": 1234567890,
+        "m": "mm"
+      }
+    },
+    {
+      "name": "gen:m:empty",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": ""
+      }
+    },
+    {
+      "name": "gen:m:markup",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:m:multibyte",
+      "props": {
+        "label": "hi",
+        "n": 1,
+        "m": "日本語"
       }
     }
   ],

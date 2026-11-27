@@ -3156,7 +3156,8 @@
         "call",
         "identifier",
         "member",
-        "object-literal"
+        "object-literal",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -3169,7 +3170,8 @@
         "call",
         "identifier",
         "member",
-        "object-literal"
+        "object-literal",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -13778,6 +13780,38 @@
         "literal:number",
         "literal:string",
         "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-read-name-written-in-switch": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-read-name-written-in-switch-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
       ],
       "contexts": [
         "text"
