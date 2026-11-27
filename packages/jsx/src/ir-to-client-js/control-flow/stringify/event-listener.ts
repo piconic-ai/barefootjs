@@ -15,6 +15,7 @@
 
 import { toDomEventName, wrapHandlerForTurn } from '../../utils.ts'
 import type { JsSourceText } from '../../../types.ts'
+import { codeSafeStringArray } from '../../../js-string-literal.ts'
 
 export type EventNameMode = 'dom' | 'raw'
 
@@ -70,7 +71,7 @@ export function emitListenerBlock(
   // row root (#3695) renders inside their scopes, which `qsa` crosses only
   // for the nominated receivers hosted by this component (`__scopeId`).
   const receiverArgs = !bodyIsMultiRoot && receiverSlotIds && receiverSlotIds.length > 0
-    ? `, ${JSON.stringify(receiverSlotIds)}, __scopeId`
+    ? `, ${codeSafeStringArray(receiverSlotIds)}, __scopeId`
     : ''
   lines.push(`${indent}{ const ${elementLocal} = ${lookup}(${scopeVar}, '[bf="${slotId}"]'${receiverArgs}); if (${elementLocal}) ${elementLocal}.addEventListener('${name}', ${wrapped}) }`)
 }

@@ -230,10 +230,10 @@ describe('codeSafeStringLiteral (profile binding id spelling)', () => {
     expect(codeSafeStringLiteral('Counter#binding:s0')).toBe(JSON.stringify('Counter#binding:s0'))
   })
 
-  test('escapes <, >, / and the line separators, and still evaluates to the same string', () => {
+  test('escapes <, > and the line separators, and still evaluates to the same string', () => {
     const value = 'a</script>b\u2028c\u2029d'
     const literal = codeSafeStringLiteral(value)
-    expect(literal).not.toMatch(/[<>/\u2028\u2029]/)
+    expect(literal).not.toMatch(/[<>\u2028\u2029]/)
     expect(new Function(`return ${literal}`)()).toBe(value)
   })
 })

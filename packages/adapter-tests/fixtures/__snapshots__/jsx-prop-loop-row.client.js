@@ -209,10 +209,10 @@ export function initJsxPropLoopRow(__scope, _p = {}) {
 
 
   // Initialize child components with props
-  initChild('SlotLoopList', _s0, { get footer() { return bfMarkup(`<b class="f">foot</b>`) }, label: "x < y", get flag() { return true } })
-  initChild('SlotLoopListDestructured', _s1, { get footer() { return bfMarkup(`<b class="f">foot</b>`) }, label: "x < y" })
+  initChild('SlotLoopList', _s0, { get footer() { return bfMarkup(`<b class="f">foot</b>`) }, label: "x \u003c y", get flag() { return true } })
+  initChild('SlotLoopListDestructured', _s1, { get footer() { return bfMarkup(`<b class="f">foot</b>`) }, label: "x \u003c y" })
   initChild('SlotLoopNested', _s2, { get footer() { return bfMarkup(`<b class="f">foot</b>`) } })
 }
 
-hydrate('JsxPropLoopRow', { init: initJsxPropLoopRow, template: (_p) => `<div>${renderChild('SlotLoopList', {footer: bfMarkup(`<b class="f">foot</b>`), label: "x < y", flag: true}, undefined, 's0')}${renderChild('SlotLoopListDestructured', {footer: bfMarkup(`<b class="f">foot</b>`), label: "x < y"}, undefined, 's1')}${renderChild('SlotLoopNested', {footer: bfMarkup(`<b class="f">foot</b>`)}, undefined, 's2')}</div>` })
+hydrate('JsxPropLoopRow', { init: initJsxPropLoopRow, template: (_p) => `<div>${renderChild('SlotLoopList', {footer: bfMarkup(`<b class="f">foot</b>`), label: "x \u003c y", flag: true}, undefined, 's0')}${renderChild('SlotLoopListDestructured', {footer: bfMarkup(`<b class="f">foot</b>`), label: "x \u003c y"}, undefined, 's1')}${renderChild('SlotLoopNested', {footer: bfMarkup(`<b class="f">foot</b>`)}, undefined, 's2')}</div>` })
 export function JsxPropLoopRow(_p, __bfKey) { return createComponent('JsxPropLoopRow', _p, __bfKey) }

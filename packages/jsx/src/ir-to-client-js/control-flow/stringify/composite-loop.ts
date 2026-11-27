@@ -36,6 +36,7 @@ import { stringifyReactiveEffects } from './reactive-effects.ts'
 import { emitLoopItemElementSetup } from './template-parse.ts'
 import { emitLoopChildRefs, emitRowPortalClaim, rowPortalSlotIds } from './loop.ts'
 import type { CompositeLoopPlan } from '../plan/types.ts'
+import { codeSafeStringLiteral } from '../../../js-string-literal.ts'
 
 export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan): void {
   const {
@@ -140,7 +141,7 @@ export function stringifyCompositeLoop(lines: string[], plan: CompositeLoopPlan)
   emitLoopChildRefs(lines, childRefs, { indent: bodyIndent, elVar: '__el', bodyIsMultiRoot: itemLookup, containerVar })
 
   lines.push(`${bodyIndent}return __el`)
-  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
+  const loopBfId = profileLoopId ? `, ${codeSafeStringLiteral(profileLoopId)}` : ''
   if (branchClearChildren) {
     // Close inner mapArray + createDisposableEffect wrapper.
     lines.push(`${mapArrayIndent}}, '${markerId}'${loopBfId})`)

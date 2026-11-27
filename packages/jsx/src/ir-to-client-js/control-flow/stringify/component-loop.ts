@@ -43,6 +43,7 @@ import { nameForRegistryRef } from '../../component-scope.ts'
 import { stringifyChildrenTextEffect, emitRowEventListener } from '../shared.ts'
 import { emitLoopChildRefs } from './loop.ts'
 import { stringifyInnerLoops } from './inner-loop.ts'
+import { codeSafeStringLiteral } from '../../../js-string-literal.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -66,7 +67,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     mapPreambleWrapped,
   } = plan
 
-  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
+  const loopBfId = profileLoopId ? `, ${codeSafeStringLiteral(profileLoopId)}` : ''
   lines.push(`  mapArray(() => ${arrayExpr}, ${containerVar}, ${keyFn}, (${paramHead}, ${indexParam}, __existing) => {`)
   if (paramUnwrap) lines.push(`    ${paramUnwrap}`)
   // The preamble's consts are referenced by componentPropsExpr's getters

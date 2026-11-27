@@ -618,7 +618,7 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
       result,
       matchText,
       () =>
-        `formatDate(${receiverText}, ${patternJs}, ${JSON.stringify(tzArg.value)}${namesJs !== null ? `, ${namesJs}` : ''})`,
+        `formatDate(${receiverText}, ${patternJs}, ${codeSafeStringLiteral(String(tzArg.value))}${namesJs !== null ? `, ${namesJs}` : ''})`,
     )
   }
   return restore(result)

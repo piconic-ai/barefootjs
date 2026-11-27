@@ -22,7 +22,7 @@
  */
 
 import type { AttrValue } from '../types.ts'
-import { codeSafeStringLiteral, PROPS_PARAM, quotePropName } from './utils.ts'
+import { codeSafeStringLiteral, codeSafeStringArray, PROPS_PARAM, quotePropName } from './utils.ts'
 
 /** One explicit prop's value as a call-site builder spells it. */
 export interface ChildPropValue {
@@ -130,13 +130,8 @@ export function spreadsCallerBag(props: readonly ChildPropLike[]): boolean {
   return props.some(prop => callerBagSpreadOmit(prop.value) !== null)
 }
 
-/**
- * A JS array literal of code-safe string literals (`codeSafeStringLiteral`),
- * printed exactly as `JSON.stringify` prints an array of ordinary names.
- */
-export function codeSafeStringArray(values: readonly string[]): string {
-  return `[${values.map(codeSafeStringLiteral).join(',')}]`
-}
+// The array spelling lives beside `codeSafeStringLiteral` (`../js-string-literal.ts`).
+export { codeSafeStringArray }
 
 /** An object literal of `entries`, `{}` when there are none. */
 function objectLiteral(entries: readonly string[]): string {

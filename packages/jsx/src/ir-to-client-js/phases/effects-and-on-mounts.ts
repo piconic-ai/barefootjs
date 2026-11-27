@@ -8,6 +8,7 @@
  */
 
 import type { ClientJsContext } from '../types.ts'
+import { codeSafeStringLiteral } from '../../js-string-literal.ts'
 
 export function emitEffectsAndOnMounts(lines: string[], ctx: ClientJsContext): void {
   ctx.effects.forEach((effect, i) => {
@@ -15,7 +16,7 @@ export function emitEffectsAndOnMounts(lines: string[], ctx: ClientJsContext): v
     // this effect node. Keyed by captureName when present, else the source line
     // (stable across compiles), falling back to source order.
     const idArg = ctx.profile
-      ? `, ${JSON.stringify(`${ctx.componentName}#effect:${effect.captureName ?? effect.loc?.start.line ?? i}`)}`
+      ? `, ${codeSafeStringLiteral(`${ctx.componentName}#effect:${effect.captureName ?? effect.loc?.start.line ?? i}`)}`
       : ''
     if (effect.captureName) {
       lines.push(`  const ${effect.captureName} = createEffect(${effect.body}${idArg})`)
