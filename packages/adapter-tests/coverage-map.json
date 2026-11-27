@@ -10299,6 +10299,23 @@
         "text"
       ]
     },
+    "loop-destructure-markup-key": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-destructured-param-condition": {
       "kinds": [
         "call",
@@ -20668,6 +20685,25 @@
         "text"
       ]
     },
+    "select-value-markup-literal": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "select-value-no-match-ssr": {
       "kinds": [
         "binary",
@@ -22093,6 +22129,21 @@
       ],
       "axes": [
         "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-closed-rest-markup-fallback": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
         "literal:string",
         "logical:??"
       ],

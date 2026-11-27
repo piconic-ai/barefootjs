@@ -3,14 +3,22 @@
  * (#3726). A JS string literal the compiler writes into emitted code is
  * spelled by `codeSafeStringLiteral` / `codeSafeStringArray`
  * (`packages/jsx/src/js-string-literal.ts`), the one place that decides how a
- * value becomes JS source. A direct `JSON.stringify` there leaves `<`, `>`,
+ * value becomes JS source. A direct `JSON.stringify` there leaves `<`,
  * U+2028 and U+2029 raw.
  *
  * Scanned: every non-test `.ts` file under `packages/jsx/src/ir-to-client-js/`
  * (the client-JS emitter), the shared emit helpers outside it
- * (`template-parts.ts`, `props-binding.ts`), and the Hono adapter, whose
- * marked template is a TSX module. Calls are found on the TS AST, so a
- * mention in a comment or a string does not count.
+ * (`template-parts.ts`, `props-binding.ts`), `jsx-to-ir.ts` (Phase 1
+ * expression text that reaches the output verbatim), and the Hono adapter,
+ * whose marked template is a TSX module. Calls are found on the TS AST, so
+ * a mention in a comment or a string does not count.
+ *
+ * Not enforced: other Phase 1 modules that build expression text
+ * (`analyzer.ts`, the `expression-parser.ts` printer,
+ * `to-locale-date-lowering.ts`'s `raw` / equality keys) are not scanned,
+ * and author source text the compiler passes through untouched
+ * (`createSignal('x < y')`) is not re-spelled. A literal spelled without
+ * `JSON.stringify` (a hand-written quote) is invisible to this ledger.
  *
  * ALLOWED pins the exact count per file. Every remaining call is NOT a
  * string-literal spelling: an internal error message, a JSON file, or a
@@ -31,6 +39,10 @@ const SCAN_DIRS = ['packages/jsx/src/ir-to-client-js']
 const SCAN_FILES = [
   'packages/jsx/src/template-parts.ts',
   'packages/jsx/src/props-binding.ts',
+  // Phase 1 builds expression text that reaches the client JS and the
+  // Hono TSX verbatim (a select option comparison, a loop row accessor, a
+  // loop key, a closed rest fallback); its literals use the helper too.
+  'packages/jsx/src/jsx-to-ir.ts',
   'packages/adapter-hono/src/adapter/hono-adapter.ts',
 ]
 

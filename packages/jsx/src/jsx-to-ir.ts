@@ -1881,7 +1881,7 @@ function transformJsxElement(
  *    loop body) — the exact per-option comparison shape the
  *    `select-option-selected` fixture already proves across every adapter.
  *    A literal `optValue` (e.g. `value="banana"`) compares by
- *    `JSON.stringify`; an expression `optValue` (a static dynamic value, or
+ *    `codeSafeStringLiteral`; an expression `optValue` (a static dynamic value, or
  *    a loop row reading its item — e.g. `value={o.id}`) compares against
  *    the expression text directly. For a loop row this makes `selected` an
  *    ordinary per-item reactive attribute like any other (`o.id`, the row's
@@ -1924,9 +1924,9 @@ function lowerFormControlValueSsr(
 
   const selectedForLiteral = (optValue: string): ExpressionAttr =>
     AttrValueOf.expression(
-      `(${expr}) === ${JSON.stringify(optValue)}`,
+      `(${expr}) === ${codeSafeStringLiteral(optValue)}`,
       templateExpr !== undefined
-        ? { templateExpr: `(${templateExpr}) === ${JSON.stringify(optValue)}` }
+        ? { templateExpr: `(${templateExpr}) === ${codeSafeStringLiteral(optValue)}` }
         : undefined,
     )
   // An expression-valued `option value` — the shape every `.map()` loop row
@@ -4298,7 +4298,7 @@ function extractLoopParamBindings(
   const appendDotAccess = (prefix: string, key: string): string => {
     return isIdent(key)
       ? `${prefix}.${key}`
-      : `${prefix}[${JSON.stringify(key)}]`
+      : `${prefix}[${codeSafeStringLiteral(key)}]`
   }
 
   const walk = (
@@ -4481,7 +4481,7 @@ function extractLoopKey(node: IRNode): string | null {
 function keyAttrValueToExpr(v: AttrValue): string | null {
   switch (v.kind) {
     case 'expression': return v.expr
-    case 'literal': return JSON.stringify(v.value)
+    case 'literal': return codeSafeStringLiteral(v.value)
     case 'template': return null
     default: return null
   }
@@ -7793,7 +7793,7 @@ function attrValueFallback(attr: ts.JsxAttribute, ctx: TransformContext): RestKe
   const value = attr.initializer
   if (value === undefined) return { text: 'true', templateText: 'true', freeIdentifiers: new Set() }
   if (ts.isStringLiteral(value)) {
-    const text = JSON.stringify(value.text)
+    const text = codeSafeStringLiteral(value.text)
     return { text, templateText: text, freeIdentifiers: new Set() }
   }
   if (!ts.isJsxExpression(value) || value.expression === undefined) return null

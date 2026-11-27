@@ -320,9 +320,9 @@ describe('<style> / <script> text is marked raw text (#3934)', () => {
     const js = clientJs(r)
     // Static text is not entity-escaped in the template or in the update.
     // One call over the whole text, in the template and in the update.
-    expect(js).toContain(`<style bf="s1">\${escapeRawTextContent('style', [("a \\u003e b "), ('x' + (0))])}</style>`)
+    expect(js).toContain(`<style bf="s1">\${escapeRawTextContent('style', [("a > b "), ('x' + (0))])}</style>`)
     expect(js).not.toContain('a &gt; b')
-    expect(js).toContain(`const __x = escapeRawTextContent('style', [("a \\u003e b "), ('x' + n())])`)
+    expect(js).toContain(`const __x = escapeRawTextContent('style', [("a > b "), ('x' + n())])`)
     // RCDATA keeps the HTML escape.
     expect(js).toContain(`[escapeText('x' + n())].join('')`)
   })

@@ -4,24 +4,28 @@
  * expression the compiler spells for a later stage to splice).
  *
  * `JSON.stringify` alone spells a valid JS string literal but leaves `<`,
- * `>`, U+2028 and U+2029 raw. A `</script>` or `<!--` in a literal closes or
+ * U+2028 and U+2029 raw. A `</script>` or `<!--` in a literal closes or
  * re-modes an inline `<script>` the code might end up in, and before ES2019
- * U+2028 / U+2029 ended a string literal. Those four characters are written
- * as `\uXXXX`, which evaluates to the same string, so a value without them
- * prints exactly as `JSON.stringify` printed it.
+ * U+2028 / U+2029 ended a string literal. Those three characters are
+ * written as `\uXXXX`, which evaluates to the same string, so a value
+ * without them prints exactly as `JSON.stringify` printed it.
  *
- * `/` is NOT escaped. Every way a `/` matters to the HTML tokenizer inside a
- * script is as the second character of `</`, and the `<` before it is
- * already `<`, so no `</` can survive. Escaping it as well would add no
- * protection and would rewrite every path, URL and fraction utility class
- * (`"/docs"`, `"w-1/2"`) in the emitted code.
+ * `<` is the only character the HTML tokenizer needs to leave script data:
+ * an end tag (`</script`), a comment opener (`<!--`) and the double-escaped
+ * `<script` all begin with it. So `>` and `/` are NOT escaped: with every
+ * `<` written as `\u003c`, they open nothing, and escaping them would only
+ * rewrite paths, URLs and utility classes. That rewrite is not harmless.
+ * UnoCSS scans the compiled output for class names, and a class literal
+ * spelled `"[&\u003e*]:w-full"` is extracted as a garbage class whose
+ * selector is invalid CSS, which drops every rule it is grouped with
+ * (`.w-full` among them).
  *
  * The guarantee is about string literals only: the client JS also carries
  * markup in template literals (the row / branch HTML templates), which this
  * module does not touch.
  */
 
-const SCRIPT_UNSAFE = /[<>\u2028\u2029]/g
+const SCRIPT_UNSAFE = /[<\u2028\u2029]/g
 
 function unicodeEscape(ch: string): string {
   return `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`

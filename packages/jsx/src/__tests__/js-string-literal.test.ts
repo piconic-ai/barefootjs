@@ -1,7 +1,7 @@
 /**
  * Every JS string literal the compiler emits is spelled by one helper,
  * `codeSafeStringLiteral` (`../js-string-literal.ts`, #3726). It escapes
- * `<`, `>`, U+2028 and U+2029 as `\uXXXX` and leaves everything else as
+ * `<`, U+2028 and U+2029 as `\uXXXX` and leaves everything else as
  * `JSON.stringify` prints it, so the emitted literal evaluates to the
  * original value and cannot close an inline `<script>`.
  */
@@ -14,7 +14,7 @@ import { codeSafeStringLiteral, codeSafeStringArray } from '../js-string-literal
 import { quotePropName } from '../ir-to-client-js/utils'
 
 const DANGEROUS = 'a</script>b\u2028c\u2029d<!--e-->'
-const UNSAFE_RAW = /[<>\u2028\u2029]/
+const UNSAFE_RAW = /[<\u2028\u2029]/
 
 /** The value a JS literal's source text evaluates to. */
 function evaluate(literal: string): unknown {
@@ -23,15 +23,18 @@ function evaluate(literal: string): unknown {
 
 describe('codeSafeStringLiteral', () => {
   test('prints a value without unsafe characters exactly as JSON.stringify does', () => {
-    for (const value of ['Counter#binding:s0', '/docs/intro', 'w-1/2', 'say "hi"\n', '']) {
+    // `>` and `/` stay as written: UnoCSS reads class names such as
+    // `[&>*]:w-full` from the compiled output, and an escaped spelling is
+    // extracted as a class with an invalid selector that drops the rule.
+    for (const value of ['Counter#binding:s0', '/docs/intro', 'w-1/2', '[&>*]:w-full', 'has-[>svg]:px-3', 'say "hi"\n', '']) {
       expect(codeSafeStringLiteral(value)).toBe(JSON.stringify(value))
     }
   })
 
-  test('escapes <, > and the line separators, and evaluates to the same string', () => {
+  test('escapes < and the line separators, and evaluates to the same string', () => {
     const literal = codeSafeStringLiteral(DANGEROUS)
     expect(literal).not.toMatch(UNSAFE_RAW)
-    expect(literal).toContain('\\u003c/script\\u003e')
+    expect(literal).toContain('\\u003c/script>')
     expect(literal).toContain('\\u2028')
     expect(literal).toContain('\\u2029')
     expect(evaluate(literal)).toBe(DANGEROUS)
@@ -59,7 +62,7 @@ describe('codeSafeStringLiteral', () => {
 })
 
 describe('emitted client JS (#3726)', () => {
-  // The source holds the raw characters: `JSON.stringify` writes `<`, `>`,
+  // The source holds the raw characters: `JSON.stringify` writes `<`,
   // U+2028 and U+2029 into the JSX attribute string as they are.
   const source = `
     'use client'

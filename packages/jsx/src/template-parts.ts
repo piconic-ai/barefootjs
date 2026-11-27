@@ -68,7 +68,7 @@ export function lookupPartToJsExpr(
  * wrapping it in quotes unescaped yields an unterminated or unbalanced
  * literal. Escapes what a single-quoted literal cannot hold raw (the
  * backslash, the quote, CR and LF), then the same script-unsafe set every
- * emitted string literal gets (`escapeScriptUnsafe`: `<`, `>`, U+2028,
+ * emitted string literal gets (`escapeScriptUnsafe`: `<`, U+2028 and
  * U+2029), so a branch without them prints exactly as before.
  */
 function singleQuotedJsString(value: string): string {
