@@ -466,7 +466,7 @@
     },
     "packages/jsx/src/expression-parser.ts": {
       "checkSupport": [
-        128
+        125
       ],
       "collectDestructureBindings": [
         49

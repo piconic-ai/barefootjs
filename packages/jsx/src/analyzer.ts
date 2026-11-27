@@ -348,6 +348,7 @@ function parseSignalInitializer(signal: AnalyzerContext['signals'][number], ctx:
   if (!signal.initialValue) return
   const parsed = parseExpression(`(${signal.initialValue})`)
   if (parsed.kind !== 'unsupported') signal.parsed = parsed
+  else if (parsed.operator) signal.unloweredRootOperator = parsed.operator
   const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
   if (seed) signal.propSeed = seed
 }
@@ -2135,7 +2136,7 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
 function memoStructuredBody(
   callback: ts.Expression | undefined,
   ctx: AnalyzerContext,
-): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete'> {
+): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete' | 'unloweredRootOperator'> {
   // Structured parse of the arrow BODY, so adapters can shape-match the memo
   // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
   // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
@@ -2177,7 +2178,8 @@ function memoStructuredBody(
   // represented — nothing silently omitted (see `MemoInfo.parsedBlockComplete`).
   const parsedBlockComplete =
     parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
-  return { parsed, parsedBlock, parsedBlockComplete }
+  const unloweredRootOperator = parsedBody?.kind === 'unsupported' ? parsedBody.operator : undefined
+  return { parsed, parsedBlock, parsedBlockComplete, ...(unloweredRootOperator && { unloweredRootOperator }) }
 }
 
 /**
@@ -2267,7 +2269,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     }
   }
 
-  const { parsed, parsedBlock, parsedBlockComplete } = memoStructuredBody(callExpr.arguments[0], ctx)
+  const { parsed, parsedBlock, parsedBlockComplete, ...rootOperator } = memoStructuredBody(callExpr.arguments[0], ctx)
 
   const bodyFields = body ? memoBodyFields(body, ctx) : {}
 
@@ -2279,6 +2281,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     parsedBlockComplete,
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
+    ...rootOperator,
     bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(callExpr.arguments[0]),
     type,
     deps,

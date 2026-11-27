@@ -1959,6 +1959,13 @@ export interface SignalInfo {
    */
   parsed?: ParsedExpr
   /**
+   * The operator no template lowers that `initialValue` applies at its root
+   * (`createSignal(typeof props.x)`), when its parse is the `unsupported`
+   * node `parsed` leaves out (`unloweredOperator`). Read by the server-read
+   * refusal of such operators, which sees nested ones in `parsed`.
+   */
+  unloweredRootOperator?: 'typeof'
+  /**
    * Set when `initialValue` is a read of one prop, bare or with a single
    * `??` / `||` fallback (`props.checked`, `checked ?? false`,
    * `props.value || ''`, `props.row.count`), recorded by the analyzer from
@@ -2177,6 +2184,13 @@ export interface MemoInfo {
    * therefore no longer implies an expression-bodied arrow.
    */
   parsed?: ParsedExpr
+  /**
+   * The operator no template lowers that the expression body applies at its
+   * root (`createMemo(() => typeof props.x)`), when its parse is the
+   * `unsupported` node `parsed` leaves out (`unloweredOperator`). Read by the
+   * server-read refusal of such operators, which sees nested ones in `parsed`.
+   */
+  unloweredRootOperator?: 'typeof'
   /**
    * Whether the memo's effective body is a template literal (`() => `…`` or a
    * block body whose first `return` is one), classified once at analysis time

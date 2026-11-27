@@ -59,6 +59,7 @@ import {
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
   refuseInheritedConstServerReads,
+  refuseUnloweredOperators,
   refuseUninlinableSeedCalls,
   refuseUnloweredArrayElements,
   refuseUnappliedPropDefaults,
@@ -1023,6 +1024,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
     // An inherited literal-const read in a value the server render computes off the emitter (#3813).
     refuseInheritedConstServerReads(authoredIr, this.state)
+    // A server-read signal seed, memo body or const applying an operator no template lowers (#3981).
+    refuseUnloweredOperators(authoredIr, this.state)
     // A server-read signal seed or memo body calling a function no template can inline (#3721).
     refuseUninlinableSeedCalls(authoredIr, this.state)
     // A server-read signal seed, memo body or const holding an array literal with a spread element (#3954).

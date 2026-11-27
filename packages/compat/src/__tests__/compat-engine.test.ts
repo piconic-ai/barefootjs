@@ -88,6 +88,7 @@ describe('compileForCompat', () => {
           'off-subset-callback-body',
           'opaque-local-accessor-call',
           'prop-member-chain-signal-seed',
+          'server-read-unlowered-operator',
           'static-literal-loop-absent-row-field',
           'static-literal-loop-component-row',
           'template-time-children-read-into-state',

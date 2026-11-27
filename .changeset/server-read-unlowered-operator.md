@@ -1,0 +1,6 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/go-template": patch
+---
+
+A signal seed, memo body or component const the server render reads, and a child prop value, that applies an operator no template lowers (`typeof x`, `a ** b`, `~a`, a bitwise or shift operator, `in`, `instanceof`) is now refused with BF101 on every template adapter. Before, it rendered empty (`null`, `undefined` or `0` on some adapters) where Hono renders the computed value, with no diagnostic; a child prop passed such an operator in place was already refused everywhere except Go. The operator may sit directly in the declaration, in a callback it runs (`items.filter(t => typeof t === 'string')`), or in a memo another read reaches. `/* @client */` on the read defers it to the client, except for a value a child prop reads, which renders on the server whatever directive the prop carries. An operator in a function that is stored and never called is not refused.
