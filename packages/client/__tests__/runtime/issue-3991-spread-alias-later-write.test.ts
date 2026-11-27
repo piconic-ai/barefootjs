@@ -50,6 +50,16 @@ export function Parent3991() {
   return <p><button onClick={() => setF('later')}>go</button><Between3991 a={first} htmlFor={f()} /></p>
 }`
 
+// A caller that moves the last spread's key between a string and `null`.
+const TOGGLE_PARENT = `'use client'
+import { createSignal } from '@barefootjs/client'
+import { Between3991 } from './Between3991'
+const first = { htmlFor: 'first' }
+export function ToggleParent3991() {
+  const [f, setF] = createSignal<string | null>('last')
+  return <p><button id="str" onClick={() => setF('later')}>s</button><button id="nul" onClick={() => setF(null)}>n</button><Between3991 a={first} htmlFor={f()} /></p>
+}`
+
 function clientJsFor(source: string, filename: string): string {
   const result = compileJSX(source, filename, { adapter })
   const errors = result.errors.filter(e => e.severity === 'error')
@@ -67,7 +77,7 @@ let loaded = false
 async function loadComponents(): Promise<void> {
   if (loaded) return
   const dir = mkdtempSync(join(tmpdir(), 'bf-3991-'))
-  for (const [source, name] of [[BETWEEN, 'Between3991'], [AFTER, 'After3991'], [PARENT, 'Parent3991']] as const) {
+  for (const [source, name] of [[BETWEEN, 'Between3991'], [AFTER, 'After3991'], [PARENT, 'Parent3991'], [TOGGLE_PARENT, 'ToggleParent3991']] as const) {
     const file = join(dir, `${name}.mjs`)
     writeFileSync(file, clientJsFor(source, `${name}.tsx`))
     await import(file)
@@ -130,6 +140,46 @@ describe('#3991 — a write after an open spread wins once over a bag key that a
     const el = await mount('Parent3991', {})
     expect(labelFor(el)).toBe('last')
     el.querySelector('button')!.click()
+    expect(labelFor(el)).toBe('later')
+  })
+
+  test('when the last spread lacks the key, the literal wins over the earlier bag everywhere', async () => {
+    const props = { a: { htmlFor: 'first' } }
+    document.body.innerHTML = await ssr(BETWEEN, props, 'Between3991_test')
+    expect(labelFor(document.body)).toBe('explicit')
+    await hydrateHtml(await ssr(BETWEEN, props, 'Between3991_test'))
+    expect(labelFor(document.body)).toBe('explicit')
+    document.body.innerHTML = ''
+    expect(labelFor(await mount('Between3991', props))).toBe('explicit')
+  })
+
+  // The last spread's key holding `null`: the reference renders the literal
+  // (a nullish bag value reads as absent, `restKeyWithFallback`), while
+  // `applyRestAttrs` removes the attribute at hydration and on mount. That
+  // is the guard of a literal BEFORE an open spread (`<label htmlFor="x"
+  // {...rest}>`), which main renders the same way: these assertions pin
+  // main's client behaviour, so a fix of that guard flips them.
+  test('a null value for the last spread\'s key: the reference keeps the literal, the client removes it (as on main)', async () => {
+    const props = { a: { htmlFor: 'first' }, htmlFor: null }
+    document.body.innerHTML = await ssr(BETWEEN, props, 'Between3991_test')
+    expect(labelFor(document.body)).toBe('explicit')
+    await hydrateHtml(await ssr(BETWEEN, props, 'Between3991_test'))
+    expect(labelFor(document.body)).toBeNull()
+    document.body.innerHTML = ''
+    expect(labelFor(await mount('Between3991', props))).toBeNull()
+  })
+
+  test('the last spread\'s key moving between a string and null keeps every string update', async () => {
+    const el = await mount('ToggleParent3991', {})
+    const click = (id: string) => (el.querySelector(`#${id}`) as HTMLElement).click()
+    expect(labelFor(el)).toBe('last')
+    click('nul')
+    expect(labelFor(el)).toBeNull()
+    click('str')
+    expect(labelFor(el)).toBe('later')
+    click('nul')
+    expect(labelFor(el)).toBeNull()
+    click('str')
     expect(labelFor(el)).toBe('later')
   })
 
