@@ -53,6 +53,37 @@ export function T(props: { children?: unknown }) {
     expect(analyzeComponent(source, 'T.tsx').signals[0].type.raw).toBe('string')
   })
 
+  test.each([
+    ['const { children } = props', "children ?? 'missing'"],
+    ['const { children: kids } = props', "kids ?? 'missing'"],
+    ["const { children = 'dflt' } = props", "children ?? 'missing'"],
+    ['const kids = props.children', "kids ?? 'missing'"],
+  ])('a body alias %s: %s is unknown', (destructure, init) => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T(props: { children?: unknown; label?: string }) {
+  ${destructure}
+  const [v] = createSignal(${init})
+  return <p>{String(v())}</p>
+}
+`
+    expect(analyzeComponent(source, 'T.tsx').signals[0].type.raw).toBe('unknown')
+  })
+
+  test('a body destructure of a concrete prop keeps the fallback type', () => {
+    const source = `
+'use client'
+import { createSignal } from '@barefootjs/client'
+export function T(props: { label?: string }) {
+  const { label } = props
+  const [v] = createSignal(label ?? 'missing')
+  return <p>{v()}</p>
+}
+`
+    expect(analyzeComponent(source, 'T.tsx').signals[0].type.raw).toBe('string')
+  })
+
   test('a module binding named like a prop of a props object is not the prop', () => {
     expect(seedType('props: { children?: unknown }', "children ?? 'missing'", "const children = 'module'")).toBe('string')
   })

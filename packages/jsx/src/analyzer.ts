@@ -15,7 +15,7 @@ import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToE
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
-import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, propReadBase, signalPropSeed, templatePropReadParams, templatePropReads } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, propReadBase, resolveBodyPropAliases, signalPropSeed, templatePropReadParams, templatePropReads } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -1841,9 +1841,10 @@ function signalInitialValueText(callExpr: ts.CallExpression, ctx: AnalyzerContex
  * `any` (`props.children ?? 'missing'`, or a destructured `children ??
  * 'missing'`). Such a seed holds whatever the caller passes (markup
  * children, a number), so its type is not the fallback's (#3987). Decided on
- * the TS AST: `props.X` on the props object, or a bare identifier only when
- * the props parameter is destructured, so a module binding named like a
- * prop is never mistaken for it.
+ * the TS AST: `props.X` on the props object, or a bare identifier bound by
+ * a destructure of the props parameter or of the props object in the body
+ * (`const { children } = props`), so a module binding named like a prop is
+ * never mistaken for it.
  */
 function isNullishOverUntypedProp(seed: ts.Expression | undefined, ctx: AnalyzerContext): boolean {
   const unwrap = (node: ts.Expression): ts.Expression => {
@@ -1856,11 +1857,30 @@ function isNullishOverUntypedProp(seed: ts.Expression | undefined, ctx: Analyzer
   let param: ParamInfo | undefined
   if (ts.isIdentifier(left) && ctx.propsObjectName === null) {
     param = ctx.propsParams.find(p => !p.isRest && p.name === left.text)
+  } else if (ts.isIdentifier(left)) {
+    const key = bodyDestructuredPropKey(left.text, ctx)
+    if (key !== null) param = propParamByKey(key, ctx)
   } else if (ts.isPropertyAccessExpression(left) && ts.isIdentifier(left.expression) && left.expression.text === ctx.propsObjectName) {
-    const key = left.name.text
-    param = ctx.propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key)
+    param = propParamByKey(left.name.text, ctx)
   }
   return param?.type?.kind === 'unknown'
+}
+
+/**
+ * The prop key `name` reads when it is a component-scope alias of one prop
+ * of the props object: a body destructure (`const { children } = props`,
+ * `const { children: kids } = props`, with or without a default) or a bare
+ * member read, as the shared resolver (`resolveBodyPropAliases`) answers
+ * it. Null for a module binding or any other local.
+ */
+function bodyDestructuredPropKey(name: string, ctx: AnalyzerContext): string | null {
+  return resolveBodyPropAliases(ctx.localConstants, ctx.propsObjectName, { requireLiveRewriteSafe: false }).get(name)?.key ?? null
+}
+
+/** The declared prop for the caller-facing key `key`: its own entry before a renamed binding's. */
+function propParamByKey(key: string, ctx: AnalyzerContext): ParamInfo | undefined {
+  return ctx.propsParams.find(p => !p.isRest && p.sourceName === undefined && p.name === key)
+    ?? ctx.propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key)
 }
 
 /**

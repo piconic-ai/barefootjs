@@ -182,6 +182,8 @@ export const renderDivergences: RenderDivergences = {
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
   'children-markup-nullish-seed': { limitation: 'children-element-read-into-state' },
   'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-seed-bindings': { limitation: 'children-element-read-into-state' },
+  'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
   // A closed rest declaring `tabIndex` and `tabindex`, then a later
   // `tabindex`: the rest's `tabIndex` still renders, first.
   'spread-closed-rest-both-cases-later-write': { limitation: 'closed-rest-both-cases-later-write' },

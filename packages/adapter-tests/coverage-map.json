@@ -2368,6 +2368,22 @@
         "text"
       ]
     },
+    "children-body-default-nullish-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -2480,6 +2496,22 @@
         "text"
       ]
     },
+    "children-markup-nullish-seed-bindings": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-named-local-escaped": {
       "kinds": [
         "array-method",
@@ -2574,6 +2606,21 @@
       "axes": [
         "literal:string",
         "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-param-default-nullish-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"

@@ -9177,6 +9177,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -9811,6 +9823,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -9818,6 +9836,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]
@@ -16727,6 +16751,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -17619,6 +17655,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -17626,6 +17668,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]
@@ -25798,6 +25846,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -26546,6 +26606,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -26553,6 +26619,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]
@@ -32309,6 +32381,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -32463,6 +32547,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -32470,6 +32560,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]
@@ -34571,6 +34667,12 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -35244,6 +35346,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
               ]
             },
             {
@@ -54083,6 +54191,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -54711,6 +54831,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -54718,6 +54844,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]
@@ -59818,6 +59950,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -59966,6 +60110,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -59973,6 +60123,12 @@
             },
             {
               "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
               "limitations": [
                 "children-element-read-into-state"
               ]

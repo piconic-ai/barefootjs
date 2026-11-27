@@ -649,6 +649,9 @@ import { fixture as childrenElementReadIntoState } from './children-element-read
 import { fixture as childrenAbsentReadIntoState } from './children-absent-read-into-state'
 import { fixture as childrenMarkupNullishSeed } from './children-markup-nullish-seed'
 import { fixture as childrenMarkupNullishMemo } from './children-markup-nullish-memo'
+import { fixture as childrenMarkupNullishSeedBindings } from './children-markup-nullish-seed-bindings'
+import { fixture as childrenParamDefaultNullishSeed } from './children-param-default-nullish-seed'
+import { fixture as childrenBodyDefaultNullishSeed } from './children-body-default-nullish-seed'
 import { fixture as childrenAbsentForwarded } from './children-absent-forwarded'
 import { fixture as nullishSeedOverUnknownProp } from './nullish-seed-over-unknown-prop'
 import { fixture as childrenDynamicReadIntoState } from './children-dynamic-read-into-state'
@@ -2339,6 +2342,9 @@ export const jsxFixtures: JSXFixture[] = [
   childrenAbsentReadIntoState,
   childrenMarkupNullishSeed,
   childrenMarkupNullishMemo,
+  childrenMarkupNullishSeedBindings,
+  childrenParamDefaultNullishSeed,
+  childrenBodyDefaultNullishSeed,
   childrenAbsentForwarded,
   nullishSeedOverUnknownProp,
   childrenDynamicReadIntoState,

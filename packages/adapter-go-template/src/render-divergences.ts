@@ -120,6 +120,11 @@ export const renderDivergences: RenderDivergences = {
   // Markup children read through a `props.children ?? 'missing'` memo: the
   // memo is typed as the fallback's string, so its text slot escapes the markup.
   'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
+  // A defaulted children parameter: the seed is evaluated into a string, so
+  // markup children render escaped.
+  'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
+  // A defaulted body destructure of children read into state seeds nil.
+  'children-body-default-nullish-seed': { limitation: 'body-default-children-read-into-state' },
   // #3975: a module const initialized by an immediately invoked arrow that
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.
