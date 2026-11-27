@@ -3087,6 +3087,133 @@
         "text"
       ]
     },
+    "component-const-iife": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-const-iife-block-body": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-block-body-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-reads-const-named-like-let": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-reads-written-prop": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-reads-written-prop-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-returns-function": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-returns-function-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "component-helper-signal-child-prop": {
       "kinds": [
         "arrow",
@@ -13557,7 +13684,7 @@
         "text"
       ]
     },
-    "module-const-iife-reads-module-const": {
+    "module-const-iife-block-body": {
       "kinds": [
         "arrow",
         "call",
@@ -13570,6 +13697,259 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-block-body-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-loop-child-seed": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-iife-nested-call": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-nested-call-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-read-name-written-in-switch": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-read-name-written-in-switch-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-reads-module-const": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-sampling-body": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-sampling-body-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-values": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "module-const-iife-with-argument": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-with-argument-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-write-body": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "module-const-iife-write-body-client": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -14266,6 +14646,22 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-object-member-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },

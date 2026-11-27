@@ -47,10 +47,6 @@ export const renderDivergences: RenderDivergences = {
   // A children fallback read with a boolean fallback: present children read
   // through a const are dropped, and an absent read prints `false`.
   'children-fallback-value-shapes': { limitation: 'children-fallback-boolean-display' },
-  // #3975: a module const initialized by an immediately invoked arrow that
-  // reads another module const: the template has no value for the const,
-  // so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
   // A module array const spreading a value no compile-time evaluator
   // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
   'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },
