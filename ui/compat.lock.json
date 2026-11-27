@@ -3741,6 +3741,12 @@
             "children-fallback-const-shadowed-read"
           ]
         },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -3780,6 +3786,12 @@
       },
       "children-fallback-value-shapes": {
         "blade": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "go-template": {
           "kind": "render",
           "limitations": [
             "children-fallback-boolean-display"
@@ -20546,6 +20558,7 @@
       ],
       "adapters": [
         "blade",
+        "go-template",
         "jinja",
         "minijinja",
         "mojolicious",
@@ -20566,6 +20579,7 @@
       "adapters": [
         "blade",
         "erb",
+        "go-template",
         "jinja",
         "minijinja",
         "mojolicious",

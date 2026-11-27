@@ -780,6 +780,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -17595,6 +17601,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -26366,6 +26384,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -32307,6 +32337,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -35148,6 +35190,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -50590,6 +50644,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -51703,6 +51763,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -54702,6 +54774,12 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -59990,6 +60068,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -61193,7 +61283,16 @@
           ]
         },
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
         "jinja": {
           "gaps": [
             {
