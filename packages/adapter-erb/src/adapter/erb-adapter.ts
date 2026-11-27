@@ -663,9 +663,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
 
   /** The Ruby value a fallback prints as a text child on its own: escaped text, or nothing for a boolean (`planTextDisplay`). */
   private fallbackTextOutput(fallback: ParsedExpr): string {
+    // Spelled before an empty display is elided, so an unsupported fallback
+    // is still refused (BF101), as `renderExpression` does.
+    const ruby = this.convertExpressionToRuby(stringifyParsedExpr(fallback), fallback)
     const display = planTextDisplay(fallback, this.operandTypingAt())
     if (display === 'empty') return "''"
-    const ruby = this.convertExpressionToRuby(stringifyParsedExpr(fallback), fallback)
     return `bf.h(${display === 'display' ? `bf.display(${ruby})` : ruby})`
   }
 
