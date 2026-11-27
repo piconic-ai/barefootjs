@@ -144,8 +144,6 @@ export const renderDivergences: RenderDivergences = {
   'spread-closed-rest-repeated-after-bag': { limitation: 'closed-rest-repeated' },
   // The bag's `crossOrigin` renders as `cross-origin` beside the folded literal `crossorigin`.
   'spread-closed-rest-then-bag-renamed-key': { limitation: 'spread-bag-camel-key-name' },
-  // A destructured prop typed as a record, spread on an element, does not build.
-  'spread-optional-bag-literal-before': { limitation: 'record-prop-bag-spread' },
   // An open spread bag's camelCase key renders kebab-cased (`tabIndex` ->
   // `tab-index`, `crossOrigin` -> `cross-origin`), where the reference
   // writes it as it is or renames only its own few keys (`crossorigin`).
@@ -399,6 +397,12 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // A caller that passes the key renders it once per expansion of the
+  // repeated body rest (`id="x" id="x"`).
+  'spread-body-rest-repeated-omitted:gen:id:empty': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:markup': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:multibyte': { limitation: 'closed-rest-repeated' },
+
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the destructure default applied to an explicit `null`. It now applies
   // only to an absent or `undefined` prop (#3848 U8).

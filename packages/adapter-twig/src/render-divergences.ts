@@ -199,6 +199,12 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // A caller that passes the key renders it once per expansion of the
+  // repeated body rest (`id="x" id="x"`).
+  'spread-body-rest-repeated-omitted:gen:id:empty': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:markup': { limitation: 'closed-rest-repeated' },
+  'spread-body-rest-repeated-omitted:gen:id:multibyte': { limitation: 'closed-rest-repeated' },
+
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the seed applied a destructure default to an explicit `null`. It now
   // applies only to an absent or `undefined` prop (#3848 U6).

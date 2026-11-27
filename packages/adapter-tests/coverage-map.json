@@ -21187,6 +21187,20 @@
         "text"
       ]
     },
+    "spread-body-rest-repeated-omitted": {
+      "kinds": [
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "spread-closed-rest-attr-names": {
       "kinds": [
         "identifier",
@@ -21403,6 +21417,44 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-repeated-omitted": {
+      "kinds": [
+        "array-literal",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "spread-closed-rest-repeated-present": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-svg-case-keys": {
       "kinds": [
         "identifier",
@@ -21498,7 +21550,25 @@
         "attribute"
       ]
     },
+    "spread-open-object-prop-bag": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-optional-bag-literal-before": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-record-prop-bag": {
       "kinds": [
         "identifier"
       ],

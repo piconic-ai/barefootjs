@@ -18585,9 +18585,9 @@
               ]
             },
             {
-              "fixture": "spread-optional-bag-literal-before",
+              "fixture": "spread-open-object-prop-bag",
               "limitations": [
-                "record-prop-bag-spread"
+                "open-object-prop-bag-spread"
               ]
             },
             {
