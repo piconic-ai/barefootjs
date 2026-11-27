@@ -2280,6 +2280,40 @@
         "text"
       ]
     },
+    "children-absent-forwarded": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "children-absent-read-into-state": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "children-alias-hop": {
       "kinds": [
         "identifier",
@@ -2352,6 +2386,22 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "children-body-default-nullish-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -2488,6 +2538,54 @@
         "text"
       ]
     },
+    "children-markup-nullish-memo": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-markup-nullish-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-markup-nullish-seed-bindings": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "children-named-local-escaped": {
       "kinds": [
         "array-method",
@@ -2582,6 +2680,21 @@
       "axes": [
         "literal:string",
         "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-param-default-nullish-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"
@@ -3018,6 +3131,42 @@
       ],
       "axes": [
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-returns-function": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-const-iife-returns-function-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:||"
       ],
       "contexts": [
         "text"
@@ -13544,6 +13693,52 @@
         "text"
       ]
     },
+    "module-const-iife-nested-call": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-nested-call-client": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-iife-reads-module-const": {
       "kinds": [
         "identifier",
@@ -13635,6 +13830,48 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "module-const-iife-write-body": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "module-const-iife-write-body-client": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -16404,6 +16641,23 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "nullish-seed-over-unknown-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
