@@ -18,6 +18,7 @@ import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
+import { codeSafeStringLiteral } from '../js-string-literal.ts'
 
 /** Expressions that render nothing (0 DOM nodes) — `&&` / `?:` empty branches. */
 const EMPTY_RENDER_EXPRS = new Set(['null', 'undefined', 'false', "''", '""', '``'])
@@ -560,7 +561,7 @@ function componentInitPropValue(prop: Pick<IRProp, 'name' | 'value'>, ctx: Clien
     case 'spread':
       return { expr: expandDynamicPropValue(attrValueToString(prop.value)!, ctx), getter: true }
     case 'literal':
-      return { expr: JSON.stringify(prop.value.value), getter: false }
+      return { expr: codeSafeStringLiteral(prop.value.value), getter: false }
     case 'boolean-shorthand':
     case 'boolean-attr':
       // `boolean-attr` should not reach here for component props
@@ -1099,7 +1100,7 @@ export function collectElements(
       // which JSON-stringifies the literal value for the same reason.
       const v = p.valueProp.value
       const valueExpr = v.kind === 'literal'
-        ? JSON.stringify(v.value)
+        ? codeSafeStringLiteral(v.value)
         : (attrValueToString(v) ?? '')
       ctx.providerSetups.push({
         contextName: p.contextName,

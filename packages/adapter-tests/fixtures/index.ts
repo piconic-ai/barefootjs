@@ -1253,6 +1253,9 @@ import { fixture as selectLoopSelected } from './select-loop-selected'
 // selected" via a hidden placeholder option, instead of the browser's
 // implicit first-option default that then disagreed with hydration.
 import { fixture as selectValueNoMatchSsr } from './select-value-no-match-ssr'
+import { fixture as selectValueMarkupLiteral } from './select-value-markup-literal'
+import { fixture as spreadClosedRestMarkupFallback } from './spread-closed-rest-markup-fallback'
+import { fixture as loopDestructureMarkupKey } from './loop-destructure-markup-key'
 // Companion to the above: a `multiple` select already has no implicit
 // default to disagree with, so the placeholder must NOT be injected there.
 import { fixture as selectMultipleValueNoMatchSsr } from './select-multiple-value-no-match-ssr'
@@ -2838,6 +2841,9 @@ export const jsxFixtures: JSXFixture[] = [
   selectValueSsr,
   selectLoopSelected,
   selectValueNoMatchSsr,
+  selectValueMarkupLiteral,
+  spreadClosedRestMarkupFallback,
+  loopDestructureMarkupKey,
   selectMultipleValueNoMatchSsr,
   selectValueOmittedOptionSsr,
   textareaValueSsr,

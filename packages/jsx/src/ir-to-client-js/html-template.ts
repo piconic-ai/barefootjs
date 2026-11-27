@@ -380,7 +380,7 @@ function transformKeyValue(value: AttrValue, transformExpr: (expr: JsSourceText,
     case 'template':
       return transformExpr(attrValueToString(value, { useTemplate: true }) ?? '')
     case 'literal':
-      return JSON.stringify(value.value)
+      return codeSafeStringLiteral(value.value)
     case 'boolean-shorthand':
     case 'boolean-attr':
       return 'true'
@@ -632,13 +632,13 @@ function buildSpreadAttrsMergeCall(args: {
       objMembers.push(`...(${spreadExprFor(v)})`)
       continue
     }
-    const memberKey = JSON.stringify(toHtmlAttrName(a.name))
+    const memberKey = codeSafeStringLiteral(toHtmlAttrName(a.name))
     switch (v.kind) {
       case 'boolean-attr':
         objMembers.push(`${memberKey}: true`)
         break
       case 'literal':
-        objMembers.push(`${memberKey}: ${JSON.stringify(v.value)}`)
+        objMembers.push(`${memberKey}: ${codeSafeStringLiteral(v.value)}`)
         break
       case 'expression':
         objMembers.push(`${memberKey}: ${expressionExprFor(v)}`)
@@ -655,7 +655,7 @@ function buildSpreadAttrsMergeCall(args: {
     // later `for`, `IRAttribute.spreadAliasShadows`) is cleared, so the
     // attribute renders once, with this later write. `void 0`, not
     // `undefined`, which the author's scope may bind.
-    for (const key of a.spreadAliasShadows ?? []) objMembers.push(`${JSON.stringify(key)}: void 0`)
+    for (const key of a.spreadAliasShadows ?? []) objMembers.push(`${codeSafeStringLiteral(key)}: void 0`)
   }
   return `\${spreadAttrs({${objMembers.join(', ')}})}`
 }
@@ -749,7 +749,7 @@ export function flatMapLeafKeyExpr(ir: IRNode): string | null {
     case 'expression':
       return `(${keyAttr.value.expr})`
     case 'literal':
-      return JSON.stringify(keyAttr.value.value)
+      return codeSafeStringLiteral(keyAttr.value.value)
     case 'template':
       return attrValueToString(keyAttr.value)
     default:
@@ -1030,7 +1030,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
                 : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
-              return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
+              return `${quotePropName(p.name)}: ${codeSafeStringLiteral(p.value.value)}`
             case 'boolean-shorthand':
               return `${quotePropName(p.name)}: true`
             case 'boolean-attr':
@@ -1705,7 +1705,7 @@ function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
               return `get ${quotePropName(p.name)}() { return ${jsxExpr} }`
             }
             case 'literal':
-              return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value.value)} }`
+              return `get ${quotePropName(p.name)}() { return ${codeSafeStringLiteral(p.value.value)} }`
             case 'boolean-shorthand':
             case 'boolean-attr':
               return `get ${quotePropName(p.name)}() { return true }`
@@ -1739,7 +1739,7 @@ function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
 
     case 'text':
       if (!node.value.trim()) return []
-      return [JSON.stringify(node.value)]
+      return [codeSafeStringLiteral(node.value)]
 
     case 'element': {
       const html = `\`${irToHtmlTemplate(node)}\``
@@ -2254,7 +2254,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
                 : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
-              return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
+              return `${quotePropName(p.name)}: ${codeSafeStringLiteral(p.value.value)}`
             case 'boolean-shorthand':
             case 'boolean-attr':
               return `${quotePropName(p.name)}: true`
@@ -2976,7 +2976,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
                 : `${quotePropName(p.name)}: bfMarkup(\`${childHtml}\`)`
             }
             case 'literal':
-              return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
+              return `${quotePropName(p.name)}: ${codeSafeStringLiteral(p.value.value)}`
             case 'boolean-shorthand':
             case 'boolean-attr':
               return `${quotePropName(p.name)}: true`

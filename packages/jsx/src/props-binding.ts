@@ -4,6 +4,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
 import { parsePropReadInitializer } from './ir-to-client-js/prune-unused-prop-extractions.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
+import { codeSafeStringLiteral } from './js-string-literal.ts'
 
 /**
  * Authoritative IdentifierName classification for a destructure-pattern
@@ -49,7 +50,7 @@ export function propsDestructureBinding(p: ParamInfo): string {
   const localName = p.name
   const binding = callerKey === localName
     ? localName
-    : `${isIdentifierName(callerKey) ? callerKey : JSON.stringify(callerKey)}: ${localName}`
+    : `${isIdentifierName(callerKey) ? callerKey : codeSafeStringLiteral(callerKey)}: ${localName}`
   return p.defaultValue ? `${binding} = ${p.defaultValue}` : binding
 }
 

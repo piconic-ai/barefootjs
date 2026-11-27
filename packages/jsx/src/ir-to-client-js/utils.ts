@@ -11,6 +11,7 @@ import { walkWithScope } from '../scope/lexical-scope-walk.ts'
 import { BindingScope, type LoopBindingSource } from '../scope/binding-scope.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { templatePartsToJsExpr } from '../template-parts.ts'
+import { codeSafeStringLiteral, codeSafeStringArray } from '../js-string-literal.ts'
 import {
   iterateJsTokens,
   isIdentifierLikeToken,
@@ -183,7 +184,7 @@ export const keyAttrName = sharedKeyAttrName
 export function mapArrayKeyArgs(bfIdArg: string, keyed: boolean, loopDepth: number): string {
   if (!keyed || loopDepth <= 0) return bfIdArg
   const bfIdSlot = bfIdArg || ', undefined'
-  return `${bfIdSlot}, ${JSON.stringify(keyAttrName(loopDepth))}`
+  return `${bfIdSlot}, ${codeSafeStringLiteral(keyAttrName(loopDepth))}`
 }
 
 /**
@@ -213,19 +214,9 @@ export function profileBindingId(componentName: string | undefined, slotId: stri
   return `, ${codeSafeStringLiteral(`${componentName}#binding:${slotId}`)}`
 }
 
-/**
- * A double-quoted JS string literal that is safe to splice into emitted code
- * wherever it lands. `JSON.stringify` alone leaves `<`, `>` and `/` raw (a
- * `</script>` closes an inline script) and, before ES2019, U+2028 / U+2029
- * ended a string literal. Those are escaped as `\uXXXX`, which evaluates to the
- * same string, so a value without them prints exactly as `JSON.stringify` did.
- */
-export function codeSafeStringLiteral(value: string): string {
-  return JSON.stringify(value).replace(
-    /[<>/\u2028\u2029]/g,
-    ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`,
-  )
-}
+// Every JS string literal the emitter spells goes through this one helper
+// (`../js-string-literal.ts`); re-exported here for the emitter's imports.
+export { codeSafeStringLiteral, codeSafeStringArray }
 
 /**
  * Convert a `template` variant's parts into a JS template-literal string.
@@ -415,7 +406,7 @@ export function quotePropName(name: string): string {
   if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
     return name
   }
-  return JSON.stringify(name)
+  return codeSafeStringLiteral(name)
 }
 
 // toHtmlAttrName is now re-exported from @barefootjs/shared (classifyDOMProp's
@@ -435,7 +426,7 @@ export function quotePropName(name: string): string {
  * no path is left unattributed.
  */
 export function wrapHandlerForTurn(handler: JsSourceText, handlerId: string, loc?: string): string {
-  const idArg = loc ? `${JSON.stringify(handlerId)}, ${JSON.stringify(loc)}` : JSON.stringify(handlerId)
+  const idArg = loc ? `${codeSafeStringLiteral(handlerId)}, ${codeSafeStringLiteral(loc)}` : codeSafeStringLiteral(handlerId)
   return `(...__bfa) => { beginTurn(${idArg}); try { return (${handler.trim()})(...__bfa) } finally { endTurn() } }`
 }
 
@@ -699,7 +690,7 @@ function renderLoopBindingAccess(b: LoopParamBinding, base: string): string {
     const parts = b.rest.exclude.map((e, i) => {
       return e.isIdent
         ? `${e.key}: __bfR${i}`
-        : `${JSON.stringify(e.key)}: __bfR${i}`
+        : `${codeSafeStringLiteral(e.key)}: __bfR${i}`
     }).join(', ')
     return `(({ ${parts}, ...__bfRest }) => __bfRest)(${parent})`
   }

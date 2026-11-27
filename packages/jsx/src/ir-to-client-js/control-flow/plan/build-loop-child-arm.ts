@@ -87,6 +87,7 @@ import type {
   LoopChildArmPlan,
   LoopChildConditionalPlan,
 } from './loop-child-arm.ts'
+import { codeSafeStringLiteral } from '../../../js-string-literal.ts'
 
 export interface BuildBranchEventBindingsArgs {
   events: readonly ConditionalBranchEvent[] | undefined
@@ -194,7 +195,7 @@ export function buildBranchChildComponentInitsPlan(
       }
       switch (p.value.kind) {
         case 'literal':
-          return { expr: JSON.stringify(p.value.value), getter: true }
+          return { expr: codeSafeStringLiteral(p.value.value), getter: true }
         case 'boolean-shorthand':
         case 'boolean-attr':
           return { expr: 'true', getter: true }

@@ -30,6 +30,7 @@ import type {
   MemoEmitPlan,
   SignalEmitPlan,
 } from '../plan/declaration-emit.ts'
+import { codeSafeStringLiteral } from '../../js-string-literal.ts'
 
 export function stringifyDeclarationEmit(
   lines: string[],
@@ -61,7 +62,7 @@ function emitConstant(lines: string[], plan: ConstantEmitPlan): void {
 
 /** Profile-mode trailing `__bfId` argument (`, "Comp#signal:x"`), or '' when off. */
 function bfIdArg(bfId: string | undefined): string {
-  return bfId ? `, ${JSON.stringify(bfId)}` : ''
+  return bfId ? `, ${codeSafeStringLiteral(bfId)}` : ''
 }
 
 function emitSignal(lines: string[], plan: SignalEmitPlan): void {

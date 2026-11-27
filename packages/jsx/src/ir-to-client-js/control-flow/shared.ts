@@ -29,6 +29,7 @@ import {
   extractFreeIdentifiersFromStatementText,
   extractFreeIdentifiersFromTemplateText,
 } from '../csr-substitute.ts'
+import { codeSafeStringLiteral } from '../../js-string-literal.ts'
 
 /**
  * Build the `keyFn` argument for mapArray / mapArrayAnchored. `null` when
@@ -301,7 +302,7 @@ export function buildComponentPropsExpr(
     switch (p.value.kind) {
       case 'literal':
         // Literal string values must NOT be wrapped — they don't reference loop params
-        return { expr: JSON.stringify(p.value.value), getter: true }
+        return { expr: codeSafeStringLiteral(p.value.value), getter: true }
       case 'boolean-shorthand':
       case 'boolean-attr':
         return { expr: 'true', getter: true }

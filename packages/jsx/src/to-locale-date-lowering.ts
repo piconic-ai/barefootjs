@@ -64,6 +64,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import type { LoweringNode, LoweringPlugin } from './lowering-registry.ts'
 import { resolveReceiverType, baseTypeName } from './rich-type-evidence.ts'
 import { typeReachesDate } from './date-lowering.ts'
+import { codeSafeStringLiteral, codeSafeStringArray } from './js-string-literal.ts'
 
 /**
  * `timeZone` literals the lowering admits without probing: `'UTC'` or a
@@ -610,14 +611,14 @@ export function lowerToLocaleDateStringOnDate(
  * raw rather than guessing).
  */
 export function foldedArgToClientJs(arg: ParsedExpr, localeText: string): string | null {
-  if (arg.kind === 'literal') return JSON.stringify(arg.value)
+  if (arg.kind === 'literal') return codeSafeStringLiteral(String(arg.value))
   if (arg.kind === 'array-literal') {
     const values: string[] = []
     for (const el of arg.elements) {
       if (el.kind !== 'literal') return null
       values.push(String(el.value))
     }
-    return JSON.stringify(values)
+    return codeSafeStringArray(values)
   }
   if (arg.kind !== 'conditional') return null
   const t = arg.test
@@ -627,7 +628,7 @@ export function foldedArgToClientJs(arg: ParsedExpr, localeText: string): string
   const cons = foldedArgToClientJs(arg.consequent, localeText)
   const rest = foldedArgToClientJs(arg.alternate, localeText)
   if (cons === null || rest === null) return null
-  return `${localeText} === ${JSON.stringify(t.right.value)} ? ${cons} : ${rest}`
+  return `${localeText} === ${codeSafeStringLiteral(String(t.right.value))} ? ${cons} : ${rest}`
 }
 
 export const toLocaleDatePlugin: LoweringPlugin = {

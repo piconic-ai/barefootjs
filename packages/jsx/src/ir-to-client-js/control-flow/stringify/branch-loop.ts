@@ -20,6 +20,7 @@ import type {
   BranchLoopPlan,
   BranchPlainLoopPlan,
 } from '../plan/branch-loop.ts'
+import { codeSafeStringLiteral } from '../../../js-string-literal.ts'
 
 export function stringifyBranchLoop(lines: string[], plan: BranchLoopPlan): void {
   // The container query runs first regardless of kind so the
@@ -62,7 +63,7 @@ function emitPlain(lines: string[], plan: BranchPlainLoopPlan): void {
     preambleRegions,
   } = plan
 
-  const loopBfId = profileLoopId ? `, ${JSON.stringify(profileLoopId)}` : ''
+  const loopBfId = profileLoopId ? `, ${codeSafeStringLiteral(profileLoopId)}` : ''
   const unwrapInline = paramUnwrap ? `${paramUnwrap} ` : ''
 
   // Wrap the mapArray() in a disposable effect so the inner createEffect

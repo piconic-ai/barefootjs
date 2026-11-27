@@ -163,7 +163,7 @@ export function C() {
   test('the string value is a code-safe literal', () => {
     const ir = irOf(`${open}
 export function C({ ...rest }: P) { return <p title="</b> &amp; x" {...rest}>x</p> }`)
-    expect(attrOf(elementOf(ir, 'p'), 'title').spreadOverridable?.expr).toBe('rest.title == null ? "\\u003c\\u002fb\\u003e & x" : undefined')
+    expect(attrOf(elementOf(ir, 'p'), 'title').spreadOverridable?.expr).toBe('rest.title == null ? "\\u003c/b> & x" : undefined')
   })
 })
 
