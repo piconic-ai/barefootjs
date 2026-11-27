@@ -28,6 +28,7 @@ import type {
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { nodeContainsJsx } from './reactivity-checker.ts'
+import type { ModuleArraySpread } from './module-array-spread.ts'
 import { sourceFactsOf } from './source-facts.ts'
 
 /**
@@ -158,6 +159,13 @@ export interface AnalyzerContext {
    * runtime ReferenceError (#1409 follow-up).
    */
   inlineableJsxConsts: Map<string, ts.Expression>
+  /**
+   * The module-scope consts whose array literal initializer has a spread
+   * element, in declaration order, with that literal: `validateContext`
+   * expands the spreads it can resolve in their `parsed` trees once every
+   * const is collected and marked (`expandModuleArraySpreads`, #3979).
+   */
+  moduleArraySpreads: ModuleArraySpread[]
   /** Maps function names to their JSX return AST and parameter names (#569) */
   jsxFunctions: Map<string, {
     jsxReturn: ts.JsxElement | ts.JsxSelfClosingElement | ts.JsxFragment
@@ -313,6 +321,7 @@ export function createAnalyzerContext(
     typeDefinitions: [],
     jsxConstants: new Map(),
     inlineableJsxConsts: new Map(),
+    moduleArraySpreads: [],
     jsxFunctions: new Map(),
     jsxMultiReturnFunctions: new Map(),
     reactiveFactories: new Map(),

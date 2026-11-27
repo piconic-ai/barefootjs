@@ -39,6 +39,9 @@ export const renderDivergences: RenderDivergences = {
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
+  // A module array const spreading a value no compile-time evaluator
+  // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
+  'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },
   // A key an open spread and another attribute or spread both write renders
   // twice (an expression or template value before the spread, an attribute
   // after it, two spreads), and an explicit `null` bag value renders the

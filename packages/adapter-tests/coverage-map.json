@@ -12903,6 +12903,21 @@
         "text"
       ]
     },
+    "module-const-array-member-signal-seed": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-array-method-call": {
       "kinds": [
         "array-literal",
@@ -12965,6 +12980,156 @@
       ]
     },
     "module-const-array-seed-no-generic": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-spread-child-array-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-spread-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-array-spread-in-place": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-array-spread-loop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-spread-memo": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-array-spread-object-rows": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-spread-signal-seed": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-array-spread-unresolved": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-array-spread-whole-seed": {
       "kinds": [
         "array-literal",
         "call",
