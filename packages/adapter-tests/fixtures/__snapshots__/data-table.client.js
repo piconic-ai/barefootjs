@@ -252,7 +252,7 @@ export function initCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -262,7 +262,7 @@ hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['check']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -284,29 +284,7 @@ hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttr
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['check']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['check']) + '"' : ''}></path></svg>` })
+}))}` })
 export function CheckIcon(_p, __bfKey) { return createComponent('CheckIcon', _p, __bfKey) }
 export function initChevronDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -360,7 +338,7 @@ export function initChevronDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -370,7 +348,7 @@ hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-down']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -392,29 +370,7 @@ hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg 
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-down']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-down']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ChevronDownIcon(_p, __bfKey) { return createComponent('ChevronDownIcon', _p, __bfKey) }
 export function initChevronUpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -468,7 +424,7 @@ export function initChevronUpIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -478,7 +434,7 @@ hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-up']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-up']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -500,29 +456,7 @@ hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${sp
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-up']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-up']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ChevronUpIcon(_p, __bfKey) { return createComponent('ChevronUpIcon', _p, __bfKey) }
 export function initChevronLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -576,7 +510,7 @@ export function initChevronLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -586,7 +520,7 @@ hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-left']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -608,29 +542,7 @@ hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg 
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-left']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-left']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ChevronLeftIcon(_p, __bfKey) { return createComponent('ChevronLeftIcon', _p, __bfKey) }
 export function initChevronRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -684,7 +596,7 @@ export function initChevronRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -694,7 +606,7 @@ hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['chevron-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['chevron-right']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -716,29 +628,7 @@ hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<sv
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-right']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['chevron-right']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ChevronRightIcon(_p, __bfKey) { return createComponent('ChevronRightIcon', _p, __bfKey) }
 export function initXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -792,7 +682,7 @@ export function initXIcon(__scope, _p = {}) {
 
 }
 
-hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('XIcon', { init: initXIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -802,7 +692,7 @@ hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmln
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['x']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['x']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -824,29 +714,7 @@ hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmln
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['x']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['x']) + '"' : ''}></path></svg>` })
+}))}` })
 export function XIcon(_p, __bfKey) { return createComponent('XIcon', _p, __bfKey) }
 export function initPlusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -900,7 +768,7 @@ export function initPlusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -910,7 +778,7 @@ hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['plus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['plus']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -932,29 +800,7 @@ hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['plus']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['plus']) + '"' : ''}></path></svg>` })
+}))}` })
 export function PlusIcon(_p, __bfKey) { return createComponent('PlusIcon', _p, __bfKey) }
 export function initMinusIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1008,7 +854,7 @@ export function initMinusIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1018,7 +864,7 @@ hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['minus']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['minus']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1040,29 +886,7 @@ hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttr
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['minus']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['minus']) + '"' : ''}></path></svg>` })
+}))}` })
 export function MinusIcon(_p, __bfKey) { return createComponent('MinusIcon', _p, __bfKey) }
 export function initSunIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1116,7 +940,7 @@ export function initSunIcon(__scope, _p = {}) {
 
 }
 
-hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('SunIcon', { init: initSunIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1126,7 +950,7 @@ hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['sun']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['sun']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1148,29 +972,7 @@ hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['sun']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['sun']) + '"' : ''}></path></svg>` })
+}))}` })
 export function SunIcon(_p, __bfKey) { return createComponent('SunIcon', _p, __bfKey) }
 export function initMoonIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1224,7 +1026,7 @@ export function initMoonIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1234,7 +1036,7 @@ hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['moon']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['moon']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1256,29 +1058,7 @@ hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['moon']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['moon']) + '"' : ''}></path></svg>` })
+}))}` })
 export function MoonIcon(_p, __bfKey) { return createComponent('MoonIcon', _p, __bfKey) }
 export function initMonitorIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1332,7 +1112,7 @@ export function initMonitorIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1342,7 +1122,7 @@ hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spread
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['monitor']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['monitor']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1364,29 +1144,7 @@ hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spread
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['monitor']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['monitor']) + '"' : ''}></path></svg>` })
+}))}` })
 export function MonitorIcon(_p, __bfKey) { return createComponent('MonitorIcon', _p, __bfKey) }
 export function initCopyIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1440,7 +1198,7 @@ export function initCopyIcon(__scope, _p = {}) {
 
 }
 
-hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1450,7 +1208,7 @@ hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['copy']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['copy']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1472,29 +1230,7 @@ hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['copy']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['copy']) + '"' : ''}></path></svg>` })
+}))}` })
 export function CopyIcon(_p, __bfKey) { return createComponent('CopyIcon', _p, __bfKey) }
 export function initClipboardIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1548,7 +1284,7 @@ export function initClipboardIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1558,7 +1294,7 @@ hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1580,29 +1316,7 @@ hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${sp
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ClipboardIcon(_p, __bfKey) { return createComponent('ClipboardIcon', _p, __bfKey) }
 export function initClipboardCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1656,7 +1370,7 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1666,7 +1380,7 @@ hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['clipboard-check']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['clipboard-check']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1688,29 +1402,7 @@ hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => 
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard-check']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['clipboard-check']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ClipboardCheckIcon(_p, __bfKey) { return createComponent('ClipboardCheckIcon', _p, __bfKey) }
 export function initMenuIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1764,7 +1456,7 @@ export function initMenuIcon(__scope, _p = {}) {
 
 }
 
-hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1774,7 +1466,7 @@ hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['menu']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['menu']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1796,29 +1488,7 @@ hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs(
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['menu']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['menu']) + '"' : ''}></path></svg>` })
+}))}` })
 export function MenuIcon(_p, __bfKey) { return createComponent('MenuIcon', _p, __bfKey) }
 export function initArrowLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1872,7 +1542,7 @@ export function initArrowLeftIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1882,7 +1552,7 @@ hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-left']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-left']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1904,29 +1574,7 @@ hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${sp
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-left']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-left']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ArrowLeftIcon(_p, __bfKey) { return createComponent('ArrowLeftIcon', _p, __bfKey) }
 export function initArrowRightIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -1980,7 +1628,7 @@ export function initArrowRightIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -1990,7 +1638,7 @@ hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-right']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-right']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -2012,29 +1660,7 @@ hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-right']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-right']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ArrowRightIcon(_p, __bfKey) { return createComponent('ArrowRightIcon', _p, __bfKey) }
 export function initArrowUpDownIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2088,7 +1714,7 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
 
 }
 
-hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2098,7 +1724,7 @@ hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['arrow-up-down']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['arrow-up-down']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -2120,29 +1746,7 @@ hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg 
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-up-down']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['arrow-up-down']) + '"' : ''}></path></svg>` })
+}))}` })
 export function ArrowUpDownIcon(_p, __bfKey) { return createComponent('ArrowUpDownIcon', _p, __bfKey) }
 export function initEllipsisIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2729,7 +2333,7 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
 
 }
 
-hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
+hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `${((__bf_const_strokePaths) => `<svg ${spreadAttrs({"xmlns": "http://www.w3.org/2000/svg", ...((_p.size ? { width: ({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2739,7 +2343,7 @@ hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${((__bf_const_strokePaths)['loader-circle']) != null ? 'd="' + escapeAttr((__bf_const_strokePaths)['loader-circle']) + '"' : ''}></path></svg>`)(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -2761,29 +2365,7 @@ hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<sv
   'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
   'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['loader-circle']) != null ? 'd="' + escapeAttr(({
-  'check': 'M20 6 9 17l-5-5',
-  'chevron-down': 'm6 9 6 6 6-6',
-  'chevron-up': 'm18 15-6-6-6 6',
-  'chevron-left': 'm15 18-6-6 6-6',
-  'chevron-right': 'm9 18 6-6-6-6',
-  'x': 'M18 6 6 18M6 6l12 12',
-  'plus': 'M5 12h14M12 5v14',
-  'minus': 'M5 12h14',
-  'sun': 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
-  'moon': 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
-  'monitor': 'M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4',
-  'copy': 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z',
-  'clipboard': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2',
-  'clipboard-check': 'M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4',
-  'menu': 'M4 6h16M4 12h16M4 18h16',
-  'arrow-left': 'm12 19-7-7 7-7M19 12H5',
-  'arrow-right': 'M5 12h14m-7-7 7 7-7 7',
-  'ellipsis': 'M5 12h.01M12 12h.01M19 12h.01',
-  'arrow-up-down': 'm21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16',
-  'panel-left': 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18',
-  'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
-})['loader-circle']) + '"' : ''}></path></svg>` })
+}))}` })
 export function LoaderCircleIcon(_p, __bfKey) { return createComponent('LoaderCircleIcon', _p, __bfKey) }
 export function initPanelLeftIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3293,7 +2875,7 @@ export function initCheckbox(__scope, _p = {}) {
   if (_s2) _s2.addEventListener('click', handleClick)
 }
 
-hydrate('Checkbox', { init: initCheckbox, template: (_p) => `<button data-slot="checkbox" ${(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) != null ? 'data-state="' + escapeAttr(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) + '"' : ''} role="checkbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) != null ? 'aria-checked="' + escapeAttr(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) + '"' : ''} ${_p.error ? 'aria-invalid' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${([
+hydrate('Checkbox', { init: initCheckbox, template: (_p) => `${((__bf_const_stateClasses) => `<button data-slot="checkbox" ${(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) != null ? 'data-state="' + escapeAttr(`${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? 'checked' : 'unchecked'}`) + '"' : ''} role="checkbox" ${(_p.id) != null ? 'id="' + escapeAttr(_p.id) + '"' : ''} ${(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) != null ? 'aria-checked="' + escapeAttr(((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false))) + '"' : ''} ${_p.error ? 'aria-invalid' : ''} ${_p.disabled ?? false ? 'disabled' : ''} ${((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${(__bf_const_stateClasses)} ${_p.className ?? ''} grid place-content-center`)) != null ? 'class="' + escapeAttr((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${(__bf_const_stateClasses)} ${_p.className ?? ''} grid place-content-center`)) + '"' : ''} bf="s2">${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? `<!--bf-cond-start:s0-->${renderChild('CheckIcon', {"data-slot": "checkbox-indicator", className: "size-3.5 text-current"}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}</button>`)(([
   // Unchecked state
   '[&[data-state=unchecked]]:border-input',
   'dark:[&[data-state=unchecked]]:bg-input/30',
@@ -3302,16 +2884,7 @@ hydrate('Checkbox', { init: initCheckbox, template: (_p) => `<button data-slot="
   '[&[data-state=checked]]:bg-primary',
   '[&[data-state=checked]]:text-primary-foreground',
   '[&[data-state=checked]]:border-primary',
-].join(' '))} ${_p.className ?? ''} grid place-content-center`)) != null ? 'class="' + escapeAttr((`${('peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50')} ${('focus-visible:border-ring focus-visible:ring-ring/50')} ${('aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive')} ${([
-  // Unchecked state
-  '[&[data-state=unchecked]]:border-input',
-  'dark:[&[data-state=unchecked]]:bg-input/30',
-  '[&[data-state=unchecked]]:bg-background',
-  // Checked state
-  '[&[data-state=checked]]:bg-primary',
-  '[&[data-state=checked]]:text-primary-foreground',
-  '[&[data-state=checked]]:border-primary',
-].join(' '))} ${_p.className ?? ''} grid place-content-center`)) + '"' : ''} bf="s2">${((_p.checked !== undefined) ? (_p.checked ?? undefined) : (_p.defaultChecked ?? false)) ? `<!--bf-cond-start:s0-->${renderChild('CheckIcon', {"data-slot": "checkbox-indicator", className: "size-3.5 text-current"}, undefined, 's1')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0--><!--bf-cond-end:s0-->`}</button>` })
+].join(' ')))}` })
 export function Checkbox(_p, __bfKey) { return createComponent('Checkbox', _p, __bfKey) }
 export function initDataTablePreviewDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3407,24 +2980,12 @@ export function initDataTablePreviewDemo(__scope, _p = {}) {
 
 }
 
-hydrate('DataTablePreviewDemo', { init: initDataTablePreviewDemo, template: (_p) => `<div class="w-full">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's0')}${renderChild('TableHead', {children: `${renderChild('DataTableColumnHeader', {title: "Status", sorted: (null) === 'status' ? ('asc') : false}, undefined, 's1')}`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `${renderChild('DataTableColumnHeader', {title: "Amount", sorted: (null) === 'amount' ? ('asc') : false}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${((() => {
+hydrate('DataTablePreviewDemo', { init: initDataTablePreviewDemo, template: (_p) => `${((__bf_const_payments) => `<div class="w-full">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's0')}${renderChild('TableHead', {children: `${renderChild('DataTableColumnHeader', {title: "Status", sorted: (null) === 'status' ? ('asc') : false}, undefined, 's1')}`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `${renderChild('DataTableColumnHeader', {title: "Amount", sorted: (null) === 'amount' ? ('asc') : false}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${((() => {
     const key = (null)
-    if (!key) return ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])
+    if (!key) return (__bf_const_payments)
 
     const dir = ('asc')
-    return /* @client */ [...([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])].sort((a, b) => {
+    return /* @client */ [...(__bf_const_payments)].sort((a, b) => {
       const aVal = a[key]
       const bVal = b[key]
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -3434,7 +2995,13 @@ hydrate('DataTablePreviewDemo', { init: initDataTablePreviewDemo, template: (_p)
       const bStr = String(bVal)
       return dir === 'asc' ? (aStr < bStr ? -1 : aStr > bStr ? 1 : 0) : (aStr > bStr ? -1 : aStr < bStr ? 1 : 0)
     })
-  })()).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s8-->${escapeText(payment.id)}<!--/-->`}, undefined, 's9')}${renderChild('TableCell', {children: `<!--bf:^s10-->${escapeText(payment.status)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.email)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s14-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's15')}`}, payment.id, 's16', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's17')}`}, undefined, 's18')}</div>` })
+  })()).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s8-->${escapeText(payment.id)}<!--/-->`}, undefined, 's9')}${renderChild('TableCell', {children: `<!--bf:^s10-->${escapeText(payment.status)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.email)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s14-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's15')}`}, payment.id, 's16', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's17')}`}, undefined, 's18')}</div>`)(([
+  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
+  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
+  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
+  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
+  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
+]))}` })
 export function DataTablePreviewDemo(_p, __bfKey) { return createComponent('DataTablePreviewDemo', _p, __bfKey) }
 export function initDataTableUsageDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3563,24 +3130,12 @@ export function initDataTableUsageDemo(__scope, _p = {}) {
 
 }
 
-hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => `<div class="w-full space-y-4">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's0')}${renderChild('TableHead', {children: `${renderChild('DataTableColumnHeader', {title: "Status", sorted: (null) === 'status' ? ('asc') : false}, undefined, 's1')}`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `${renderChild('DataTableColumnHeader', {title: "Amount", sorted: (null) === 'amount' ? ('asc') : false}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${(((() => {
+hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => `${((__bf_const_payments) => `<div class="w-full space-y-4">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[100px]", children: `ID`}, undefined, 's0')}${renderChild('TableHead', {children: `${renderChild('DataTableColumnHeader', {title: "Status", sorted: (null) === 'status' ? ('asc') : false}, undefined, 's1')}`}, undefined, 's2')}${renderChild('TableHead', {children: `Email`}, undefined, 's3')}${renderChild('TableHead', {className: "text-right", children: `${renderChild('DataTableColumnHeader', {title: "Amount", sorted: (null) === 'amount' ? ('asc') : false}, undefined, 's4')}`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${(((() => {
     const key = (null)
-    if (!key) return ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])
+    if (!key) return (__bf_const_payments)
 
     const dir = ('asc')
-    return /* @client */ [...([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])].sort((a, b) => {
+    return /* @client */ [...(__bf_const_payments)].sort((a, b) => {
       const aVal = a[key]
       const bVal = b[key]
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -3592,22 +3147,10 @@ hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => 
     })
   })()).slice((0) * (3), ((0) + 1) * (3))).map((payment) => `${renderChild('TableRow', {children: `${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s8-->${escapeText(payment.id)}<!--/-->`}, undefined, 's9')}${renderChild('TableCell', {children: `<!--bf:^s10-->${escapeText(payment.status)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.email)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s14-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's15')}`}, payment.id, 's16', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's17')}`}, undefined, 's18')}${renderChild('DataTablePagination', {canPrev: (0) > 0, canNext: (0) < (Math.max(1, Math.ceil(((() => {
     const key = (null)
-    if (!key) return ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])
+    if (!key) return (__bf_const_payments)
 
     const dir = ('asc')
-    return /* @client */ [...([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])].sort((a, b) => {
+    return /* @client */ [...(__bf_const_payments)].sort((a, b) => {
       const aVal = a[key]
       const bVal = b[key]
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -3619,22 +3162,10 @@ hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => 
     })
   })()).length / (3)))) - 1, children: `Page <!--bf:^s19-->${escapeTextOrMarkup((0) + 1)}<!--/--> of <!--bf:^s20-->${escapeTextOrMarkup((Math.max(1, Math.ceil(((() => {
     const key = (null)
-    if (!key) return ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])
+    if (!key) return (__bf_const_payments)
 
     const dir = ('asc')
-    return /* @client */ [...([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-])].sort((a, b) => {
+    return /* @client */ [...(__bf_const_payments)].sort((a, b) => {
       const aVal = a[key]
       const bVal = b[key]
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -3644,7 +3175,13 @@ hydrate('DataTableUsageDemo', { init: initDataTableUsageDemo, template: (_p) => 
       const bStr = String(bVal)
       return dir === 'asc' ? (aStr < bStr ? -1 : aStr > bStr ? 1 : 0) : (aStr > bStr ? -1 : aStr < bStr ? 1 : 0)
     })
-  })()).length / (3)))))}<!--/-->`}, undefined, 's21')}</div>` })
+  })()).length / (3)))))}<!--/-->`}, undefined, 's21')}</div>`)(([
+  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
+  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
+  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
+  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
+  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
+]))}` })
 export function DataTableUsageDemo(_p, __bfKey) { return createComponent('DataTableUsageDemo', _p, __bfKey) }
 export function initDataTableFilteringDemo(__scope, _p = {}) {
   if (!__scope) return
@@ -3970,53 +3507,11 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
 
 }
 
-hydrate('DataTableSelectionDemo', { init: initDataTableSelectionDemo, template: (_p) => `<div class="w-full">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[40px]", children: `${renderChild('Checkbox', {checked: (((([
+hydrate('DataTableSelectionDemo', { init: initDataTableSelectionDemo, template: (_p) => `${((__bf_const_payments) => `<div class="w-full">${renderChild('Table', {children: `${renderChild('TableHeader', {children: `${renderChild('TableRow', {children: `${renderChild('TableHead', {className: "w-[40px]", children: `${renderChild('Checkbox', {checked: ((((__bf_const_payments).map(() => false)).filter(Boolean).length) === (__bf_const_payments).length && (__bf_const_payments).length > 0), "aria-label": "Select all"}, undefined, 's0')}`}, undefined, 's1')}${renderChild('TableHead', {children: `ID`}, undefined, 's2')}${renderChild('TableHead', {children: `Status`}, undefined, 's3')}${renderChild('TableHead', {children: `Email`}, undefined, 's4')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${(__bf_const_payments).map((payment, index) => `${renderChild('TableRow', {"data-state": ((__bf_const_payments).map(() => false))[index] ? 'selected' : undefined, children: `${renderChild('TableCell', {children: `${renderChild('Checkbox', {checked: ((__bf_const_payments).map(() => false))[index], "aria-label": `Select ${payment.id}`}, undefined, 's8')}`}, undefined, 's9')}${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s10-->${escapeText(payment.id)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.status)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {children: `<!--bf:^s14-->${escapeText(payment.email)}<!--/-->`}, undefined, 's15')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s16-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's17')}`}, payment.id, 's18', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's19')}`}, undefined, 's20')}<div class="py-4 text-sm text-muted-foreground" bf="s22"><!--bf:s21-->${escapeTextOrMarkup((((__bf_const_payments).map(() => false)).filter(Boolean).length))}<!--/--> of ${escapeText((__bf_const_payments).length)} row(s) selected.</div></div>`)(([
   { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
   { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
   { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
   { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
   { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false)).filter(Boolean).length) === ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).length && ([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).length > 0), "aria-label": "Select all"}, undefined, 's0')}`}, undefined, 's1')}${renderChild('TableHead', {children: `ID`}, undefined, 's2')}${renderChild('TableHead', {children: `Status`}, undefined, 's3')}${renderChild('TableHead', {children: `Email`}, undefined, 's4')}${renderChild('TableHead', {className: "text-right", children: `Amount`}, undefined, 's5')}`}, undefined, 's6')}`}, undefined, 's7')}${renderChild('TableBody', {children: `<!--bf-loop:l0-->${([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map((payment, index) => `${renderChild('TableRow', {"data-state": (([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false))[index] ? 'selected' : undefined, children: `${renderChild('TableCell', {children: `${renderChild('Checkbox', {checked: (([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false))[index], "aria-label": `Select ${payment.id}`}, undefined, 's8')}`}, undefined, 's9')}${renderChild('TableCell', {className: "font-medium", children: `<!--bf:^s10-->${escapeText(payment.id)}<!--/-->`}, undefined, 's11')}${renderChild('TableCell', {children: `<!--bf:^s12-->${escapeText(payment.status)}<!--/-->`}, undefined, 's13')}${renderChild('TableCell', {children: `<!--bf:^s14-->${escapeText(payment.email)}<!--/-->`}, undefined, 's15')}${renderChild('TableCell', {className: "text-right", children: `$<!--bf:^s16-->${escapeText(payment.amount.toFixed(2))}<!--/-->`}, undefined, 's17')}`}, payment.id, 's18', true)}`).join('')}<!--bf-/loop:l0-->`}, undefined, 's19')}`}, undefined, 's20')}<div class="py-4 text-sm text-muted-foreground" bf="s22"><!--bf:s21-->${escapeTextOrMarkup(((([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).map(() => false)).filter(Boolean).length))}<!--/--> of ${escapeText(([
-  { id: 'PAY001', amount: 316, status: 'success', email: 'ken99@example.com' },
-  { id: 'PAY002', amount: 242, status: 'success', email: 'abe45@example.com' },
-  { id: 'PAY003', amount: 837, status: 'processing', email: 'monserrat44@example.com' },
-  { id: 'PAY004', amount: 874, status: 'success', email: 'silas22@example.com' },
-  { id: 'PAY005', amount: 721, status: 'failed', email: 'carmella@example.com' },
-]).length)} row(s) selected.</div></div>` })
+]))}` })
 export function DataTableSelectionDemo(_p, __bfKey) { return createComponent('DataTableSelectionDemo', _p, __bfKey) }

@@ -207,15 +207,15 @@ export function initKeyedRowBranchCall(__scope, _p = {}) {
 
 }
 
-hydrate('KeyedRowBranchCall', { init: initKeyedRowBranchCall, template: (_p) => `<div><button type="button" class="slower" bf="s0">slower</button><button type="button" class="scale" bf="s1">scale</button><ol class="plain" bf="s3"><!--bf-loop:l0-->${([
+hydrate('KeyedRowBranchCall', { init: initKeyedRowBranchCall, template: (_p) => `${((__bf_const_fmt) => `<div><button type="button" class="slower" bf="s0">slower</button><button type="button" class="scale" bf="s1">scale</button><ol class="plain" bf="s3"><!--bf-loop:l0-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}"><!--bf:s2-->${escapeText((((((((fmt)))))))(row.wait))}<!--/--></li>`).join('')}<!--bf-/loop:l0--></ol><ol class="tern-call" bf="s6"><!--bf-loop:l1-->${([
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}"><!--bf:s2-->${escapeText((__bf_const_fmt)(row.wait))}<!--/--></li>`).join('')}<!--bf-/loop:l0--></ol><ol class="tern-call" bf="s6"><!--bf-loop:l1-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s4-->${escapeText('0s')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4--><!--bf:s5-->${escapeText((((((((fmt)))))))(row.wait))}<!--/--><!--bf-cond-end:s4-->`}</li>`).join('')}<!--bf-/loop:l1--></ol><ol class="tern-nocall" bf="s9"><!--bf-loop:l2-->${([
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s4-->${escapeText('0s')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4--><!--bf:s5-->${escapeText((__bf_const_fmt)(row.wait))}<!--/--><!--bf-cond-end:s4-->`}</li>`).join('')}<!--bf-/loop:l1--></ol><ol class="tern-nocall" bf="s9"><!--bf-loop:l2-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
@@ -223,7 +223,7 @@ hydrate('KeyedRowBranchCall', { init: initKeyedRowBranchCall, template: (_p) => 
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s10-->${escapeText('0s')}<!--bf-cond-end:s10-->` : `<!--bf-cond-start:s10--><!--bf:s11-->${escapeText(`+${(((((((fmt)))))))(row.wait)}`)}<!--/--><!--bf-cond-end:s10-->`}</li>`).join('')}<!--bf-/loop:l3--></ol><ol class="tern-declaration" bf="s15"><!--bf-loop:l4-->${([
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s10-->${escapeText('0s')}<!--bf-cond-end:s10-->` : `<!--bf-cond-start:s10--><!--bf:s11-->${escapeText(`+${(__bf_const_fmt)(row.wait)}`)}<!--/--><!--bf-cond-end:s10-->`}</li>`).join('')}<!--bf-/loop:l3--></ol><ol class="tern-declaration" bf="s15"><!--bf-loop:l4-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
@@ -231,17 +231,17 @@ hydrate('KeyedRowBranchCall', { init: initKeyedRowBranchCall, template: (_p) => 
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait > 0 ? `<!--bf-cond-start:s16--><!--bf:s17-->${escapeText((((((((fmt)))))))(row.wait))}<!--/--><!--bf-cond-end:s16-->` : `<!--bf-cond-start:s16--><!--bf-cond-end:s16-->`}</li>`).join('')}<!--bf-/loop:l5--></ol><ol class="nested" bf="s22"><!--bf-loop:l6-->${([
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait > 0 ? `<!--bf-cond-start:s16--><!--bf:s17-->${escapeText((__bf_const_fmt)(row.wait))}<!--/--><!--bf-cond-end:s16-->` : `<!--bf-cond-start:s16--><!--bf-cond-end:s16-->`}</li>`).join('')}<!--bf-/loop:l5--></ol><ol class="nested" bf="s22"><!--bf-loop:l6-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s19-->${escapeText('0s')}<!--bf-cond-end:s19-->` : `<!--bf-cond-start:s19-->${row.wait > 9000 ? `<!--bf-cond-start:s20-->${escapeText('long')}<!--bf-cond-end:s20-->` : `<!--bf-cond-start:s20--><!--bf:s21-->${escapeText((((((((fmt)))))))(row.wait))}<!--/--><!--bf-cond-end:s20-->`}<!--bf-cond-end:s19-->`}</li>`).join('')}<!--bf-/loop:l6--></ol><ol class="memo-destructured" bf="s25"><!--bf-loop:l7-->${(([
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s19-->${escapeText('0s')}<!--bf-cond-end:s19-->` : `<!--bf-cond-start:s19-->${row.wait > 9000 ? `<!--bf-cond-start:s20-->${escapeText('long')}<!--bf-cond-end:s20-->` : `<!--bf-cond-start:s20--><!--bf:s21-->${escapeText((__bf_const_fmt)(row.wait))}<!--/--><!--bf-cond-end:s20-->`}<!--bf-cond-end:s19-->`}</li>`).join('')}<!--bf-/loop:l6--></ol><ol class="memo-destructured" bf="s25"><!--bf-loop:l7-->${(([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ])).map(({ id, wait }, i) => `<li data-key="${escapeAttr(id)}">${wait === 0 ? `<!--bf-cond-start:s23-->${escapeText('0s')}<!--bf-cond-end:s23-->` : `<!--bf-cond-start:s23--><!--bf:s24-->${escapeText((((((((fmt)))))))(wait + i))}<!--/--><!--bf-cond-end:s23-->`}</li>`).join('')}<!--bf-/loop:l7--></ol><ol class="signal-in-call" bf="s28"><!--bf-loop:l8-->${([
+  ])).map(({ id, wait }, i) => `<li data-key="${escapeAttr(id)}">${wait === 0 ? `<!--bf-cond-start:s23-->${escapeText('0s')}<!--bf-cond-end:s23-->` : `<!--bf-cond-start:s23--><!--bf:s24-->${escapeText((__bf_const_fmt)(wait + i))}<!--/--><!--bf-cond-end:s23-->`}</li>`).join('')}<!--bf-/loop:l7--></ol><ol class="signal-in-call" bf="s28"><!--bf-loop:l8-->${([
     { id: 1, wait: 0 },
     { id: 2, wait: 500 },
     { id: 3, wait: 2000 },
-  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s26-->${escapeText('0s')}<!--bf-cond-end:s26-->` : `<!--bf-cond-start:s26--><!--bf:s27-->${escapeText((((((((fmt)))))))(row.wait * (1)))}<!--/--><!--bf-cond-end:s26-->`}</li>`).join('')}<!--bf-/loop:l8--></ol></div>` })
+  ]).map((row) => `<li data-key="${escapeAttr(row.id)}">${row.wait === 0 ? `<!--bf-cond-start:s26-->${escapeText('0s')}<!--bf-cond-end:s26-->` : `<!--bf-cond-start:s26--><!--bf:s27-->${escapeText((__bf_const_fmt)(row.wait * (1)))}<!--/--><!--bf-cond-end:s26-->`}</li>`).join('')}<!--bf-/loop:l8--></ol></div>`)((((((((fmt))))))))}` })
 export function KeyedRowBranchCall(_p, __bfKey) { return createComponent('KeyedRowBranchCall', _p, __bfKey) }

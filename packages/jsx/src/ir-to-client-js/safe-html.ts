@@ -215,6 +215,14 @@ export function mappedRowsMarkup(arrayExpr: string, method: string, params: stri
 }
 
 /**
+ * `\`body\`` — a compiled template-literal BODY (already-assembled HTML with
+ * `interp`ed holes) as a value, for `withOuterBindings` to close over (#4021).
+ */
+export function templateLiteralMarkup(body: string): SafeHtml {
+  return safeHtml(`\`${body}\``)
+}
+
+/**
  * `((p1, p2) => markup)(v1, v2)` — bind values computed outside `markup` to
  * parameters it reads (#3352). `markup` is returned unchanged when there is
  * nothing to bind.

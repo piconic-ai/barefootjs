@@ -78,14 +78,14 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
 
 }
 
-hydrate('LoopRowNestedChildChildrenHandler', { init: initLoopRowNestedChildChildrenHandler, template: (_p) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="nested" bf="s7"><!--bf-loop:l0-->${([
-  { id: 'a', label: 'A' },
-  { id: 'b', label: 'B' },
-]).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's5')}`}, o.id, 's6', true)}`).join('')}<!--bf-/loop:l0--></div><div class="composite" bf="s11"><!--bf-loop:l1-->${([
+hydrate('LoopRowNestedChildChildrenHandler', { init: initLoopRowNestedChildChildrenHandler, template: (_p) => `${((__bf_const_NESTED) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="nested" bf="s7"><!--bf-loop:l0-->${(__bf_const_NESTED).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's5')}`}, o.id, 's6', true)}`).join('')}<!--bf-/loop:l0--></div><div class="composite" bf="s11"><!--bf-loop:l1-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
   ]).map((o) => `<div data-key="${escapeAttr(o.id)}" class="row">${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's10')}</div>`).join('')}<!--bf-/loop:l1--></div><div class="sig-nested" bf="s16"><!--bf-loop:l2-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
-  ]).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's14')}`}, o.id, 's15', true)}`).join('')}<!--bf-/loop:l2--></div></div>` })
+  ]).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's14')}`}, o.id, 's15', true)}`).join('')}<!--bf-/loop:l2--></div></div>`)(([
+  { id: 'a', label: 'A' },
+  { id: 'b', label: 'B' },
+]))}` })
 export function LoopRowNestedChildChildrenHandler(_p, __bfKey) { return createComponent('LoopRowNestedChildChildrenHandler', _p, __bfKey) }

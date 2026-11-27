@@ -3,9 +3,9 @@ import { createFixture } from '../src/types'
 /**
  * An object literal module const compared with itself (`B === B`). The
  * server evaluates the literal once, so the comparison is true. The CSR
- * template splices the literal at each read, so each read is a separate
- * object and the comparison renders `false` on a client mount. The template adapters refuse the
- * comparison (BF101), so this fixture is CSR-skipped.
+ * template binds the const once per template evaluation (#4021), so both
+ * reads are the one object and a client mount renders `true` too. The
+ * template adapters refuse the comparison (BF101).
  */
 export const fixture = createFixture({
   id: 'module-const-literal-identity',

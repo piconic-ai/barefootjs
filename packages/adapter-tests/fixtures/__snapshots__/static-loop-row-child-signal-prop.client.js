@@ -62,14 +62,8 @@ export function initStaticLoopRowChildSignalProp(__scope, _p = {}) {
 
 }
 
-hydrate('StaticLoopRowChildSignalProp', { init: initStaticLoopRowChildSignalProp, template: (_p) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="plain" bf="s2"><!--bf-loop:l0-->${([
+hydrate('StaticLoopRowChildSignalProp', { init: initStaticLoopRowChildSignalProp, template: (_p) => `${((__bf_const_rows) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="plain" bf="s2"><!--bf-loop:l0-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${renderChild('SignalPropBadge', {n: (0)}, undefined, 's1')}</li>`).join('')}<!--bf-/loop:l0--></ul><ul class="branch" bf="s5"><!--bf-loop:l1-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<!--bf-cond-start:s3-->${renderChild('SignalPropBadge', {n: (0)}, undefined, 's4')}<!--bf-cond-end:s3-->` : `<i bf-c="s3">off</i>`}</li>`).join('')}<!--bf-/loop:l1--></ul><ul class="else" bf="s8"><!--bf-loop:l2-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<i bf-c="s6">on</i>` : `<!--bf-cond-start:s6-->${renderChild('SignalPropBadge', {n: (0)}, undefined, 's7')}<!--bf-cond-end:s6-->`}</li>`).join('')}<!--bf-/loop:l2--></ul></div>`)(([
     { id: 'a', kind: 'on' },
     { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${renderChild('SignalPropBadge', {n: (0)}, undefined, 's1')}</li>`).join('')}<!--bf-/loop:l0--></ul><ul class="branch" bf="s5"><!--bf-loop:l1-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<!--bf-cond-start:s3-->${renderChild('SignalPropBadge', {n: (0)}, undefined, 's4')}<!--bf-cond-end:s3-->` : `<i bf-c="s3">off</i>`}</li>`).join('')}<!--bf-/loop:l1--></ul><ul class="else" bf="s8"><!--bf-loop:l2-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<i bf-c="s6">on</i>` : `<!--bf-cond-start:s6-->${renderChild('SignalPropBadge', {n: (0)}, undefined, 's7')}<!--bf-cond-end:s6-->`}</li>`).join('')}<!--bf-/loop:l2--></ul></div>` })
+  ]))}` })
 export function StaticLoopRowChildSignalProp(_p, __bfKey) { return createComponent('StaticLoopRowChildSignalProp', _p, __bfKey) }

@@ -112,7 +112,9 @@ export function Host() {
       'host-literal.tsx',
     )
 
-    // Never mutated — the existing inlining behaviour is unaffected.
-    expect(js).toContain("config: ({ a: { color: 'red' }, b: { color: 'blue' } })")
+    // Never mutated — the template still evaluates its initializer. It is
+    // bound once per template evaluation (#4021), and the prop reads it.
+    expect(js).toContain('config: (__bf_const_config)')
+    expect(js).toContain(")(({ a: { color: 'red' }, b: { color: 'blue' } }))")
   })
 })
