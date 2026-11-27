@@ -68,6 +68,7 @@ describe('compileForCompat', () => {
           'caller-rows-computed-key',
           'client-only-loop-in-static-loop',
           'computed-const-loop-source',
+          'const-iife-unlowered',
           'const-literal-inherited-key',
           'const-object-spread-unresolved',
           'derived-object-literal-signal',
