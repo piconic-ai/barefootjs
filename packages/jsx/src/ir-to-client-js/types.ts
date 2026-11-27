@@ -86,6 +86,11 @@ export interface ClientJsContext {
   /** What each IR source text reads, recorded in Phase 1 (`IRMetadata.sourceFacts`). Absent in a hand-built context. */
   sourceFacts?: Record<string, SourceFacts>
   /**
+   * Source spellings a generated name must avoid (`IRMetadata.generatedNameSpellings`).
+   * Absent in a hand-built context, which is treated as an empty set.
+   */
+  generatedNameSpellings?: ReadonlySet<string>
+  /**
    * Threaded through (alongside `propsParams` above) so the reactive-effect
    * emitter can bind its own `datePlugin` matcher (#2292) — see
    * `emit-reactive.ts`'s `getReactiveDateLoweringMatcher`. Mirrors the

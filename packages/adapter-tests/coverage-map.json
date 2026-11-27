@@ -3226,6 +3226,22 @@
         "text"
       ]
     },
+    "component-const-prop-object-identity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:==="
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-helper-signal-child-prop": {
       "kinds": [
         "arrow",
@@ -4401,6 +4417,27 @@
       ],
       "axes": [
         "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "const-literal-identity-positions": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "attribute",
@@ -13408,6 +13445,22 @@
         "text"
       ]
     },
+    "module-const-alias-identity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "module-const-array-child-prop": {
       "kinds": [
         "array-literal",
@@ -14734,6 +14787,23 @@
         "attribute",
         "loop",
         "text"
+      ]
+    },
+    "module-const-member-alias-identity": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
       ]
     },
     "module-const-member-key-hydrate": {

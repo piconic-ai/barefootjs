@@ -110,20 +110,11 @@ export function initStaticLoopRowClientConditional(__scope, _p = {}) {
 
 }
 
-hydrate('StaticLoopRowClientConditional', { init: initStaticLoopRowClientConditional, template: (_p) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="literal" bf="s2"><!--bf-loop:l0-->${([
+hydrate('StaticLoopRowClientConditional', { init: initStaticLoopRowClientConditional, template: (_p) => `${((__bf_const_rows, __bf_const_groups) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="literal" bf="s2"><!--bf-loop:l0-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s1--><!--bf-cond-end:s1--></li>`).join('')}<!--bf-/loop:l0--></ul><div class="nested" bf="s5"><!--bf-loop:l2-->${(__bf_const_groups).map((g) => `<p data-key="${escapeAttr(g.id)}" bf="s4"><!--bf-loop:l1-->${g.sizes.map((z) => `<span data-key-1="${escapeAttr(z)}"><!--bf-cond-start:s3--><!--bf-cond-end:s3--></span>`).join('')}<!--bf-/loop:l1--></p>`).join('')}<!--bf-/loop:l2--></div><ul class="inline" bf="s9"><!--bf-loop:l3-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s6--><!--bf-cond-end:s6--></li>`).join('')}<!--bf-/loop:l3--></ul><ul class="helper" bf="s13"><!--bf-loop:l4-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s10--><!--bf-cond-end:s10--></li>`).join('')}<!--bf-/loop:l4--></ul><ul class="signal" bf="s16"><!--bf-loop:l5-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}" bf="s15"><!--bf-cond-start:s14--><!--bf-cond-end:s14--></li>`).join('')}<!--bf-/loop:l5--></ul></div>`)(([
   { id: 'a', kind: 'on' },
   { id: 'b', kind: 'off' },
-]).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s1--><!--bf-cond-end:s1--></li>`).join('')}<!--bf-/loop:l0--></ul><div class="nested" bf="s5"><!--bf-loop:l2-->${([
+]), ([
   { id: 'g1', sizes: [1, 2] },
   { id: 'g2', sizes: [3] },
-]).map((g) => `<p data-key="${escapeAttr(g.id)}" bf="s4"><!--bf-loop:l1-->${g.sizes.map((z) => `<span data-key-1="${escapeAttr(z)}"><!--bf-cond-start:s3--><!--bf-cond-end:s3--></span>`).join('')}<!--bf-/loop:l1--></p>`).join('')}<!--bf-/loop:l2--></div><ul class="inline" bf="s9"><!--bf-loop:l3-->${([
-  { id: 'a', kind: 'on' },
-  { id: 'b', kind: 'off' },
-]).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s6--><!--bf-cond-end:s6--></li>`).join('')}<!--bf-/loop:l3--></ul><ul class="helper" bf="s13"><!--bf-loop:l4-->${([
-  { id: 'a', kind: 'on' },
-  { id: 'b', kind: 'off' },
-]).map((r) => `<li data-key="${escapeAttr(r.id)}"><!--bf-cond-start:s10--><!--bf-cond-end:s10--></li>`).join('')}<!--bf-/loop:l4--></ul><ul class="signal" bf="s16"><!--bf-loop:l5-->${([
-  { id: 'a', kind: 'on' },
-  { id: 'b', kind: 'off' },
-]).map((r) => `<li data-key="${escapeAttr(r.id)}" bf="s15"><!--bf-cond-start:s14--><!--bf-cond-end:s14--></li>`).join('')}<!--bf-/loop:l5--></ul></div>` })
+]))}` })
 export function StaticLoopRowClientConditional(_p, __bfKey) { return createComponent('StaticLoopRowClientConditional', _p, __bfKey) }

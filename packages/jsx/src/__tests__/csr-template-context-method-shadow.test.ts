@@ -131,8 +131,10 @@ describe('CSR template: shadowed ctx.<method>() (#1100)', () => {
     expect(tpl).not.toMatch(/\)\)\.\(\(/)
     expect(tpl).not.toMatch(/\)\)\.\(/)
 
-    // The correct rewrite preserves the property access.
-    expect(tpl).toContain('(useContext(BarChartContext)).bars()')
+    // The correct rewrite preserves the property access. `ctx` is bound
+    // once per template evaluation (#4021), so the access reads the binding.
+    expect(tpl).toContain('(__bf_const_ctx).bars()')
+    expect(tpl).toContain(')((useContext(BarChartContext)))')
 
     // And the embedded template literal must parse as valid JavaScript.
     expect(() => new Function(`return ${tpl}`)).not.toThrow()
@@ -159,8 +161,11 @@ describe('CSR template: shadowed ctx.<method>() (#1100)', () => {
 
     // ctx.count() must remain a member call, not be replaced with the signal's
     // initial value. The local `count()` getter inlines to `(0)`.
-    expect(tpl).toContain('(useContext(CountContext)).count()')
+    // `ctx` is bound once per template evaluation (#4021).
+    expect(tpl).toContain('(__bf_const_ctx).count()')
+    expect(tpl).toContain(')((useContext(CountContext)))')
     expect(tpl).not.toMatch(/\)\)\.\(0\)/)
+    expect(tpl).not.toMatch(/\)\.\(0\)/)
     expect(() => new Function(`return ${tpl}`)).not.toThrow()
   })
 })

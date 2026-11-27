@@ -79,11 +79,11 @@ export function initLoopRowChildChildrenInnerLoopHandler(__scope, _p = {}) {
 
 }
 
-hydrate('LoopRowChildChildrenInnerLoopHandler', { init: initLoopRowChildChildrenInnerLoopHandler, template: (_p) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="rows" bf="s7"><!--bf-loop:l1-->${([
-  { id: 'a', tags: ['x', 'y'] },
-  { id: 'b', tags: ['z'] },
-]).map((o) => `${renderChild('Chip__0da3ade1', {children: `<ul bf="^s5"><!--bf-loop:l0-->${o.tags.map((tag) => `<li data-key-1="${escapeAttr(tag)}"><button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(tag)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul>`}, o.id, 's6', true)}`).join('')}<!--bf-/loop:l1--></div><div class="live" bf="s12"><!--bf-loop:l3-->${([
+hydrate('LoopRowChildChildrenInnerLoopHandler', { init: initLoopRowChildChildrenInnerLoopHandler, template: (_p) => `${((__bf_const_ROWS) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="rows" bf="s7"><!--bf-loop:l1-->${(__bf_const_ROWS).map((o) => `${renderChild('Chip__0da3ade1', {children: `<ul bf="^s5"><!--bf-loop:l0-->${o.tags.map((tag) => `<li data-key-1="${escapeAttr(tag)}"><button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(tag)}<!--/--></button></li>`).join('')}<!--bf-/loop:l0--></ul>`}, o.id, 's6', true)}`).join('')}<!--bf-/loop:l1--></div><div class="live" bf="s12"><!--bf-loop:l3-->${([
     { id: 'a', tags: ['x', 'y'] },
     { id: 'b', tags: ['z'] },
-  ]).map((o, i) => `${renderChild('Chip__0da3ade1', {children: `<ul bf="^s10"><!--bf-loop:l2-->${o.tags.map((tag, j) => `<li data-key-1="${escapeAttr(tag)}"><button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(tag)}<!--/--></button></li>`).join('')}<!--bf-/loop:l2--></ul>`}, o.id, 's11', true)}`).join('')}<!--bf-/loop:l3--></div></div>` })
+  ]).map((o, i) => `${renderChild('Chip__0da3ade1', {children: `<ul bf="^s10"><!--bf-loop:l2-->${o.tags.map((tag, j) => `<li data-key-1="${escapeAttr(tag)}"><button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(tag)}<!--/--></button></li>`).join('')}<!--bf-/loop:l2--></ul>`}, o.id, 's11', true)}`).join('')}<!--bf-/loop:l3--></div></div>`)(([
+  { id: 'a', tags: ['x', 'y'] },
+  { id: 'b', tags: ['z'] },
+]))}` })
 export function LoopRowChildChildrenInnerLoopHandler(_p, __bfKey) { return createComponent('LoopRowChildChildrenInnerLoopHandler', _p, __bfKey) }

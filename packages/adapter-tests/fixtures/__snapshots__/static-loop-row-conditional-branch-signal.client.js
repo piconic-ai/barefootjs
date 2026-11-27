@@ -160,29 +160,8 @@ export function initStaticLoopRowConditionalBranchSignal(__scope, _p = {}) {
 
 }
 
-hydrate('StaticLoopRowConditionalBranchSignal', { init: initStaticLoopRowConditionalBranchSignal, template: (_p) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="text" bf="s4"><!--bf-loop:l0-->${([
+hydrate('StaticLoopRowConditionalBranchSignal', { init: initStaticLoopRowConditionalBranchSignal, template: (_p) => `${((__bf_const_rows) => `<div><button type="button" class="inc" bf="s0">inc</button><ul class="text" bf="s4"><!--bf-loop:l0-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s1" bf="s3"><!--bf:s2-->${escapeText('n=' + (0))}<!--/--></b>` : `<i bf-c="s1">off</i>`}</li>`).join('')}<!--bf-/loop:l0--></ul><ul class="attr" bf="s7"><!--bf-loop:l1-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s5" ${('n=' + (0)) != null ? 'title="' + escapeAttr('n=' + (0)) + '"' : ''} bf="s6">attr</b>` : `<i bf-c="s5">off</i>`}</li>`).join('')}<!--bf-/loop:l1--></ul><ul class="else" bf="s11"><!--bf-loop:l2-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s8">on</b>` : `<i bf-c="s8" bf="s10"><!--bf:s9-->${escapeText('off ' + (0))}<!--/--></i>`}</li>`).join('')}<!--bf-/loop:l2--></ul><ul class="memo" bf="s15"><!--bf-loop:l3-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s12" bf="s14"><!--bf:s13-->${escapeText('d=' + ((0) * 2))}<!--/--></b>` : `<i bf-c="s12">off</i>`}</li>`).join('')}<!--bf-/loop:l3--></ul><ul class="prop" bf="s19"><!--bf-loop:l4-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s16" bf="s18"><!--bf:s17-->${escapeText(_p.label ?? 'none')}<!--/--></b>` : `<i bf-c="s16">off</i>`}</li>`).join('')}<!--bf-/loop:l4--></ul><ul class="nested" bf="s22"><!--bf-loop:l5-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<!--bf-cond-start:s20-->${(0) > 0 ? `<b bf-c="s21">some</b>` : `<em bf-c="s21">zero</em>`}<!--bf-cond-end:s20-->` : `<i bf-c="s20">off</i>`}</li>`).join('')}<!--bf-/loop:l5--></ul><ul class="event" bf="s25"><!--bf-loop:l6-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<button bf-c="s23" type="button" class="add" bf="s24">add</button>` : `<i bf-c="s23">off</i>`}</li>`).join('')}<!--bf-/loop:l6--></ul><ul class="static" bf="s27"><!--bf-loop:l7-->${(__bf_const_rows).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s26">on</b>` : `<i bf-c="s26">off</i>`}</li>`).join('')}<!--bf-/loop:l7--></ul></div>`)(([
     { id: 'a', kind: 'on' },
     { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s1" bf="s3"><!--bf:s2-->${escapeText('n=' + (0))}<!--/--></b>` : `<i bf-c="s1">off</i>`}</li>`).join('')}<!--bf-/loop:l0--></ul><ul class="attr" bf="s7"><!--bf-loop:l1-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s5" ${('n=' + (0)) != null ? 'title="' + escapeAttr('n=' + (0)) + '"' : ''} bf="s6">attr</b>` : `<i bf-c="s5">off</i>`}</li>`).join('')}<!--bf-/loop:l1--></ul><ul class="else" bf="s11"><!--bf-loop:l2-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s8">on</b>` : `<i bf-c="s8" bf="s10"><!--bf:s9-->${escapeText('off ' + (0))}<!--/--></i>`}</li>`).join('')}<!--bf-/loop:l2--></ul><ul class="memo" bf="s15"><!--bf-loop:l3-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s12" bf="s14"><!--bf:s13-->${escapeText('d=' + ((0) * 2))}<!--/--></b>` : `<i bf-c="s12">off</i>`}</li>`).join('')}<!--bf-/loop:l3--></ul><ul class="prop" bf="s19"><!--bf-loop:l4-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s16" bf="s18"><!--bf:s17-->${escapeText(_p.label ?? 'none')}<!--/--></b>` : `<i bf-c="s16">off</i>`}</li>`).join('')}<!--bf-/loop:l4--></ul><ul class="nested" bf="s22"><!--bf-loop:l5-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<!--bf-cond-start:s20-->${(0) > 0 ? `<b bf-c="s21">some</b>` : `<em bf-c="s21">zero</em>`}<!--bf-cond-end:s20-->` : `<i bf-c="s20">off</i>`}</li>`).join('')}<!--bf-/loop:l5--></ul><ul class="event" bf="s25"><!--bf-loop:l6-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<button bf-c="s23" type="button" class="add" bf="s24">add</button>` : `<i bf-c="s23">off</i>`}</li>`).join('')}<!--bf-/loop:l6--></ul><ul class="static" bf="s27"><!--bf-loop:l7-->${([
-    { id: 'a', kind: 'on' },
-    { id: 'b', kind: 'off' },
-  ]).map((r) => `<li data-key="${escapeAttr(r.id)}">${r.kind === 'on' ? `<b bf-c="s26">on</b>` : `<i bf-c="s26">off</i>`}</li>`).join('')}<!--bf-/loop:l7--></ul></div>` })
+  ]))}` })
 export function StaticLoopRowConditionalBranchSignal(_p, __bfKey) { return createComponent('StaticLoopRowConditionalBranchSignal', _p, __bfKey) }

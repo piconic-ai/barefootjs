@@ -2675,6 +2675,19 @@ export interface ConstantInfo {
    */
   identityBound?: boolean
   /**
+   * When true, two evaluations of the initializer can give different values:
+   * it evaluates an allocating expression somewhere (an object or array
+   * literal, `new X()`, a call, a function expression; `initializerMayDiffer`),
+   * whatever it reads. Evaluating it twice gives two objects (`{ k: 'v' }`,
+   * `mk()`), or two samples (`'x' + Math.random()`). Set by
+   * `recordIdentityCandidate` (`const-identity.ts`). The CSR template binds
+   * such a const once per template evaluation instead of splicing the
+   * initializer at each read (#4021); unlike `identityBound` it ignores
+   * reactive reads, because one template evaluation reads each signal, memo
+   * and prop at one value anyway.
+   */
+  freshPerEvaluation?: boolean
+  /**
    * When true, this module-level const is shadowed inside the component: a
    * destructured prop, the props object, or a component-scope const,
    * function, signal or memo binds the same name, so a read of the name in
@@ -2846,6 +2859,13 @@ export interface IRMetadata {
    * Phase 2 builds itself (a template, a rewritten handler) has no entry.
    */
   sourceFacts?: Record<string, SourceFacts>
+  /**
+   * Every identifier spelling in the source file that starts with `__bf_`
+   * (`generatedPrefixSpellings`), sorted; absent when there is none. Phase 2
+   * picks the names it generates into emitted code outside this set, so a
+   * source binding can never capture a generated read (#4021).
+   */
+  generatedNameSpellings?: string[]
 }
 
 // =============================================================================

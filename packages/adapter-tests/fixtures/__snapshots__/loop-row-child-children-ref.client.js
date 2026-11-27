@@ -95,7 +95,7 @@ export function initLoopRowChildChildrenRef(__scope, _p = {}) {
 
 }
 
-hydrate('LoopRowChildChildrenRef', { init: initLoopRowChildChildrenRef, template: (_p) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="item" bf="s5"><!--bf-loop:l0-->${([
+hydrate('LoopRowChildChildrenRef', { init: initLoopRowChildChildrenRef, template: (_p) => `${((__bf_const_STATIC_ROWS) => `<div><p class="picked" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s2">add</button><div class="item" bf="s5"><!--bf-loop:l0-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
   ]).map((o) => `${renderChild('Chip__ef8242e5', {children: `<button type="button" class="pick" bf="^s3">pick</button>`}, o.id, 's4', true)}`).join('')}<!--bf-/loop:l0--></div><div class="index" bf="s8"><!--bf-loop:l1-->${([
@@ -104,8 +104,8 @@ hydrate('LoopRowChildChildrenRef', { init: initLoopRowChildChildrenRef, template
   ]).map((o, i) => `${renderChild('Chip__ef8242e5', {children: `<button type="button" class="pick" bf="^s6">pick</button>`}, o.id, 's7', true)}`).join('')}<!--bf-/loop:l1--></div><div class="destructured" bf="s12"><!--bf-loop:l2-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
-  ]).map(({ id, label }, i) => `${renderChild('Chip__ef8242e5', {children: `<label><!--bf:^s9-->${escapeText(label)}<!--/--><button type="button" class="pick" bf="^s10">pick</button></label>`}, id, 's11', true)}`).join('')}<!--bf-/loop:l2--></div><div class="static" bf="s15"><!--bf-loop:l3-->${([
+  ]).map(({ id, label }, i) => `${renderChild('Chip__ef8242e5', {children: `<label><!--bf:^s9-->${escapeText(label)}<!--/--><button type="button" class="pick" bf="^s10">pick</button></label>`}, id, 's11', true)}`).join('')}<!--bf-/loop:l2--></div><div class="static" bf="s15"><!--bf-loop:l3-->${(__bf_const_STATIC_ROWS).map((o, i) => `${renderChild('Chip__ef8242e5', {children: `<button type="button" class="pick" bf="^s13">pick</button>`}, o.id, 's14', true)}`).join('')}<!--bf-/loop:l3--></div></div>`)(([
   { id: 'a', label: 'A' },
   { id: 'b', label: 'B' },
-]).map((o, i) => `${renderChild('Chip__ef8242e5', {children: `<button type="button" class="pick" bf="^s13">pick</button>`}, o.id, 's14', true)}`).join('')}<!--bf-/loop:l3--></div></div>` })
+]))}` })
 export function LoopRowChildChildrenRef(_p, __bfKey) { return createComponent('LoopRowChildChildrenRef', _p, __bfKey) }

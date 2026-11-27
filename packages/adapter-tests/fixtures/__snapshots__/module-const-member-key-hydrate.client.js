@@ -25,5 +25,5 @@ export function initModuleConstMemberKeyHydrate(__scope, _p = {}) {
   if (_s1) _s1.addEventListener('click', () => setCount(count() + NAMES.length * TEXTS.length * OPS.run(0)))
 }
 
-hydrate('ModuleConstMemberKeyHydrate', { init: initModuleConstMemberKeyHydrate, template: (_p) => `<div><p data-slot="label">${escapeText((({ label: 'm', tag: ('b'), shown: 's' }).label))}</p><p data-slot="tag">${escapeText(({ label: 'm', tag: ('b'), shown: 's' }).shown)}</p><button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button></div>` })
+hydrate('ModuleConstMemberKeyHydrate', { init: initModuleConstMemberKeyHydrate, template: (_p) => `${((__bf_const_D) => `<div><p data-slot="label">${escapeText((({ label: 'm', tag: ('b'), shown: 's' }).label))}</p><p data-slot="tag">${escapeText((__bf_const_D).shown)}</p><button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button></div>`)(({ label: 'm', tag: ('b'), shown: 's' }))}` })
 export function ModuleConstMemberKeyHydrate(_p, __bfKey) { return createComponent('ModuleConstMemberKeyHydrate', _p, __bfKey) }

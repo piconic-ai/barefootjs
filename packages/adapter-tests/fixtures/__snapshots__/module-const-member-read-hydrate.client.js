@@ -25,5 +25,5 @@ export function initModuleConstMemberReadHydrate(__scope, _p = {}) {
         })
 }
 
-hydrate('ModuleConstMemberReadHydrate', { init: initModuleConstMemberReadHydrate, template: (_p) => `<div><p data-slot="label">${escapeText(({ label: 'm', tag: 't', shown: 's' }).label)}</p><p data-slot="shown">${escapeText(({ label: 'm', tag: 't', shown: 's' }).shown)}</p><button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button></div>` })
+hydrate('ModuleConstMemberReadHydrate', { init: initModuleConstMemberReadHydrate, template: (_p) => `${((__bf_const_D) => `<div><p data-slot="label">${escapeText((__bf_const_D).label)}</p><p data-slot="shown">${escapeText((__bf_const_D).shown)}</p><button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button></div>`)(({ label: 'm', tag: 't', shown: 's' }))}` })
 export function ModuleConstMemberReadHydrate(_p, __bfKey) { return createComponent('ModuleConstMemberReadHydrate', _p, __bfKey) }
