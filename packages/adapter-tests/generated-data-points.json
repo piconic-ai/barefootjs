@@ -20916,6 +20916,63 @@
       }
     }
   ],
+  "spread-open-bag-literal-alias-after": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "attrs": {
+          "htmlFor": "from-attrs",
+          "id": "i"
+        },
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    },
+    {
+      "name": "gen:attrs:absent",
+      "props": {
+        "label": "L",
+        "htmlFor": "spread",
+        "httpEquiv": "refresh"
+      }
+    }
+  ],
   "spread-open-bag-literal-case-alias": [
     {
       "name": "gen:rows:absent",

@@ -21303,6 +21303,16 @@
         "attribute"
       ]
     },
+    "spread-closed-rest-boolean-values": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-closed-rest-both-cases-later-write": {
       "kinds": [
         "identifier",
@@ -21524,7 +21534,25 @@
         "text"
       ]
     },
+    "spread-open-bag-boolean-values": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-open-bag-hono-renamed-keys": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-bag-literal-alias-after": {
       "kinds": [
         "identifier"
       ],
@@ -21563,7 +21591,28 @@
         "text"
       ]
     },
+    "spread-open-bag-literal-other-spelling-after": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-open-bag-literal-renamed-elsewhere": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-open-props-object-literal-alias-after": {
       "kinds": [
         "identifier"
       ],

@@ -1168,7 +1168,15 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
             .map(a => a.name)
-          const excludeKeys = [...new Set([...consumedKeys, ...staticAttrKeys])]
+          // An attribute written AFTER this spread also takes the bag keys it
+          // shadows (`htmlFor` beside a later `for`,
+          // `IRAttribute.spreadAliasShadows`), so hydration keeps the later
+          // write the server rendered. One written before it does not: this
+          // spread's key is the later write there.
+          const shadowedKeys = element.attrs
+            .slice(element.attrs.indexOf(attr) + 1)
+            .flatMap(a => (a.name === '...' ? [] : a.spreadAliasShadows ?? []))
+          const excludeKeys = [...new Set([...consumedKeys, ...staticAttrKeys, ...shadowedKeys])]
           ctx.restAttrElements.push({
             slotId: element.slotId,
             source: PROPS_PARAM,

@@ -1877,6 +1877,17 @@ export interface IRAttribute extends AttrMeta {
    * listed bag lacks every listed key. Absent when no spread may.
    */
   spreadAliasOverriders?: SpreadAliasOverrider[]
+  /**
+   * The twin of `spreadAliasOverriders` for an attribute written AFTER an
+   * open spread (`<label {...rest} htmlFor="y">`): the bag keys an earlier
+   * spread may write this attribute under other than the key a JSX runtime
+   * writes it under (`jsxAttrKey`), such as `htmlFor` for `for`. JS keeps
+   * the last write, so the attribute renders once, with this value; a
+   * JSX-runtime adapter clears those keys after writing it, so its props
+   * object does not render the bag's value beside it. Absent when no
+   * earlier spread may.
+   */
+  spreadAliasShadows?: readonly string[]
 }
 
 /** One open spread of {@link IRAttribute.spreadAliasOverriders}. */
