@@ -3706,6 +3706,22 @@
           ]
         }
       },
+      "children-absent-forwarded": {
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "forwarded-absent-children"
+          ]
+        }
+      },
+      "children-body-default-nullish-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "body-default-children-read-into-state"
+          ]
+        }
+      },
       "children-dynamic-read-into-state": {
         "go-template": {
           "kind": "refusal",
@@ -3831,6 +3847,50 @@
           "kind": "render",
           "limitations": [
             "children-fallback-boolean-display"
+          ]
+        }
+      },
+      "children-markup-nullish-memo": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
+          ]
+        }
+      },
+      "children-markup-nullish-seed": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
+          ]
+        }
+      },
+      "children-markup-nullish-seed-bindings": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
+          ]
+        }
+      },
+      "children-param-default-nullish-seed": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
           ]
         }
       },
@@ -19349,6 +19409,14 @@
         "description": "Undeclared props reach a child that spreads its whole props object",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-undeclared-prop-whole-props-spread.ts"
       },
+      "children-absent-forwarded": {
+        "description": "Children forwarded from a call without children read as undefined",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-absent-forwarded.ts"
+      },
+      "children-body-default-nullish-seed": {
+        "description": "A defaulted body-destructured children binding seeding a signal through ?? renders the default or…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-body-default-nullish-seed.ts"
+      },
       "children-dynamic-read-into-state": {
         "description": "Dynamic JSX children a component seeds a signal from reach that signal",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-dynamic-read-into-state.ts"
@@ -19364,6 +19432,22 @@
       "children-fallback-value-shapes": {
         "description": "A fallback read of the children prop with a boolean or number fallback keeps present children markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-value-shapes.ts"
+      },
+      "children-markup-nullish-memo": {
+        "description": "Markup children read through a ?? memo render as markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-memo.ts"
+      },
+      "children-markup-nullish-seed": {
+        "description": "Markup children seeding a signal through ?? render as markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-seed.ts"
+      },
+      "children-markup-nullish-seed-bindings": {
+        "description": "Markup children seeding a signal through ?? render as markup, whatever binding reads them",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-seed-bindings.ts"
+      },
+      "children-param-default-nullish-seed": {
+        "description": "A defaulted children parameter seeding a signal through ?? renders the default or the markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-param-default-nullish-seed.ts"
       },
       "children-read-into-state-forms": {
         "description": "Every way of computing state from dynamic JSX children sees those children",
@@ -20691,6 +20775,19 @@
         "BF056"
       ]
     },
+    "body-default-children-read-into-state": {
+      "title": "A defaulted body destructure of children read into state",
+      "kind": "silent",
+      "given": "a component that destructures its children from the props object in the body with a default and seeds a signal from the binding (`const { children = 'dflt' } = props`, `createSignal(children ?? 'missing')`), rendering the signal",
+      "expected": "the signal holds the default when the call passes no children and the children otherwise (`dflt`, `t` for `<Note>t</Note>`)",
+      "actual": "renders nothing in either case",
+      "fixtures": [
+        "children-body-default-nullish-seed"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "body-destructure-computed-default-signal-seed": {
       "title": "A signal seeded from a body-destructured prop with a computed default",
       "kind": "silent",
@@ -20950,11 +21047,15 @@
     "children-element-read-into-state": {
       "title": "An element child read into state by the component",
       "kind": "silent",
-      "given": "a component that reads `props.children` into a signal and renders the signal (`const [value] = createSignal(props.children)`, `{value()}`), called with an element as its JSX children (`<Note><i>a</i></Note>`)",
+      "given": "a component that reads `props.children` (or a destructured `children` binding) into a signal, bare or with a `??` fallback, or into a `??` memo, and renders it (`const [value] = createSignal(props.children)`, `createSignal(props.children ?? 'missing')` or `createMemo(() => props.children ?? 'missing')`, `{value()}`), called with an element as its JSX children (`<Note><i>a</i></Note>`)",
       "expected": "the element renders inside the component (`<b><i>a</i></b>`)",
       "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
       "fixtures": [
-        "children-element-read-into-state"
+        "children-element-read-into-state",
+        "children-markup-nullish-memo",
+        "children-markup-nullish-seed",
+        "children-markup-nullish-seed-bindings",
+        "children-param-default-nullish-seed"
       ],
       "adapters": [
         "hono",
@@ -21514,6 +21615,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "forwarded-absent-children": {
+      "title": "Children forwarded from a call that passes none",
+      "kind": "silent",
+      "given": "a component that forwards its children to a child as a prop (`<Check children={props.children} />`), called without children (`<Outer />`)",
+      "expected": "the child reads `props.children` as `undefined` (`props.children === undefined` is true)",
+      "actual": "throws while rendering the forwarding component, because the template passes an undefined variable on",
+      "fixtures": [
+        "children-absent-forwarded"
+      ],
+      "adapters": [
+        "jinja"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

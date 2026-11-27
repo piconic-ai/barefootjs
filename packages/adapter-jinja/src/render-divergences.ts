@@ -43,6 +43,9 @@ export const renderDivergences: RenderDivergences = {
   // A bag key that is not one attribute name is written as it is
   // (`x onmouseover=alert(1)="x"`), where the reference drops it.
   'spread-bag-unsafe-attr-names': { limitation: 'spread-bag-unsafe-attr-name' },
+  // Forwarding `children={props.children}` from a call without children:
+  // the template passes an undefined variable to the child and raises.
+  'children-absent-forwarded': { limitation: 'forwarded-absent-children' },
   // A children fallback const read in a loop row whose parameter shadows a
   // name its initializer reads: the row renders empty.
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },

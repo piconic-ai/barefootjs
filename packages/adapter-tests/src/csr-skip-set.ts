@@ -409,6 +409,10 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An element child a component reads into a signal: the CSR template
   // prints the signal's initial value as escaped text.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-seed': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
+  'children-markup-nullish-seed-bindings': { limitation: 'children-element-read-into-state' },
+  'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
   // A children fallback read with a reactive fallback: its text slot
   // escapes present children markup.
   'children-fallback-reactive-read': { limitation: 'children-fallback-reactive-slot' },
