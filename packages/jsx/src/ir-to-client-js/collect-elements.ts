@@ -1165,9 +1165,12 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           // the caller-facing key too, not the local binding name.
           // Phase 1 lists them on the spread (`SpreadAttr.restOmittedKeys`).
           const consumedKeys = (attr.value.kind === 'spread' && attr.value.restOmittedKeys) || []
+          // A later attribute also takes the bag keys it shadows
+          // (`htmlFor` beside a later `for`, `IRAttribute.spreadAliasShadows`),
+          // so hydration keeps the later write the server rendered.
           const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
-            .map(a => a.name)
+            .flatMap(a => [a.name, ...(a.spreadAliasShadows ?? [])])
           const excludeKeys = [...new Set([...consumedKeys, ...staticAttrKeys])]
           ctx.restAttrElements.push({
             slotId: element.slotId,

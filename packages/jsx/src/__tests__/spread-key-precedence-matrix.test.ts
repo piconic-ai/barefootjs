@@ -212,3 +212,64 @@ export function C({ ...rest }: { ${key}?: string }) { return <K {...rest} /> }`,
     })
   }
 })
+
+describe('a write after an open bag: the JSX runtimes clear the bag keys that alias the attribute', () => {
+  // The keys are the JSX runtimes' (the reference, the client JS), so they do
+  // not depend on the target adapter's spread helper: the client JS is one
+  // artifact for every adapter.
+  const expectedShadows: Record<string, string[] | undefined> = {
+    className: undefined,
+    htmlFor: ['htmlFor'],
+    crossOrigin: ['crossOrigin'],
+    httpEquiv: ['httpEquiv'],
+    itemProp: ['itemProp'],
+    fetchPriority: ['fetchPriority'],
+    noModule: ['noModule'],
+    formAction: ['formAction'],
+  }
+  for (const [key, attr] of keys) {
+    for (const [label, adapter] of [['default', new TestAdapter()], ['renames all', new RenamesAllAdapter()]] as const) {
+      test(`${key} literal (${label})`, () => {
+        const el = elementOf(`type P = { [key: string]: unknown }
+export function C({ ...rest }: P) { return <x-el {...rest} ${key}="lit">x</x-el> }`, adapter)
+        expect(attrNamed(el, attr).map(a => a.spreadAliasShadows)).toEqual([expectedShadows[key]])
+      })
+    }
+  }
+  test('an expression value, a prop bag, and a key in another letter case', () => {
+    const el = elementOf(`type P = { a?: Record<string, unknown>; v?: string }
+export function C({ a, v }: P) { return <x-el {...a} htmlFor={v} tabIndex={1} title="t">x</x-el> }`, new TestAdapter())
+    expect(attrNamed(el, 'for')[0].spreadAliasShadows).toEqual(['htmlFor'])
+    expect(attrNamed(el, 'tabindex')[0].spreadAliasShadows).toEqual(['tabIndex'])
+    expect(attrNamed(el, 'title')[0].spreadAliasShadows).toBeUndefined()
+  })
+  test('a write before the bag, a rest that took the key, and a closed rest key stay unmarked', () => {
+    const before = elementOf(`type P = { [key: string]: unknown }
+export function C({ ...rest }: P) { return <x-el htmlFor="lit" {...rest}>x</x-el> }`, new TestAdapter())
+    expect(attrNamed(before, 'for')[0].spreadAliasShadows).toBeUndefined()
+    const taken = elementOf(`type P = { htmlFor?: string; [key: string]: unknown }
+export function C({ htmlFor, ...rest }: P) { return <x-el {...rest} htmlFor="lit">{htmlFor}</x-el> }`, new TestAdapter())
+    expect(attrNamed(taken, 'for')[0].spreadAliasShadows).toBeUndefined()
+    const closed = elementOf(`type P = { htmlFor?: string; bag?: Record<string, string> }
+export function C({ bag, ...rest }: P) { return <x-el {...bag} {...rest}>x</x-el> }`, new TestAdapter())
+    expect(closed.attrs.filter(a => a.restExpandedKey).map(a => a.spreadAliasShadows)).toEqual([undefined])
+  })
+})
+
+describe('a write after an open bag: the client JS keeps the later write', () => {
+  const clientJs = (source: string, adapter: TestAdapter): string =>
+    compileJSX(source, 'Component.tsx', { adapter }).files.find(f => f.type === 'clientJs')?.content ?? ''
+  const source = `'use client'
+type P = { a?: Record<string, unknown>; v?: string; [key: string]: unknown }
+export function C({ a, v, ...rest }: P) {
+  return <div><x-el {...rest} crossOrigin="lit">x</x-el><p {...a} htmlFor={v}>y</p></div>
+}`
+  test('hydration does not apply the cleared rest keys, and the client template clears the bag key', () => {
+    const js = clientJs(source, new TestAdapter())
+    expect(js).toContain('"crossorigin","crossOrigin"]')
+    expect(js).toContain('"for": _p.v, "htmlFor": undefined')
+  })
+  test('the client JS is the same whatever the target adapter renames', () => {
+    expect(clientJs(source, new RenamesAllAdapter())).toBe(clientJs(source, new TestAdapter()))
+  })
+})

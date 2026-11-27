@@ -74,7 +74,7 @@ import { extractFreeIdentifiersFromNode, initializerShapeContainsJsx, extractMul
 import { iterateJsTokens, replaceInExprContexts } from './scanner/js-scanner.ts'
 import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts'
 import { templatePartsToJsExpr } from './template-parts.ts'
-import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
+import { toHTMLAttrName, toSpreadAttrName, spreadKeysRenamedTo, spreadKeysInOtherCase, spreadKeysAliasingAttr, foldAttrName, jsxAttrKey, isBooleanAttr, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope, propsObjectIdentifier } from './scope/binding-scope.ts'
 import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
@@ -8139,6 +8139,7 @@ function processAttributes(
     })
   }
   markAttrsOverridableBySpread(attrs, ctx)
+  markAttrsShadowingSpreadAliases(attrs, ctx)
 
   // The ref callback is resolved once, for both the SSR-portal recognition
   // and BF063. BF063 runs after the loop so it sees every attribute this
@@ -8210,6 +8211,36 @@ function markAttrsOverridableBySpread(
       ...(value.kind === 'literal' && { literalText: true as const }),
     }
     if (tests.aliasOverriders.length > 0) attr.spreadAliasOverriders = tests.aliasOverriders
+  })
+}
+
+/**
+ * Sets `IRAttribute.spreadAliasShadows` on each attribute written after an
+ * open spread whose bag may carry the same attribute under a key a JSX
+ * runtime keeps apart from the attribute's own (`htmlFor` beside `for`,
+ * `tabIndex` beside `tabindex`, `spreadKeysAliasingAttr`). Only the JSX
+ * runtimes (the reference, the client JS) read it, so the keys are theirs,
+ * whatever the target adapter's spread helper renames. JS keeps the
+ * last write, so `<label {...rest} htmlFor="y">` renders one `for`, the
+ * literal's; a JSX runtime that writes the literal as `for` and the bag key
+ * as `htmlFor` holds two props and renders both.
+ *
+ * A closed rest key (`restExpandedKey`) is left as it is: when the rest
+ * lacks the key at render time, the earlier bag's value is the last write.
+ */
+function markAttrsShadowingSpreadAliases(attrs: IRAttribute[], ctx: TransformContext): void {
+  const firstSpread = attrs.findIndex(attr => attr.value.kind === 'spread')
+  if (firstSpread < 0) return
+  attrs.forEach((attr, index) => {
+    if (index <= firstSpread || attr.value.kind === 'spread' || attr.restExpandedKey) return
+    const aliasKeys = spreadKeysAliasingAttr(toSpreadAttrName(attr.name))
+    if (aliasKeys.length === 0) return
+    const shadowed = new Set<string>()
+    for (const spread of attrs.slice(0, index)) {
+      if (spread.value.kind !== 'spread') continue
+      for (const key of keysBagMayCarry(spread.value.expr, aliasKeys, ctx)) shadowed.add(key)
+    }
+    if (shadowed.size > 0) attr.spreadAliasShadows = [...shadowed]
   })
 }
 

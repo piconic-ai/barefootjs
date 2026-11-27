@@ -1576,6 +1576,12 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       const guarded = this.renderAliasGuardedAttr(attr, jsxName)
       const lowered = guarded ?? emitAttrValue(attr.value, this.elementAttrEmitter, jsxName)
       if (lowered) parts.push(lowered)
+      // An earlier spread's bag may hold this attribute under another key of
+      // the props object (`htmlFor` beside `for`): clear it, so the attribute
+      // renders once, with this later write (`IRAttribute.spreadAliasShadows`).
+      if (lowered && attr.spreadAliasShadows) {
+        parts.push(`{...{ ${attr.spreadAliasShadows.map(key => `${codeSafeStringLiteral(key)}: undefined`).join(', ')} }}`)
+      }
     }
 
     // Add event handlers (as no-op for SSR)
