@@ -90,7 +90,7 @@ describe('a const initialized by an applied zero-param arrow', () => {
     const unrelated = `function unrelated() { let label = 1; return label }`
     const named = (decls: string, body: string) =>
       irFor(decls, `${body}\n return <p>{B.k}</p>`).metadata.localConstants.find(c => c.name === 'B')!
-    // An unwritten prop named like an unrelated \`let\` lowers.
+    // An unwritten prop named like an unrelated `let` lowers.
     expect(named(unrelated, `const B = (() => ({ k: props.label }))()`).parsed?.kind).toBe('object-literal')
     for (const write of [
       `props = { label: 'x' }`,
@@ -104,8 +104,20 @@ describe('a const initialized by an applied zero-param arrow', () => {
       `for (label of ['a']) {}`, `const set = () => { label = 'x' }`, `label++`,
     ]) expect(destructured(write).callsFunctionLiteral).toBe(true)
     expect(destructured(`const other = label + '!'`).parsed?.kind).toBe('object-literal')
-    // A write to a same-named binding of another scope does not count.
-    expect(destructured(`const f = (label: string) => { label = 'x'; return label }`).parsed?.kind).toBe('object-literal')
+    // Writes go by spelling, a sound over-approximation: a write to another
+    // binding of the same name keeps the call too (BF101, never an empty render).
+    expect(destructured(`const f = (label: string) => { label = 'x'; return label }`).callsFunctionLiteral).toBe(true)
+    // A write in a computed method key, which no parameter scope of the method holds (#4022 review).
+    expect(destructured(`const obj = { [(label = 'updated')](label: string) { return label } }`).callsFunctionLiteral).toBe(true)
+  })
+
+  test('a write in a later switch case counts, by spelling (#4022 review)', () => {
+    // `value` in `case 1` is the `let` of the shared switch scope, yet a
+    // write of that spelling anywhere keeps the call: over-refusal, loud.
+    const decls = `const value = 'outer'\nfunction f(n: number) { switch (n) { case 0: let value: string; break; case 1: value = 'shadow' } }`
+    expect(constantOf(`${decls}\nconst B = (() => ({ k: value }))()`, 'B').callsFunctionLiteral).toBe(true)
+    // Without the write, the const lowers.
+    expect(constantOf(`const value = 'outer'\nconst B = (() => ({ k: value }))()`, 'B').parsed?.kind).toBe('object-literal')
   })
 
   test('`arguments`, `this` and the like as a key or a member name read nothing', () => {
@@ -134,7 +146,7 @@ describe('a const initialized by an applied zero-param arrow', () => {
       `const B = (() => ({ f: () => 1 }))()`,
       // An applied arrow left under an operator after the peel.
       `const B = (() => (() => 1)() + 2)()`,
-      // A read of a \`let\` may see a later assignment.
+      // A read of a `let` may see a later assignment.
       `let n = 1\nn = 2\nconst B = (() => n)()`,
       // A block body under a non-null assertion.
       `const B = (() => { return { k: 'v' } })()!`,

@@ -1748,6 +1748,8 @@ import { fixture as moduleConstIifeBlockBodyClient } from './module-const-iife-b
 import { fixture as moduleConstIifeWithArgument } from './module-const-iife-with-argument'
 import { fixture as moduleConstIifeWithArgumentClient } from './module-const-iife-with-argument-client'
 import { fixture as moduleConstIifeSamplingBody } from './module-const-iife-sampling-body'
+import { fixture as moduleConstIifeReadNameWrittenInSwitch } from './module-const-iife-read-name-written-in-switch'
+import { fixture as moduleConstIifeReadNameWrittenInSwitchClient } from './module-const-iife-read-name-written-in-switch-client'
 import { fixture as componentConstIifeReturnsFunction } from './component-const-iife-returns-function'
 import { fixture as componentConstIifeReturnsFunctionClient } from './component-const-iife-returns-function-client'
 import { fixture as moduleConstIifeWriteBody } from './module-const-iife-write-body'
@@ -3167,6 +3169,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstIifeWithArgument,
   moduleConstIifeWithArgumentClient,
   moduleConstIifeSamplingBody,
+  moduleConstIifeReadNameWrittenInSwitch,
+  moduleConstIifeReadNameWrittenInSwitchClient,
   componentConstIifeReturnsFunction,
   componentConstIifeReturnsFunctionClient,
   moduleConstIifeWriteBody,

@@ -208,9 +208,14 @@ function recordStatement(stmt: ts.Statement, out: Map<string, Mutability>): void
   }
 }
 
-/** Whether `scope` holds statements (a file, a block, a `case`), whose declarations it records. */
+/** Whether `scope` holds statements (a file, a block, a `switch` body), whose declarations it records. */
 function recordStatementScope(scope: ts.Node, out: Map<string, Mutability>): boolean {
-  if (!(ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope) || ts.isCaseClause(scope) || ts.isDefaultClause(scope))) return false
+  if (ts.isCaseBlock(scope)) {
+    // The clauses of a `switch` share one lexical scope.
+    for (const clause of scope.clauses) for (const stmt of clause.statements) recordStatement(stmt, out)
+    return true
+  }
+  if (!(ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope))) return false
   for (const stmt of scope.statements) recordStatement(stmt, out)
   if (ts.isSourceFile(scope) || (ts.isBlock(scope) && ts.isFunctionLike(scope.parent))) recordHoistedVars(scope, out)
   return true
@@ -242,64 +247,58 @@ function scopeDeclarations(scope: ts.Node): ReadonlyMap<string, Mutability> | nu
   return out
 }
 
-/** The scope a name no scope declares resolves to (a global). */
-const GLOBAL_SCOPE = Symbol('global')
-
-/** Where a read or a write of `id` resolves (`resolveDeclaration`). */
-interface ResolvedBinding {
-  scope: ts.Node | typeof GLOBAL_SCOPE
-  kind: Mutability
-}
-
 /**
  * The declaration `id` refers to, resolved lexically: the nearest enclosing
  * scope that declares the name decides. A name no scope declares is a
- * global (`immutable` unless written). Null for a node with no parent chain
+ * global (`immutable`). Only reads are resolved; writes go by spelling
+ * (`writtenNames`). Null for a node with no parent chain
  * (a re-parse without parents), which the caller treats as mutable.
  */
-function resolveDeclaration(id: ts.Identifier): ResolvedBinding | null {
+function resolveDeclaration(id: ts.Identifier): { kind: Mutability } | null {
   for (let node: ts.Node | undefined = id.parent; node; node = node.parent) {
     const kind = scopeDeclarations(node)?.get(id.text)
-    if (kind) return { scope: node, kind }
-    if (ts.isSourceFile(node)) return { scope: GLOBAL_SCOPE, kind: 'immutable' }
+    if (kind) return { kind }
+    if (ts.isSourceFile(node)) return { kind: 'immutable' }
   }
   return null
 }
 
 /**
- * The bindings some statement of the file writes, by the scope each write
- * resolves to: an assignment (plain or compound), `++` / `--`, a
- * destructuring-assignment target (`({ label } = x)`, `[label] = y`) or a
- * `for (x of …)` / `for (x in …)` head (`isAssignmentTargetIdentifier`),
- * nested functions included. A parameter or a `const`-free name is
- * reassignable without `let`, so a write is what makes it mutable. Collected
- * once per file.
+ * The names some statement of the file writes, by spelling only: an
+ * assignment (plain or compound), `++` / `--`, a destructuring-assignment
+ * target (`({ label } = x)`, `[label] = y`) or a `for (x of …)` / `for (x in
+ * …)` head (`isAssignmentTargetIdentifier`), wherever it sits (a nested
+ * function, a method, a computed key, a `switch` case). Writes are
+ * deliberately not resolved to a declaration: a sound over-approximation,
+ * so no scope rule can attribute a write to the wrong binding. A read of a
+ * name written anywhere keeps the call (BF101) even when the write targets
+ * another binding of that spelling. Collected once per file.
  */
-const writesByFile = new WeakMap<ts.SourceFile, Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>>>()
+const writtenNamesByFile = new WeakMap<ts.SourceFile, ReadonlySet<string>>()
 
-function writtenBindings(sourceFile: ts.SourceFile): Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>> {
-  const cached = writesByFile.get(sourceFile)
+function writtenNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
+  const cached = writtenNamesByFile.get(sourceFile)
   if (cached) return cached
-  const writes = new Map<ts.Node | typeof GLOBAL_SCOPE, Set<string>>()
+  const names = new Set<string>()
   const visit = (node: ts.Node): void => {
-    if (ts.isIdentifier(node) && isAssignmentTargetIdentifier(node)) {
-      const at = resolveDeclaration(node)?.scope ?? GLOBAL_SCOPE
-      const names = writes.get(at) ?? new Set<string>()
-      names.add(node.text)
-      writes.set(at, names)
-    }
+    if (ts.isIdentifier(node) && isAssignmentTargetIdentifier(node)) names.add(node.text)
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
-  writesByFile.set(sourceFile, writes)
-  return writes
+  writtenNamesByFile.set(sourceFile, names)
+  return names
 }
 
-/** Whether some statement writes the binding `id` resolves to, or it is a `let` / `var` / `catch` binding. */
+/**
+ * Whether a read of `id` may see a value assigned after its declaration: it
+ * resolves to a `let` / `var` / `catch` binding (`resolveDeclaration`), or a
+ * name of its spelling is written anywhere in the file (`writtenNames`), a
+ * parameter, a prop or a `const` alike.
+ */
 function isMutableRead(id: ts.Identifier, sourceFile: ts.SourceFile): boolean {
+  if (writtenNames(sourceFile).has(id.text)) return true
   const resolved = resolveDeclaration(id)
-  if (!resolved || resolved.kind === 'mutable') return true
-  return writtenBindings(sourceFile).get(resolved.scope)?.has(id.text) === true
+  return !resolved || resolved.kind === 'mutable'
 }
 
 /**
@@ -309,7 +308,8 @@ function isMutableRead(id: ts.Identifier, sourceFile: ts.SourceFile): boolean {
  * or `var`, or any binding a statement writes, a parameter or prop included
  * (`label = 'updated'` after `const B = (() => ({ label }))()`). Each read is
  * resolved to the declaration it sees (`resolveDeclaration`), so a `const`
- * or an unwritten prop named like an unrelated `let` is not one.
+ * or an unwritten prop named like an unrelated `let` is not one; a write of
+ * the same spelling anywhere makes it one (`writtenNames`).
  */
 function readsMutableBinding(body: ts.Expression, sourceFile: ts.SourceFile): boolean {
   return forEachReadIdentifier(body, id => isMutableRead(id, sourceFile))

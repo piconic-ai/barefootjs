@@ -51,6 +51,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // call (BF101 on the template adapters); the CSR template renders it empty,
   // as before #4022.
   'component-const-iife-reads-written-prop',
+  // A module IIFE const reading a name a `switch` case writes elsewhere
+  // keeps the call (writes go by spelling); the CSR template renders it
+  // empty, as before #4022.
+  'module-const-iife-read-name-written-in-switch',
   // #3954: a memo calling a literal const's method that spreads a prop
   // (`api.add()`). SSR refuses it on the template adapters (BF101, pinned under
   // `array-literal-element-spread`), and the CSR template does not carry a

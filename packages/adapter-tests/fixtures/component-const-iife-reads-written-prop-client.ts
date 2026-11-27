@@ -14,15 +14,16 @@ function unrelated() {
   let label = 1
   return label
 }
-export function ComponentConstIifeReadsWrittenPropClient({ label, n }: { label: string; n: number }) {
-  const B = (() => ({ label, n }))()
+export function ComponentConstIifeReadsWrittenPropClient({ label, n, m }: { label: string; n: number; m: string }) {
+  const B = (() => ({ label, n, m }))()
   label = 'updated'
   ;[n] = [9]
-  return <p>{/* @client */ B.label}|{/* @client */ B.n}</p>
+  const obj = { [(m = 'updated')](m: string) { return m } }
+  return <p>{/* @client */ B.label}|{/* @client */ B.n}|{/* @client */ B.m}</p>
 }
 `,
-  props: { label: 'hi', n: 1 },
+  props: { label: 'hi', n: 1, m: 'mm' },
   expectedHtml: `
-    <p bf-s="test" bf="s2"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/--></p>
+    <p bf-s="test" bf="s3"><!--bf:s0--><!--/-->|<!--bf:s1--><!--/-->|<!--bf:s2--><!--/--></p>
   `,
 })
