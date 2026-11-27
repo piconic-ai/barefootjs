@@ -2334,6 +2334,27 @@
         "text"
       ]
     },
+    "children-body-const-fallback-read": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "children-chained-nullish-fallback-escaped": {
       "kinds": [
         "identifier",
@@ -2379,6 +2400,59 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "children-fallback-const-row-shadow": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "children-fallback-reactive-read": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "children-fallback-value-shapes": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
         "text"
       ]
     },

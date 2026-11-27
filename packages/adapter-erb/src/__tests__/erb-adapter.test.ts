@@ -844,3 +844,26 @@ export function C(props: { v?: number | null; n: number }) {
     expect(template).toContain('(v[:n] - 1)')
   })
 })
+
+describe('ErbAdapter - children fallback read diagnostics', () => {
+  /** Error codes a compile of `body` inside a component reading `props.children` and `props.items` reports. */
+  function errorCodes(body: string): string[] {
+    const source = `export function C(props: { children?: unknown; items: number[] }) {\n  ${body}\n}\n`
+    const result = compileJSX(source, 'C.tsx', { adapter: new ErbAdapter() })
+    return [...new Set(result.errors.filter(e => e.severity === 'error').map(e => e.code))]
+  }
+
+  const unsupported = ['!props.items.fill(0)', '!!props.items.fill(0)', 'props.items.fill(0).length > 0', "props.items.fill(0).join(',')"]
+  for (const op of ['??', '||']) {
+    for (const fallback of unsupported) {
+      test(`an unsupported fallback \`children ${op} ${fallback}\` is refused, read directly or through a const`, () => {
+        expect(errorCodes(`return <p>{props.children ${op} ${fallback}}</p>`)).toEqual(['BF101'])
+        expect(errorCodes(`const label = props.children ${op} ${fallback}\n  return <p>{label}</p>`)).toEqual(['BF101'])
+      })
+    }
+    test(`a supported boolean fallback \`children ${op} false\` compiles clean`, () => {
+      expect(errorCodes(`return <p>{props.children ${op} false}</p>`)).toEqual([])
+      expect(errorCodes(`const label = props.children ${op} false\n  return <p>{label}</p>`)).toEqual([])
+    })
+  }
+})
