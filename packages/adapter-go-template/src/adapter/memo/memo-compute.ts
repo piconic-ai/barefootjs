@@ -1653,6 +1653,19 @@ function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string
 }
 
 /**
+ * Whether `e` reads one prop off the props object `propsObjectName`
+ * (`props.n`, or `props['n']` when `staticBracket`).
+ */
+function readsPropsObjectMember(
+  e: Extract<ParsedExpr, { kind: 'member' }>,
+  propsObjectName: string | null,
+  staticBracket: boolean,
+): boolean {
+  if (!propsObjectName || (e.computed && !staticBracket)) return false
+  return e.object.kind === 'identifier' && e.object.name === propsObjectName
+}
+
+/**
  * #2448: every INPUT prop name a constructor-evaluated `parsed` expression
  * reads, either via a `<propsObjectName>.<name>` member access (object-props
  * signature, e.g. `props.n`) or a bare identifier bound to a destructured
@@ -1682,6 +1695,10 @@ function propsAccessNameFromParsed(ctx: GoEmitContext, node: ParsedExpr): string
  * adapter that later re-derives a nested field still needs the base field
  * seeded).
  *
+ * `staticBracketReads` also counts a static bracket read of the props object
+ * (`props['children']`) as the prop it names; off by default, so the
+ * dependency maps built before it (#2448, #3961) read what they did.
+ *
  * This is a best-effort STRUCTURAL walk over the child's OWN analysis-time
  * `parsed` tree — not a re-derivation of the Go initializer text, which
  * isn't available yet at registration time (the cross-file shape pre-pass,
@@ -1691,6 +1708,7 @@ export function collectPropsReadByCtorInit(
   body: ParsedExpr,
   propsObjectName: string | null,
   propNames: ReadonlySet<string>,
+  options: { staticBracketReads?: boolean } = {},
 ): Set<string> {
   const found = new Set<string>()
   const visit = (e: ParsedExpr, bound: ReadonlySet<string>): void => {
@@ -1702,12 +1720,7 @@ export function collectPropsReadByCtorInit(
         if (!propsObjectName && propNames.has(e.name) && !bound.has(e.name)) found.add(e.name)
         return
       case 'member':
-        if (
-          propsObjectName &&
-          !e.computed &&
-          e.object.kind === 'identifier' &&
-          e.object.name === propsObjectName
-        ) {
+        if (readsPropsObjectMember(e, propsObjectName, options.staticBracketReads ?? false)) {
           found.add(e.property)
           return
         }

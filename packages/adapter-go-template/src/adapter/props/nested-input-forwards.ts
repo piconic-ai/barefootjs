@@ -20,6 +20,9 @@
 import {
   BindingScope,
   buildImportAliasMap,
+  planComponentProps,
+  resolveComponentPropKeys,
+  type AttrValue,
   type ComponentIR,
   type IRComponent,
   type IRNode,
@@ -36,6 +39,27 @@ export interface NestedInputForward {
   readonly prop: string
   /** The parent's caller-facing Input fields the value reads (`Children`). */
   readonly reads: ReadonlySet<string>
+  /**
+   * Fields read only by the explicit writer a `{...props}` param overrides
+   * when the parent's caller passes it (`seed={props.children} {...props}`
+   * with `seed` optional): they reach the nested prop only when none of
+   * `unlessPassed` (caller-facing keys) is passed.
+   */
+  readonly fallbackReads: ReadonlySet<string>
+  readonly unlessPassed: ReadonlySet<string>
+  /** The keys this call may pass to `child`: `'any'` when it spreads an object. */
+  readonly writes: CallWrites
+}
+
+/** The keys a component call may pass: `'any'` when it spreads an object. */
+export type CallWrites = ReadonlySet<string> | 'any'
+
+/** The keys `comp`'s call may pass to the component it calls. */
+export function callWrites(comp: Pick<IRComponent, 'props' | 'children'>): CallWrites {
+  if (comp.props.some(p => p.value.kind === 'spread')) return 'any'
+  const keys = new Set(comp.props.map(p => p.name))
+  if (comp.children.length > 0) keys.add('children')
+  return keys
 }
 
 /**
@@ -51,17 +75,23 @@ export interface NestedDerivedReading {
   readonly field: string
 }
 
-/** How many nested hops a forwarded value is followed through. */
-const MAX_FORWARD_DEPTH = 8
-
 type Meta = Pick<ComponentIR['metadata'], 'propsObjectName' | 'propsParams' | 'localConstants' | 'imports'>
 
+/** Reads the caller-facing fields of a component's props a value reads, evaluated in a given scope. */
+type PropReader = (value: ParsedExpr, scope: BindingScope) => Set<string>
+
 /**
- * The nested child props in `ir`'s tree whose expression value reads one of
- * `ir`'s own props, directly (`seed={props.children}`, `seed={children}`)
- * or through a body const (`const c = props.children`, `const { children } =
- * props`). A loop row's binding shadows a prop of the same name; a
- * `/* @client *\/` prop never reaches the constructor and is skipped.
+ * The nested child props in `ir`'s tree whose value reads one of `ir`'s own
+ * props, after the shared props plan has decided which writer of each key
+ * the constructor uses (`planComponentProps` / `resolveComponentPropKeys`,
+ * as `planChildCallProps` does): an explicit prop a later writer replaces
+ * is dropped, and a key a `{...props}` spread carries reads the parent's
+ * param of that name (also when it only overrides the explicit writer when
+ * passed). A value reads a prop directly (`seed={props.children}`,
+ * `seed={props['children']}`, `seed={children}`) or through a body const
+ * (`const c = props.children`, `const { children } = props`). A loop row's
+ * binding shadows a name at the call; a `/* @client *\/` prop never reaches
+ * the constructor and is skipped.
  */
 export function collectNestedInputForwards(ir: { metadata: Meta; root: IRNode }): NestedInputForward[] {
   const meta = ir.metadata
@@ -70,10 +100,9 @@ export function collectNestedInputForwards(ir: { metadata: Meta; root: IRNode })
   const forwards: NestedInputForward[] = []
   const visitComponent = (comp: IRComponent, scope: BindingScope): void => {
     const child = aliases.get(comp.name) ?? comp.name
-    for (const prop of comp.props) {
-      if (prop.value.kind !== 'expression' || prop.clientOnly || !prop.value.parsed) continue
-      const reads = reader(prop.value.parsed, scope)
-      if (reads.size > 0) forwards.push({ child, prop: prop.name, reads })
+    const writes = callWrites(comp)
+    for (const [prop, r] of callKeyReads(comp, meta, reader, scope)) {
+      if (r.reads.size > 0 || r.fallbackReads.size > 0) forwards.push({ child, prop, writes, ...r })
     }
   }
   walkComponents(ir.root, BindingScope.EMPTY, visitComponent)
@@ -81,10 +110,67 @@ export function collectNestedInputForwards(ir: { metadata: Meta; root: IRNode })
 }
 
 /**
- * A function from a nested prop's value to the caller-facing fields of
- * `meta`'s props it reads, following body consts once each.
+ * Each key of `comp`'s call and the parent fields the value its constructor
+ * writes for that key reads. A call that also spreads an object whose keys
+ * are unknown reads every expression prop as written, the way the
+ * constructor lowers it.
  */
-function propReader(meta: Meta): (value: ParsedExpr, scope: BindingScope) => Set<string> {
+interface KeyReads { reads: Set<string>; fallbackReads: Set<string>; unlessPassed: Set<string> }
+
+function callKeyReads(comp: IRComponent, meta: Meta, reader: PropReader, scope: BindingScope): Map<string, KeyReads> {
+  const out = new Map<string, KeyReads>()
+  const at = (key: string): KeyReads => {
+    let r = out.get(key)
+    if (!r) out.set(key, (r = { reads: new Set(), fallbackReads: new Set(), unlessPassed: new Set() }))
+    return r
+  }
+  const valueReads = (value: AttrValue): Set<string> => {
+    const prop = comp.props.find(p => p.value === value)
+    if (value.kind !== 'expression' || !value.parsed || prop?.clientOnly) return new Set()
+    return reader(value.parsed, scope)
+  }
+  const plan = planComponentProps(
+    { props: comp.props, children: comp.children, slotId: null },
+    { propsObjectName: meta.propsObjectName ?? null, propsParams: meta.propsParams ?? [] },
+  )
+  const resolved = resolveComponentPropKeys(plan)
+  if (resolved === null) {
+    for (const prop of comp.props) for (const f of valueReads(prop.value)) at(prop.name).reads.add(f)
+    return out
+  }
+  const spreadShadowed = !!meta.propsObjectName && scope.isBound(meta.propsObjectName)
+  for (const key of resolved) {
+    const r = at(key.key)
+    const present = spreadShadowed ? [] : key.presentParams
+    const baseReads = key.base?.kind === 'value' ? valueReads(key.base.value) : new Set<string>()
+    if (key.base?.kind === 'props-param' && !spreadShadowed) baseReads.add(paramField(meta, key.base.name))
+    for (const f of baseReads) (present.length > 0 ? r.fallbackReads : r.reads).add(f)
+    for (const param of present) {
+      r.reads.add(paramField(meta, param))
+      r.unlessPassed.add(paramKey(meta, param))
+    }
+  }
+  return out
+}
+
+/** The key the caller writes for `meta`'s param `name` (its local binding). */
+function paramKey(meta: Meta, name: string): string {
+  const param = (meta.propsParams ?? []).find(p => p.name === name)
+  return param?.sourceName ?? name
+}
+
+/** The caller-facing Input field of `meta`'s param `name` (its local binding). */
+function paramField(meta: Meta, name: string): string {
+  return capitalizeFieldName(paramKey(meta, name))
+}
+
+/**
+ * A {@link PropReader} for `meta`'s props, following body consts once each.
+ * The value's own names are resolved in the use-site `scope` (a loop row
+ * binding shadows them); a const's initializer is resolved where it is
+ * declared, the component body, whatever loop rows enclose the use.
+ */
+function propReader(meta: Meta): PropReader {
   const propsObjectName = meta.propsObjectName ?? null
   const params = meta.propsParams ?? []
   const localNames = new Set(params.map(p => p.name))
@@ -94,18 +180,24 @@ function propReader(meta: Meta): (value: ParsedExpr, scope: BindingScope) => Set
     if (!c.isModule && c.parsed) consts.set(c.name, c.parsed)
   }
   const constNames = new Set(consts.keys())
-  return (value, scope) => {
+  const readsOf = (e: ParsedExpr, scope: BindingScope): Set<string> => {
     const found = new Set<string>()
+    if (propsObjectName && scope.isBound(propsObjectName)) return found
+    for (const read of collectPropsReadByCtorInit(e, propsObjectName, localNames, { staticBracketReads: true })) {
+      if (propsObjectName || !scope.isBound(read)) found.add(capitalizeFieldName(sourceOf.get(read) ?? read))
+    }
+    return found
+  }
+  return (value, scope) => {
+    const found = readsOf(value, scope)
     const seen = new Set<string>()
-    const pending: ParsedExpr[] = [value]
-    for (let e = pending.pop(); e; e = pending.pop()) {
-      for (const read of collectPropsReadByCtorInit(e, propsObjectName, localNames)) {
-        if (propsObjectName || !scope.isBound(read)) found.add(capitalizeFieldName(sourceOf.get(read) ?? read))
-      }
-      for (const name of collectPropsReadByCtorInit(e, null, constNames)) {
-        if (seen.has(name) || scope.isBound(name)) continue
+    const pending: Array<{ e: ParsedExpr; scope: BindingScope }> = [{ e: value, scope }]
+    for (let item = pending.pop(); item; item = pending.pop()) {
+      if (item.e !== value) for (const r of readsOf(item.e, item.scope)) found.add(r)
+      for (const name of collectPropsReadByCtorInit(item.e, null, constNames)) {
+        if (seen.has(name) || item.scope.isBound(name)) continue
         seen.add(name)
-        pending.push(consts.get(name)!)
+        pending.push({ e: consts.get(name)!, scope: BindingScope.EMPTY })
       }
     }
     return found
@@ -163,29 +255,42 @@ function walkComponents(
  * component's {@link NestedInputForward}s, `derivedReading` the field of a
  * component that a prop it receives feeds directly
  * (`derivedFieldReading` over its late-delivery deps). A value forwarded on
- * again is followed up to {@link MAX_FORWARD_DEPTH} hops, each
- * (component, prop) pair once.
+ * again is followed through any number of components, each (component,
+ * prop) pair once, so a cycle of forwards terminates.
  */
 export function nestedDerivedReading(
   parent: string,
   propName: string,
+  parentCallWrites: CallWrites,
   forwardsOf: (component: string) => readonly NestedInputForward[] | undefined,
   derivedReading: (component: string, prop: string) => string | undefined,
 ): NestedDerivedReading | undefined {
   const seen = new Set<string>()
-  const follow = (component: string, prop: string, depth: number): NestedDerivedReading | undefined => {
+  const follow = (component: string, prop: string, writes: CallWrites): NestedDerivedReading | undefined => {
     const field = capitalizeFieldName(prop)
     for (const f of forwardsOf(component) ?? []) {
-      if (!f.reads.has(field)) continue
+      if (!reaches(f, field, writes)) continue
       const direct = derivedReading(f.child, f.prop)
       if (direct !== undefined) return { child: f.child, prop: f.prop, owner: f.child, field: direct }
       const key = `${f.child}\0${f.prop}`
-      if (depth >= MAX_FORWARD_DEPTH || seen.has(key)) continue
+      if (seen.has(key)) continue
       seen.add(key)
-      const deeper = follow(f.child, f.prop, depth + 1)
+      const deeper = follow(f.child, f.prop, f.writes)
       if (deeper) return { child: f.child, prop: f.prop, owner: deeper.owner, field: deeper.field }
     }
     return undefined
   }
-  return follow(parent, propName, 0)
+  return follow(parent, propName, parentCallWrites)
+}
+
+/**
+ * Whether `field` reaches `f`'s nested prop when the component holding `f`
+ * is called with `writes`: always for a plain read, and for a fallback read
+ * only when that call can pass none of the keys that override it.
+ */
+function reaches(f: NestedInputForward, field: string, writes: CallWrites): boolean {
+  if (f.reads.has(field)) return true
+  if (!f.fallbackReads.has(field)) return false
+  if (writes === 'any') return false
+  return ![...f.unlessPassed].some(k => writes.has(k))
 }

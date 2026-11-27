@@ -6,7 +6,11 @@ import { createFixture } from '../src/types'
  * component's state on every adapter: static text children, no children,
  * static markup children, static children of a call nested in a loop row,
  * a static JSX-valued prop, a loop row binding that shadows the forwarded
- * prop, and a nested prop no state is computed from. The twin of
+ * prop, a nested prop no state is computed from, a static bracket read of
+ * static children, a const read in a loop row whose own parameter shadows
+ * the const, and through `{...props}`: a static JSX-valued prop the spread
+ * carries, and an explicit writer the spread replaces (a required param, or
+ * an optional one the call passes). The twin of
  * `children-forwarded-into-child-prop-seed`.
  */
 export const fixture = createFixture({
@@ -35,6 +39,22 @@ function Quiet(props: { seed?: unknown }) {
 function Toned(props: { children?: unknown }) {
   return <Quiet seed={props.children} />
 }
+function ViaBracket(props: { children?: unknown }) {
+  return <Kid seed={props['children']} />
+}
+function RowShadowsConst({ children, items }: { children?: unknown; items: string[] }) {
+  const captured = children
+  return <ul>{items.map((captured) => <li key={captured}><Kid seed={captured} /></li>)}</ul>
+}
+function SpreadSeed(props: { seed?: unknown }) {
+  return <Kid {...props} />
+}
+function SpreadRequired(props: { children?: unknown; seed: unknown }) {
+  return <Kid seed={props.children} {...props} />
+}
+function SpreadPassed(props: { children?: unknown; seed?: unknown }) {
+  return <Kid seed={props.children} {...props} />
+}
 export function Host(props: { label: string; items: string[] }) {
   return (
     <div>
@@ -45,6 +65,11 @@ export function Host(props: { label: string; items: string[] }) {
       <ViaHeader header={<em>own</em>} />
       <Shadowed items={props.items}>{props.label}</Shadowed>
       <Toned>{props.label}</Toned>
+      <ViaBracket>own</ViaBracket>
+      <RowShadowsConst items={props.items}>{props.label}</RowShadowsConst>
+      <SpreadSeed seed={<em>own</em>} />
+      <SpreadRequired seed="x">{props.label}</SpreadRequired>
+      <SpreadPassed seed="x">{props.label}</SpreadPassed>
     </div>
   )
 }
@@ -65,6 +90,14 @@ export function Host(props: { label: string; items: string[] }) {
         <li data-key="b"><b bf-s="test_s7_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></li>
       </ul>
       <s bf-s="test_s9_s0" bf="s1"><!--bf:s0-->quiet<!--/--></s>
+      <b bf-s="test_s10_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <ul bf-s="test_s12" bf="s1">
+        <li data-key="a"><b bf-s="test_s12_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></li>
+        <li data-key="b"><b bf-s="test_s12_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b></li>
+      </ul>
+      <b bf-s="test_s13_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s15_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
+      <b bf-s="test_s17_s0" bf="s1"><!--bf-cond-start:s0-->children<!--bf-cond-end:s0--></b>
     </div>
   `,
 })

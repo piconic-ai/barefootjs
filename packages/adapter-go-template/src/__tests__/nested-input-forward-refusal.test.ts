@@ -83,6 +83,33 @@ function Inner(props: { children?: unknown }) {
     ['a JSX-valued named prop', `function Inner(props: { header?: unknown }) {
   return <Kid seed={props.header} />
 }`, '<Inner header={<i>{props.label}</i>} />'],
+    ['a static bracket read', `function Inner(props: { children?: unknown }) {
+  return <Kid seed={props['children']} />
+}`, '<Inner>{props.label}</Inner>'],
+    ['a body const read in a loop row whose parameter shadows what the const reads', `function Inner({ children, items }: { children?: unknown; items: string[] }) {
+  const captured = children
+  return <ul>{items.map((children) => <li key={children}><Kid seed={captured} /></li>)}</ul>
+}`, '<Inner items={props.items}>{props.label}</Inner>'],
+    ['ten forwarding components in a row', `function Hop1(props: { seed?: unknown }) {\n  return <Hop2 seed={props.seed} />\n}\nfunction Hop2(props: { seed?: unknown }) {\n  return <Hop3 seed={props.seed} />\n}\nfunction Hop3(props: { seed?: unknown }) {\n  return <Hop4 seed={props.seed} />\n}\nfunction Hop4(props: { seed?: unknown }) {\n  return <Hop5 seed={props.seed} />\n}\nfunction Hop5(props: { seed?: unknown }) {\n  return <Hop6 seed={props.seed} />\n}\nfunction Hop6(props: { seed?: unknown }) {\n  return <Hop7 seed={props.seed} />\n}\nfunction Hop7(props: { seed?: unknown }) {\n  return <Hop8 seed={props.seed} />\n}\nfunction Hop8(props: { seed?: unknown }) {\n  return <Hop9 seed={props.seed} />\n}\nfunction Hop9(props: { seed?: unknown }) {\n  return <Hop10 seed={props.seed} />\n}\nfunction Hop10(props: { seed?: unknown }) {\n  return <Kid seed={props.seed} />\n}
+function Inner(props: { children?: unknown }) {
+  return <Hop1 seed={props.children} />
+}`, '<Inner>{props.label}</Inner>'],
+    ['a JSX-valued prop a props spread carries', `function Inner(props: { seed?: unknown }) {
+  return <Kid {...props} />
+}`, '<Inner seed={<i>{props.label}</i>} />'],
+    ['children a props spread carries', `function KidC(props: { children?: unknown }) {
+  const [v] = createSignal(props.children ?? 'none')
+  return <u>{v() === 'none' ? 'fallback' : 'children'}</u>
+}
+function Inner(props: { children?: unknown }) {
+  return <KidC {...props} />
+}`, '<Inner>{props.label}</Inner>'],
+    ['an explicit writer a spread overrides only when passed, not passed', `function Inner(props: { children?: unknown; seed?: unknown }) {
+  return <Kid seed={props.children} {...props} />
+}`, '<Inner>{props.label}</Inner>'],
+    ['an explicit writer after a props spread', `function Inner(props: { children?: unknown; seed?: unknown }) {
+  return <Kid {...props} seed={props.children} />
+}`, '<Inner seed="x">{props.label}</Inner>'],
   ]
   for (const [name, inner, call] of refused) {
     test(`refused: ${name}`, () => {
@@ -112,6 +139,22 @@ function Inner(props: { children?: unknown }) {
     ['a client-only nested prop', `function Inner(props: { children?: unknown }) {
   return <Kid seed={/* @client */ props.children} />
 }`, '<Inner>{props.label}</Inner>'],
+    ['static children through a static bracket read', `function Inner(props: { children?: unknown }) {
+  return <Kid seed={props['children']} />
+}`, '<Inner>own</Inner>'],
+    ['a loop row binding that shadows the body const', `function Inner({ children, items }: { children?: unknown; items: string[] }) {
+  const captured = children
+  return <ul>{items.map((captured) => <li key={captured}><Kid seed={captured} /></li>)}</ul>
+}`, '<Inner items={props.items}>{props.label}</Inner>'],
+    ['an explicit writer a spread of a required param replaces', `function Inner(props: { children?: unknown; seed: unknown }) {
+  return <Kid seed={props.children} {...props} />
+}`, '<Inner seed="x">{props.label}</Inner>'],
+    ['an explicit writer a spread overrides when passed, passed', `function Inner(props: { children?: unknown; seed?: unknown }) {
+  return <Kid seed={props.children} {...props} />
+}`, '<Inner seed="x">{props.label}</Inner>'],
+    ['a static JSX-valued prop a props spread carries', `function Inner(props: { seed?: unknown }) {
+  return <Kid {...props} />
+}`, '<Inner seed={<i>own</i>} />'],
   ]
   for (const [name, inner, call] of delivered) {
     test(`not refused: ${name}`, () => {

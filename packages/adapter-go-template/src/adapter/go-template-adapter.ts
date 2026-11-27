@@ -206,7 +206,7 @@ import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWriters } from "./props/props-spread.ts"
 import { derivedFieldReading, passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseTemplateTimeDeliveryToNestedDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
-import { collectNestedInputForwards, nestedDerivedReading, type NestedInputForward } from "./props/nested-input-forwards.ts"
+import { callWrites, collectNestedInputForwards, nestedDerivedReading, type NestedInputForward } from "./props/nested-input-forwards.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, childrenInputFieldValue, childrenInputRead, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -1506,20 +1506,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * BF101 when `propName` (`children` or a JSX-valued prop), delivered to
-   * `<compName>` (declared `declaredName`) after its construction, reaches
+   * the call `comp` (of `declaredName`) after its construction, reaches
    * a constructor-derived field: one of its own (#3961), or one of a nested
    * component it forwards the value into (#3986). Returns whether it refused.
    */
-  private refuseLateDelivery(compName: string, declaredName: string, propName: string, loc: SourceLocation): boolean {
-    if (refuseTemplateTimeDeliveryToDerivedField(this.state, compName, this.lateDeliveryDerivedDeps(declaredName), propName, loc)) return true
+  private refuseLateDelivery(comp: IRComponent, declaredName: string, propName: string, loc: SourceLocation): boolean {
+    if (refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), propName, loc)) return true
     const nested = nestedDerivedReading(
       declaredName,
       propName,
+      callWrites(comp),
       (component) => this.childNestedInputForwards.get(component),
       (component, prop) => derivedFieldReading(this.lateDeliveryDerivedDeps(component), prop),
     )
     if (!nested) return false
-    refuseTemplateTimeDeliveryToNestedDerivedField(this.state, compName, nested, propName, loc)
+    refuseTemplateTimeDeliveryToNestedDerivedField(this.state, comp.name, nested, propName, loc)
     return true
   }
 
@@ -7198,7 +7199,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.extractScopedHtmlChildren(children) !== null) continue
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
-        this.refuseLateDelivery(comp.name, declaredName, prop.name, prop.loc)
+        this.refuseLateDelivery(comp, declaredName, prop.name, prop.loc)
         this.state.pendingChildrenDefines.push({
           name,
           content: this.renderWrapperRowDefine(children),
@@ -7242,7 +7243,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private refuseTemplateTimeChildren(comp: IRComponent): void {
     const declaredName = this.resolveChildName(comp.name)
-    this.refuseLateDelivery(comp.name, declaredName, 'children', comp.loc)
+    this.refuseLateDelivery(comp, declaredName, 'children', comp.loc)
   }
 
   /**
