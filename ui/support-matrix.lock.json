@@ -7198,6 +7198,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -9213,6 +9219,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -9847,9 +9877,27 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -16763,6 +16811,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -17655,6 +17727,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -17670,6 +17748,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -18970,6 +19060,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
               ]
             },
             {
@@ -25912,6 +26008,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -26660,6 +26780,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -26675,6 +26801,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -27699,6 +27837,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
               ]
             },
             {
@@ -32501,6 +32645,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -32655,6 +32823,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -32670,6 +32844,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -34847,6 +35033,24 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -35523,6 +35727,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -35538,6 +35748,12 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -36502,6 +36718,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
               ]
             },
             {
@@ -49739,6 +49961,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
                 "array-equality-through-inlined-const"
@@ -54575,6 +54803,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -55203,6 +55455,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -55212,6 +55470,18 @@
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -56092,6 +56362,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
               ]
             },
             {
@@ -60346,6 +60622,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -60494,6 +60794,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -60509,6 +60815,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {

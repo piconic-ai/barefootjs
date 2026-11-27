@@ -288,6 +288,37 @@ func Coerce[F any](zero F, v any) F {
 	panic(fmt.Sprintf("bf.Coerce: a %T cannot be a %s", v, target))
 }
 
+// nullChildrenT is the type of the value PassChildren hands a child Input's
+// `interface{}` Children field for a passed `null`: a host nil there means the
+// caller passed no children. Only ChildrenIn reads it.
+type nullChildrenT struct{}
+
+// PassChildren is v as the children a parent passes into a child Input's
+// Children field, which the generated code spells `ChildInput{}.Children`:
+// Coerce, except that a `null` into an `interface{}` field stays apart from
+// an omitted one, which ChildrenIn reads as `undefined`.
+func PassChildren[F any](zero F, v any) F {
+	if isNull(jsValue(v)) {
+		if c, ok := any(nullChildrenT{}).(F); ok {
+			return c
+		}
+	}
+	return Coerce(zero, v)
+}
+
+// ChildrenIn is a component's `interface{}` Children Input field as JS reads
+// `props.children`: `undefined` when the Input leaves it out, `null` when a
+// parent passed `null` (PassChildren), else the children themselves.
+func ChildrenIn(v any) any {
+	if v == nil {
+		return Undefined
+	}
+	if _, ok := v.(nullChildrenT); ok {
+		return nil
+	}
+	return v
+}
+
 // jsValuer is an Opt (of any T) seen through `any`.
 type jsValuer interface{ V() any }
 
