@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A block memo computing `typeof` in a local before its `return`: the
+  // memo is left uncomputed, so the slot renders empty.
+  'memo-typeof-block-statements': { limitation: 'memo-block-unlowered-operator' },
   // A bag key that is not one attribute name is written as it is
   // (`x onmouseover=alert(1)="x"`), where the reference drops it.
   'spread-bag-unsafe-attr-names': { limitation: 'spread-bag-unsafe-attr-name' },

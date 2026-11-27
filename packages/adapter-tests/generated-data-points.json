@@ -4425,6 +4425,26 @@
       }
     }
   ],
+  "const-typeof-unread-member": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
   "controlled-signal": [
     {
       "name": "gen:value:zero",
@@ -12287,6 +12307,66 @@
       }
     }
   ],
+  "memo-typeof-block-return": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-block-return-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-block-statements": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
   "memo-typeof-filter-callback": [
     {
       "name": "gen:items:empty",
@@ -12300,6 +12380,46 @@
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "memo-typeof-object-member": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
+  "memo-typeof-object-member-client": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
       }
     }
   ],

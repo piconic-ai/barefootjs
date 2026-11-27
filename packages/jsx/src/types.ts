@@ -1959,12 +1959,12 @@ export interface SignalInfo {
    */
   parsed?: ParsedExpr
   /**
-   * The operator no template lowers that `initialValue` applies at its root
-   * (`createSignal(typeof props.x)`), when its parse is the `unsupported`
-   * node `parsed` leaves out (`unloweredOperator`). Read by the server-read
-   * refusal of such operators, which sees nested ones in `parsed`.
+   * The parse of `initialValue` when `parsed` leaves it out and it is, at its
+   * root, an operator no template lowers (`createSignal(typeof props.x)`, an
+   * `unsupported` node with an `operator`). Read only by the server-read
+   * refusal of such operators (`refuseUnloweredOperators`).
    */
-  unloweredRootOperator?: 'typeof'
+  unparsedValue?: ParsedExpr
   /**
    * Set when `initialValue` is a read of one prop, bare or with a single
    * `??` / `||` fallback (`props.checked`, `checked ?? false`,
@@ -2185,12 +2185,14 @@ export interface MemoInfo {
    */
   parsed?: ParsedExpr
   /**
-   * The operator no template lowers that the expression body applies at its
-   * root (`createMemo(() => typeof props.x)`), when its parse is the
-   * `unsupported` node `parsed` leaves out (`unloweredOperator`). Read by the
-   * server-read refusal of such operators, which sees nested ones in `parsed`.
+   * The parse of the value the memo returns when `parsed` leaves it out: an
+   * object-literal expression body (`() => ({ kind: typeof props.x })`), or
+   * an operator no template lowers at the root of an expression body or of a
+   * block body's single `return` (`() => { return typeof props.x }`). Read
+   * only by the server-read refusal of such operators
+   * (`refuseUnloweredOperators`); never lowered.
    */
-  unloweredRootOperator?: 'typeof'
+  unparsedValue?: ParsedExpr
   /**
    * Whether the memo's effective body is a template literal (`() => `…`` or a
    * block body whose first `return` is one), classified once at analysis time

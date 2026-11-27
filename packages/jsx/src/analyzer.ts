@@ -349,7 +349,7 @@ function parseSignalInitializer(signal: AnalyzerContext['signals'][number], ctx:
   if (!signal.initialValue) return
   const parsed = parseExpression(`(${signal.initialValue})`)
   if (parsed.kind !== 'unsupported') signal.parsed = parsed
-  else if (parsed.operator) signal.unloweredRootOperator = parsed.operator
+  else if (parsed.operator) signal.unparsedValue = parsed
   const seed = signal.isModule ? null : signalPropSeed(signal.parsed, ctx.propsParams, ctx.propsObjectName)
   if (seed) signal.propSeed = seed
 }
@@ -2137,7 +2137,7 @@ function memoBodyNode(callback: ts.Expression): { node: ts.Node; call: boolean }
 function memoStructuredBody(
   callback: ts.Expression | undefined,
   ctx: AnalyzerContext,
-): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete' | 'unloweredRootOperator'> {
+): Pick<MemoInfo, 'parsed' | 'parsedBlock' | 'parsedBlockComplete' | 'unparsedValue'> {
   // Structured parse of the arrow BODY, so adapters can shape-match the memo
   // on a tree instead of re-parsing `computation`. Parse from the type-STRIPPED
   // body (`ctx.getJS`, same source as `computation`) — `getText` would keep
@@ -2179,8 +2179,24 @@ function memoStructuredBody(
   // represented — nothing silently omitted (see `MemoInfo.parsedBlockComplete`).
   const parsedBlockComplete =
     parsedBlock && blockBody ? parsedBlock.length === blockBody.statements.length : undefined
-  const unloweredRootOperator = parsedBody?.kind === 'unsupported' ? parsedBody.operator : undefined
-  return { parsed, parsedBlock, parsedBlockComplete, ...(unloweredRootOperator && { unloweredRootOperator }) }
+  const unparsedValue = memoUnparsedValue(parsedBody, blockBody, ctx)
+  return { parsed, parsedBlock, parsedBlockComplete, ...(unparsedValue && { unparsedValue }) }
+}
+
+/**
+ * `MemoInfo.unparsedValue`: the parse of the value a memo returns that
+ * `parsed` leaves out. An expression body that is an object literal, or an
+ * operator no template lowers (`unsupported` with an `operator`); a block
+ * body that is a single `return` of such an operator, which the tolerant
+ * block parse drops. Any other block is left out: what its other statements
+ * do is not modelled here.
+ */
+function memoUnparsedValue(parsedBody: ParsedExpr | undefined, blockBody: ts.Block | undefined, ctx: AnalyzerContext): ParsedExpr | undefined {
+  if (parsedBody) return parsedBody.kind === 'object-literal' || (parsedBody.kind === 'unsupported' && parsedBody.operator) ? parsedBody : undefined
+  const only = blockBody?.statements.length === 1 ? blockBody.statements[0] : undefined
+  if (!only || !ts.isReturnStatement(only) || !only.expression) return undefined
+  const returned = parseExpression(ctx.getJS(only.expression))
+  return returned.kind === 'unsupported' && returned.operator ? returned : undefined
 }
 
 /**

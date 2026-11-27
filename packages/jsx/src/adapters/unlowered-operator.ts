@@ -17,7 +17,10 @@
  * reached (`walkServerReads`), and within its expression only what its
  * evaluation runs (`walkEvaluated`): an operator in a callback handed to a
  * call is refused, one in a function stored and never called is not. A
- * `/* @client *\/` read and an event handler read none.
+ * `/* @client *\/` read and an event handler read none. A memo whose value
+ * has no `parsed` tree is read from its `unparsedValue` (an object-literal
+ * body, a single `return`); a const object literal only through the members
+ * a template position reads, since a template inlines the member it reads.
  */
 
 import { evaluatedWalkContext, walkEvaluated, type EvaluatedAt, type EvaluatedWalkContext } from '../evaluated-expr-walk.ts'
@@ -34,39 +37,174 @@ import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
 export function refuseUnloweredOperators(ir: ComponentIR, sink: UninlinableSeedCallSink): void {
   const readByProp = childPropReads(ir)
   const ctx = evaluatedWalkContext(ir.metadata, { component: BindingScope.EMPTY, module: BindingScope.EMPTY })
-  // A child prop's value is computed apart from any emitter too (Go's
-  // constructor drops it); markup positions are refused by their emitters.
   const component = BindingScope.forComponent(ir.metadata.propsObjectName ?? null)
+  const sources: ReadSource[] = []
   walkTemplatePositions(ir.root, ({ expr, scope, attrName, loc, role }) => {
-    if (role !== 'prop' || (attrName !== undefined && isEventHandlerName(attrName))) return
-    const node = firstUnloweredOperator(expr, { scope: scope ?? component, from: 'component' }, ctx)
+    if (attrName !== undefined && isEventHandlerName(attrName)) return
+    const at: EvaluatedAt = { scope: scope ?? component, from: 'component' }
+    sources.push({ expr, at, whole: false })
+    // A child prop's value is computed apart from any emitter too (Go's
+    // constructor drops it); markup positions are refused by their emitters.
+    if (role !== 'prop') return
+    const node = firstUnloweredOperator(expr, at, ctx)
     if (node !== null) recordChildProp(attrName, operatorText(node), loc, sink)
   }, component)
-  const rootOperators = unloweredRootOperators(ir)
-  walkServerReads(ir, (read) => {
+  const reads: ServerRead[] = []
+  walkServerReads(ir, read => reads.push(read))
+  // A signal seed or a memo body is computed apart from any emitter, from
+  // the whole of each const it reads: a const it reads counts as read whole.
+  for (const read of reads) {
+    if (read.expr) sources.push({ expr: read.expr, at: { scope: BindingScope.EMPTY, from: read.scope }, whole: read.kind === 'signal' || read.kind === 'memo' })
+  }
+  const unparsed = unparsedValues(ir)
+  const constPaths = readPathsByName(sources, literalConstNames(reads), ctx)
+  for (const read of reads) {
     // A module-scope declaration is out of scope, as for the array-element refusal.
-    if (read.scope === 'module') return
-    if (!read.expr) {
-      const operator = read.kind === 'signal' || read.kind === 'memo' ? rootOperators.get(read.name) : undefined
-      if (operator) record(read, `\`${operator}\``, !readByProp(read), sink)
-      return
-    }
-    const node = firstUnloweredOperator(read.expr, { scope: BindingScope.EMPTY, from: read.scope }, ctx)
+    if (read.scope === 'module') continue
+    const value = read.expr ?? (read.kind === 'signal' || read.kind === 'memo' ? unparsed.get(read.name) : undefined)
+    if (!value) continue
+    const at: EvaluatedAt = { scope: BindingScope.EMPTY, from: read.scope }
+    // A const read in a template position is read member by member (`o.n`
+    // inlines `o`'s `n`), so only the members those reads reach count. A
+    // signal or memo is computed whole, or not at all.
+    const reached = read.kind === 'const' && isLiteralContainer(value) ? nodesAtPaths(value, constPaths.get(read.name) ?? []) : [value]
+    const node = firstOf(reached, e => firstUnloweredOperator(e, at, ctx))
     if (node !== null) record(read, operatorText(node), !readByProp(read), sink)
-  })
+  }
+}
+
+/** An expression the server render evaluates, and where. */
+interface ReadSource {
+  expr: ParsedExpr
+  at: EvaluatedAt
+  /** Whether every const it reads is read whole, whatever member it names. */
+  whole: boolean
 }
 
 /**
- * The component signals and memos whose value expression is, at its root,
- * an operator no template lowers, by the name they are read under. Their
- * `parsed` is unset (an `unsupported` root), so the analyzer records the
- * operator apart (`unloweredRootOperator`).
+ * The parse each component signal and memo keeps apart from `parsed`
+ * (`unparsedValue`: an object-literal memo body, an operator at the root of
+ * a seed or of a memo's expression or single `return`), by the name it is
+ * read under.
  */
-function unloweredRootOperators(ir: ComponentIR): ReadonlyMap<string, string> {
-  const operators = new Map<string, string>()
-  for (const s of ir.metadata.signals) if (!s.isModule && s.unloweredRootOperator) operators.set(s.getter, s.unloweredRootOperator)
-  for (const m of ir.metadata.memos) if (!m.isModule && m.unloweredRootOperator) operators.set(m.name, m.unloweredRootOperator)
-  return operators
+function unparsedValues(ir: ComponentIR): ReadonlyMap<string, ParsedExpr> {
+  const values = new Map<string, ParsedExpr>()
+  for (const s of ir.metadata.signals) if (!s.isModule && s.unparsedValue) values.set(s.getter, s.unparsedValue)
+  for (const m of ir.metadata.memos) if (!m.isModule && m.unparsedValue) values.set(m.name, m.unparsedValue)
+  return values
+}
+
+function isLiteralContainer(e: ParsedExpr): boolean {
+  return e.kind === 'object-literal' || e.kind === 'array-literal'
+}
+
+/** The component consts the server render reads whose initializer is an object or array literal. */
+function literalConstNames(reads: readonly ServerRead[]): ReadonlySet<string> {
+  return new Set(reads.filter(r => r.kind === 'const' && r.scope === 'component' && r.expr && isLiteralContainer(r.expr)).map(r => r.name))
+}
+
+/** A member path a read takes from a value; `null` for a step whose key is not a literal. */
+type ReadPath = ReadonlyArray<string | null>
+
+/**
+ * The member paths each of `names` is read through in `sources`: `o.a.b` is
+ * `['a', 'b']`, `o[i]` is `[null]`, `o` alone (passed on, spread, compared)
+ * is `[]`, the whole value. A name a callback or loop row binds is not the
+ * const.
+ */
+function readPathsByName(sources: readonly ReadSource[], names: ReadonlySet<string>, ctx: EvaluatedWalkContext): ReadonlyMap<string, ReadPath[]> {
+  const paths = new Map<string, ReadPath[]>()
+  if (names.size === 0) return paths
+  const add = (name: string, path: ReadPath): void => {
+    const list = paths.get(name) ?? []
+    list.push(path)
+    paths.set(name, list)
+  }
+  for (const { expr, at, whole } of sources) {
+    // A chain is visited outermost first: its inner nodes are its own path, not reads of their own.
+    const inChain = new Set<ParsedExpr>()
+    walkEvaluated(expr, at, { ...ctx, entered: new Set() }, (e, eAt) => {
+      if (inChain.has(e)) return
+      const chain = memberChain(e)
+      if (!chain || !names.has(chain.name) || eAt.scope.isBound(chain.name)) return
+      for (const node of chain.nodes) inChain.add(node)
+      add(chain.name, whole ? [] : chain.path)
+    })
+  }
+  return paths
+}
+
+/** `e` as a member chain rooted at a bare name (`o`, `o.a`, `o.a[i]`), with the nodes it is made of. */
+function memberChain(e: ParsedExpr): { name: string; path: ReadPath; nodes: ParsedExpr[] } | null {
+  const steps: Array<string | null> = []
+  const nodes: ParsedExpr[] = []
+  let node = e
+  while (node.kind === 'member' || node.kind === 'index-access') {
+    steps.push(node.kind === 'member' ? node.property : null)
+    nodes.push(node)
+    node = node.object
+  }
+  if (node.kind !== 'identifier') return null
+  nodes.push(node)
+  return { name: node.name, path: steps.reverse(), nodes }
+}
+
+/**
+ * The subtrees of the literal `value` that `paths` read: a step into an
+ * object literal reaches the last property of that key and every spread
+ * after it (all spreads when no property has the key; into a spread object
+ * literal, only its own member of that key), a literal index into
+ * an array literal with no spread before it reaches that element. Any other
+ * step reads the node it stands on whole.
+ */
+function nodesAtPaths(value: ParsedExpr, paths: readonly ReadPath[]): ParsedExpr[] {
+  const reached: ParsedExpr[] = []
+  for (const path of paths) {
+    let current: ParsedExpr[] = [value]
+    for (const step of path) {
+      const next: ParsedExpr[] = []
+      for (const node of current) {
+        const members = step === null ? null : literalMembers(node, step)
+        if (members === null) reached.push(node)
+        else next.push(...members)
+      }
+      current = next
+    }
+    reached.push(...current)
+  }
+  return reached
+}
+
+/** What reading `key` of the literal `node` reaches, or `null` when `node` is not a literal container `key` can be followed into. */
+function literalMembers(node: ParsedExpr, key: string): ParsedExpr[] | null {
+  if (node.kind === 'object-literal') {
+    let last = -1
+    node.properties.forEach((p, i) => {
+      if (p.kind === 'prop' && p.key === key) last = i
+    })
+    const members: ParsedExpr[] = []
+    node.properties.forEach((p, i) => {
+      if (i === last && p.kind === 'prop') members.push(p.value)
+      // A spread of a literal reaches only its own member of that key.
+      else if (i > last && p.kind === 'spread') members.push(...(literalMembers(p.expr, key) ?? [p.expr]))
+    })
+    return members
+  }
+  if (node.kind === 'array-literal') {
+    const index = Number(key)
+    if (!Number.isInteger(index) || index < 0 || String(index) !== key) return null
+    if (node.elements.slice(0, index + 1).some(el => el.kind === 'unsupported')) return null
+    return node.elements[index] ? [node.elements[index]] : []
+  }
+  return null
+}
+
+function firstOf(nodes: readonly ParsedExpr[], find: (e: ParsedExpr) => ParsedExpr | null): ParsedExpr | null {
+  for (const node of nodes) {
+    const found = find(node)
+    if (found !== null) return found
+  }
+  return null
 }
 
 /** The first node evaluating `expr` runs that applies an operator no template lowers, or `null`. */

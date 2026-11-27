@@ -4,7 +4,7 @@ export default defineLimitation({
   kind: 'refusal',
   title: 'An operator no template lowers in a value read on the server',
   given:
-    'an operator outside comparison, arithmetic, `!` and unary `-` / `+` (`typeof x`, `a ** b`, `~a`, a bitwise or shift operator, `in`, `instanceof`) in a signal seed (`createSignal(typeof props.x)`), a memo body (`createMemo(() => typeof props.x)`, directly, through another memo or in a callback it runs), a component const initializer, or a child prop (`<Kid v={typeof props.x} />`) the server render reads',
+    'an operator outside comparison, arithmetic, `!` and unary `-` / `+` (`typeof x`, `a ** b`, `~a`, a bitwise or shift operator, `in`, `instanceof`) in a signal seed (`createSignal(typeof props.x)`), a memo body (`createMemo(() => typeof props.x)`, directly, through another memo, in a callback it runs, as the single `return` of a block body, or in a member of a returned object literal), a component const initializer (a const object literal only through a member a read reaches), or a child prop (`<Kid v={typeof props.x} />`) the server render reads',
   expected: 'the read renders the computed value (`string` for `typeof` of a string prop)',
   diagnostic: 'BF101',
   fixtures: [
@@ -12,6 +12,8 @@ export default defineLimitation({
     'signal-seed-typeof-prop',
     'memo-typeof-through-memo',
     'memo-typeof-filter-callback',
+    'memo-typeof-block-return',
+    'memo-typeof-object-member',
     'memo-exponent-operator',
     'const-typeof-prop',
     'memo-typeof-child-prop',

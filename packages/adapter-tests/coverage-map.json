@@ -4510,6 +4510,21 @@
         "text"
       ]
     },
+    "const-typeof-unread-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "context-provider": {
       "kinds": [
         "call",
@@ -13197,11 +13212,44 @@
         "text"
       ]
     },
+    "memo-typeof-block-return": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-block-return-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-block-statements": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-typeof-child-prop": {
       "kinds": [
         "call",
         "identifier",
-        "member"
+        "member",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -13244,10 +13292,37 @@
         "text"
       ]
     },
+    "memo-typeof-object-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-object-member-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-typeof-prop": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -13257,7 +13332,8 @@
     "memo-typeof-prop-client": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -13269,7 +13345,8 @@
         "binary",
         "call",
         "identifier",
-        "literal"
+        "literal",
+        "unsupported"
       ],
       "axes": [
         "binary:+",
@@ -13284,7 +13361,8 @@
         "binary",
         "call",
         "identifier",
-        "literal"
+        "literal",
+        "unsupported"
       ],
       "axes": [
         "binary:+",
@@ -21794,7 +21872,8 @@
     "signal-seed-typeof-prop": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [
@@ -21804,7 +21883,8 @@
     "signal-seed-typeof-prop-client": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "unsupported"
       ],
       "axes": [],
       "contexts": [

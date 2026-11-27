@@ -9593,6 +9593,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -9600,6 +9612,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -10359,6 +10377,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -10366,6 +10396,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -11209,6 +11245,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -11216,6 +11264,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -12083,6 +12137,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -12090,6 +12156,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -12837,6 +12909,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -12844,6 +12928,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -13579,6 +13669,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -13586,6 +13688,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -14327,6 +14435,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -14334,6 +14454,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -15063,6 +15189,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -15070,6 +15208,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -15811,6 +15955,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -15818,6 +15974,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -17887,6 +18049,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -17894,6 +18068,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -18947,6 +19127,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -18954,6 +19146,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -20187,6 +20385,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -20194,6 +20404,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -21439,6 +21655,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -21446,6 +21674,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -22493,6 +22727,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -22500,6 +22746,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -23535,6 +23787,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -23542,6 +23806,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -24583,6 +24853,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -24590,6 +24872,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -25601,6 +25889,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -25608,6 +25908,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -26649,6 +26955,18 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-block-statements",
+              "limitations": [
+                "memo-block-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-child-prop",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -26656,6 +26974,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -37885,6 +38209,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
@@ -38682,6 +39012,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -39651,6 +39987,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-member-signal-seed",
               "limitations": [
                 "module-const-array-member-signal-seed"
@@ -40549,6 +40891,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
@@ -41351,6 +41699,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
@@ -42136,6 +42490,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -42943,6 +43303,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
@@ -43722,6 +44088,12 @@
             },
             {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -44523,6 +44895,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
@@ -45128,6 +45506,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -45561,6 +45945,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -46015,6 +46405,12 @@
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -46478,6 +46874,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -46911,6 +47313,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -47353,6 +47761,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -47804,6 +48218,12 @@
               ]
             },
             {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -48219,6 +48639,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -48655,6 +49081,12 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -49926,7 +50358,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -49971,6 +50433,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50104,7 +50572,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -50149,6 +50647,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50282,7 +50786,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -50333,6 +50867,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50466,7 +51006,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -50511,6 +51081,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50644,7 +51220,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -50689,6 +51295,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -50828,7 +51440,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -50873,6 +51515,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -51006,7 +51654,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -51051,6 +51729,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -51184,7 +51868,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -51229,6 +51943,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {
@@ -51362,7 +52082,37 @@
               ]
             },
             {
+              "fixture": "memo-typeof-block-return",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-child-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
               "fixture": "memo-typeof-filter-callback",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-object-member",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-typeof-through-memo",
               "limitations": [
                 "server-read-unlowered-operator"
               ]
@@ -51407,6 +52157,12 @@
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
+              ]
+            },
+            {
+              "fixture": "signal-seed-typeof-prop",
+              "limitations": [
+                "server-read-unlowered-operator"
               ]
             },
             {

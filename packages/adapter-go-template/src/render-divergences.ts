@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A block memo computing `typeof` in a local before its `return`: the
+  // memo is left uncomputed, so the slot renders empty.
+  'memo-typeof-block-statements': { limitation: 'memo-block-unlowered-operator' },
   // A memo body falling back from `void 0`: the constructor has no value
   // for the memo, so the slot renders empty.
   'memo-void-nullish-fallback': { limitation: 'memo-void-operand' },

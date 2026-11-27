@@ -71,6 +71,29 @@ describe('refuseUnloweredOperators', () => {
     ])
   })
 
+  test('a block body that is one `return`, and an object literal body', () => {
+    expect(refused(`const k = createMemo(() => { return typeof props.x }); return <p>{k()}</p>`)).toEqual([`Memo 'k' computes`])
+    expect(refused(`const k = createMemo(function () { return typeof props.x }); return <p>{k()}</p>`)).toEqual([`Memo 'k' computes`])
+    // A memo is computed whole, so any member of its object counts.
+    expect(refused(`const k = createMemo(() => ({ kind: typeof props.x, n: 1 })); return <p>{k().n}</p>`)).toEqual([`Memo 'k' computes`])
+    // A block with other statements is not modelled.
+    expect(refused(`const k = createMemo(() => { const t = typeof props.x; return t }); return <p>{k()}</p>`)).toEqual([])
+  })
+
+  test('a const object literal: only the members a template position reaches', () => {
+    const decl = `const o = { kind: typeof props.x, n: 1, a: { kind: typeof props.x, n: 2 }, ...{ m: typeof props.x } }`
+    expect(refused(`${decl}; return <p>{o.n}{o.a.n}</p>`)).toEqual([])
+    expect(refused(`${decl}; const label = o.n; return <p>{label}</p>`)).toEqual([])
+    expect(refused(`${decl}; return <p>{/* @client */ o.kind}{o.n}</p>`)).toEqual([])
+    for (const read of ['o.kind', 'o.a.kind', 'o.m', 'o.a', 'JSON.stringify(o)', 'o.kind.toUpperCase()']) {
+      expect(refused(`${decl}; return <p>{${read}}</p>`)).toEqual([`'o' is initialized from`])
+    }
+    // A loop row named like the const is not the const.
+    expect(refused(`${decl}; return <ul>{['a'].map(o => <li key={o}>{o}</li>)}{o.n}</ul>`)).toEqual([])
+    // A memo or seed computes from the whole const.
+    expect(refused(`${decl}; const m = createMemo(() => o.n + 1); return <p>{m()}</p>`)).toEqual([`'o' is initialized from`])
+  })
+
   test('each operator no template lowers', () => {
     expect(operators(`const k = createMemo(() => typeof props.x); return <p>{k()}</p>`)).toEqual(['`typeof`'])
     expect(operators(`const k = createMemo(() => ~(props.n ?? 0)); return <p>{k()}</p>`)).toEqual(['`~`'])
