@@ -610,6 +610,7 @@ import { fixture as spreadOpenBagLiteralAliasBefore } from './spread-open-bag-li
 import { fixture as spreadClosedRestLiteralAliasAfter } from './spread-closed-rest-literal-alias-after'
 import { fixture as spreadOpenBagLiteralAliasAfter } from './spread-open-bag-literal-alias-after'
 import { fixture as spreadOpenBagLiteralOtherSpellingAfter } from './spread-open-bag-literal-other-spelling-after'
+import { fixture as spreadOpenPropsObjectLiteralAliasAfter } from './spread-open-props-object-literal-alias-after'
 import { fixture as spreadOpenBagBooleanValues } from './spread-open-bag-boolean-values'
 import { fixture as spreadClosedRestBooleanValues } from './spread-closed-rest-boolean-values'
 import { fixture as spreadOpenBagLiteralRenamedElsewhere } from './spread-open-bag-literal-renamed-elsewhere'
@@ -2294,6 +2295,7 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestLiteralAliasAfter,
   spreadOpenBagLiteralAliasAfter,
   spreadOpenBagLiteralOtherSpellingAfter,
+  spreadOpenPropsObjectLiteralAliasAfter,
   spreadOpenBagBooleanValues,
   spreadClosedRestBooleanValues,
   spreadOpenBagLiteralRenamedElsewhere,

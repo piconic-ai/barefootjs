@@ -21538,6 +21538,15 @@
         "attribute"
       ]
     },
+    "spread-open-props-object-literal-alias-after": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-optional-bag-literal-before": {
       "kinds": [
         "identifier"

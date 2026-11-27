@@ -179,6 +179,8 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-literal-renamed-elsewhere',
   'spread-open-bag-literal-case-alias',
   'spread-open-bag-literal-alias-after',
+  'spread-open-bag-literal-other-spelling-after',
+  'spread-open-props-object-literal-alias-after',
   // The CSR template renders a closed rest's `readOnly: true` as a bare
   // boolean, and the open bag reaches its element only through
   // `applyRestAttrs` (limitation `spread-bag-boolean-value`).

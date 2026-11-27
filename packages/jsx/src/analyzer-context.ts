@@ -211,6 +211,12 @@ export interface AnalyzerContext {
   propsType: TypeInfo | null
   propsParams: ParamInfo[]
   propsObjectName: string | null
+  /**
+   * Whether the props object's type admits keys it does not declare (an index
+   * signature, an external or extended type, no annotation): a spread of it
+   * may then carry any key.
+   */
+  propsObjectTypeOpen: boolean
   /** Whether the component reads its props object as a whole (`observesWholePropsObject`). */
   propsObjectObservedWhole: boolean
   restPropsName: string | null
@@ -334,6 +340,7 @@ export function createAnalyzerContext(
     propsType: null,
     propsParams: [],
     propsObjectName: null,
+    propsObjectTypeOpen: false,
     propsObjectObservedWhole: false,
     restPropsName: null,
     restPropsExpandedKeys: [],

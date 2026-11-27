@@ -16501,6 +16501,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17396,6 +17402,12 @@
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -18657,6 +18669,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "spread-optional-bag-literal-before",
               "limitations": [
                 "record-prop-bag-spread"
@@ -19621,6 +19639,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20555,6 +20579,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -21459,6 +21489,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22360,6 +22396,12 @@
               "fixture": "spread-open-bag-literal-other-spelling-after",
               "limitations": [
                 "attr-spread-key-overlap"
+              ]
+            },
+            {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -23285,6 +23327,12 @@
               ]
             },
             {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -24192,6 +24240,12 @@
               "fixture": "spread-open-bag-literal-renamed-elsewhere",
               "limitations": [
                 "spread-key-alias-literal-duplicate"
+              ]
+            },
+            {
+              "fixture": "spread-open-props-object-literal-alias-after",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {

@@ -1579,8 +1579,10 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       // An earlier spread's bag may hold this attribute under another key of
       // the props object (`htmlFor` beside `for`): clear it, so the attribute
       // renders once, with this later write (`IRAttribute.spreadAliasShadows`).
+      // `void 0`, not `undefined`: the author's scope may bind that name
+      // (`rows.map(undefined => …)`).
       if (lowered && attr.spreadAliasShadows) {
-        parts.push(`{...{ ${attr.spreadAliasShadows.map(key => `${codeSafeStringLiteral(key)}: undefined`).join(', ')} }}`)
+        parts.push(`{...{ ${attr.spreadAliasShadows.map(key => `${codeSafeStringLiteral(key)}: void 0`).join(', ')} }}`)
       }
     }
 

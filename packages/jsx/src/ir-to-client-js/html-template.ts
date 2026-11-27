@@ -652,8 +652,9 @@ function buildSpreadAttrsMergeCall(args: {
     }
     // An earlier bag's other key for this attribute (`htmlFor` beside a
     // later `for`, `IRAttribute.spreadAliasShadows`) is cleared, so the
-    // attribute renders once, with this later write.
-    for (const key of a.spreadAliasShadows ?? []) objMembers.push(`${JSON.stringify(key)}: undefined`)
+    // attribute renders once, with this later write. `void 0`, not
+    // `undefined`, which the author's scope may bind.
+    for (const key of a.spreadAliasShadows ?? []) objMembers.push(`${JSON.stringify(key)}: void 0`)
   }
   return `\${spreadAttrs({${objMembers.join(', ')}})}`
 }

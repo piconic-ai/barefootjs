@@ -8255,10 +8255,57 @@ function markAttrsShadowingSpreadAliases(attrs: IRAttribute[], ctx: TransformCon
     const shadowed = new Set<string>()
     for (const spread of attrs.slice(0, index)) {
       if (spread.value.kind !== 'spread') continue
-      for (const key of keysBagMayCarry(spread.value.expr, aliasKeys, ctx)) shadowed.add(key)
+      for (const key of keysBagMayClear(spread.value.expr, aliasKeys, ctx)) shadowed.add(key)
     }
     if (shadowed.size > 0) attr.spreadAliasShadows = [...shadowed]
   })
+}
+
+/**
+ * {@link keysBagMayCarry} for a key a JSX runtime only clears, never reads:
+ * a props object whose type admits undeclared keys (`props: Record<string,
+ * unknown>`) may carry any of them. The literal guard keeps the narrower
+ * answer, as reading an undeclared prop off it fails on a template adapter.
+ */
+function keysBagMayClear(spreadExpr: string, keys: readonly string[], ctx: TransformContext): readonly string[] {
+  const name = spreadExpr.trim()
+  if (name === ctx.analyzer.propsObjectName && !ctx.scope.isBound(name) && ctx.analyzer.propsObjectTypeOpen) return keys
+  const literal = literalBagKeys(constBagInitializer(parseExpression(name), ctx))
+  if (literal !== null) return keys.filter(key => literal.has(key))
+  return keysBagMayCarry(spreadExpr, keys, ctx)
+}
+
+/**
+ * A spread of a component `const` (`const sizeAttrs = size ? {…} : {}`)
+ * read as its initializer, one hop; any other expression as it is.
+ */
+function constBagInitializer(parsed: ParsedExpr | null, ctx: TransformContext): ParsedExpr | null {
+  if (parsed?.kind !== 'identifier' || ctx.scope.isBound(parsed.name)) return parsed
+  const constant = constantsByName(ctx).get(parsed.name)
+  return (constant?.declarationKind === 'const' && constant.parsed) || parsed
+}
+
+/**
+ * The keys an inline object spread can carry when it spells them all
+ * (`{...(size ? { width: size } : {})}`, `{...(on && { title: 't' })}`), or
+ * null when it may carry others (a nested spread, any other expression).
+ */
+function literalBagKeys(parsed: ParsedExpr | null): Set<string> | null {
+  if (parsed === null) return null
+  switch (parsed.kind) {
+    case 'object-literal':
+      return parsed.properties.every(p => p.kind === 'prop')
+        ? new Set(parsed.properties.map(p => (p.kind === 'prop' ? p.key : '')))
+        : null
+    case 'conditional': {
+      const consequent = literalBagKeys(parsed.consequent)
+      const alternate = consequent && literalBagKeys(parsed.alternate)
+      return consequent && alternate ? new Set([...consequent, ...alternate]) : null
+    }
+    // A falsy left side spreads nothing.
+    case 'logical': return parsed.op === '&&' ? literalBagKeys(parsed.right) : null
+    default: return null
+  }
 }
 
 /**

@@ -17346,6 +17346,62 @@
           ]
         }
       },
+      "spread-open-props-object-literal-alias-after": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        }
+      },
       "spread-optional-bag-literal-before": {
         "go-template": {
           "kind": "render",
@@ -19836,12 +19892,16 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-case-alias.ts"
       },
       "spread-open-bag-literal-other-spelling-after": {
-        "description": "An attribute after an open bag carrying its crossOrigin / tabIndex spelling renders once, with the…",
+        "description": "An attribute after an open bag carrying its crossOrigin / tabIndex / viewbox spelling renders once,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-other-spelling-after.ts"
       },
       "spread-open-bag-literal-renamed-elsewhere": {
         "description": "A literal crossOrigin before an open bag carrying crossOrigin renders one crossorigin, the bag value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-bag-literal-renamed-elsewhere.ts"
+      },
+      "spread-open-props-object-literal-alias-after": {
+        "description": "An attribute after a spread of an open props object carrying its htmlFor spread key renders once,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-open-props-object-literal-alias-after.ts"
       },
       "spread-optional-bag-literal-before": {
         "description": "A literal before an omitted optional bag spread renders",
@@ -22368,15 +22428,17 @@
     "whole-props-spread-undeclared-prop": {
       "title": "An undeclared prop through a whole-props spread",
       "kind": "silent",
-      "given": "a child that spreads its whole props object onto an element (`<b {...props}>`) is passed a prop its props type does not declare",
+      "given": "a component that spreads its whole props object onto an element (`<b {...props}>`) is passed a prop its props type does not declare, including one an index signature admits (`props: Record<string, unknown>`)",
       "expected": "the undeclared prop renders on the spread element (`title=\"passed\"`)",
       "actual": "drops the undeclared prop from the element",
       "fixtures": [
-        "child-undeclared-prop-whole-props-spread"
+        "child-undeclared-prop-whole-props-spread",
+        "spread-open-props-object-literal-alias-after"
       ],
       "adapters": [
         "blade",
         "erb",
+        "go-template",
         "jinja",
         "minijinja",
         "mojolicious",

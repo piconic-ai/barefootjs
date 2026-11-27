@@ -61,6 +61,8 @@ export const renderDivergences: RenderDivergences = {
   // (`htmlFor`, `crossOrigin`, `tabIndex`) renders beside the bag's value.
   'spread-open-bag-literal-alias-after': { limitation: 'attr-spread-key-overlap' },
   'spread-open-bag-literal-other-spelling-after': { limitation: 'attr-spread-key-overlap' },
+  // The undeclared `id` the open props object carries is dropped.
+  'spread-open-props-object-literal-alias-after': { limitation: 'whole-props-spread-undeclared-prop' },
   // A boolean bag value outside the reference's boolean attribute set
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },

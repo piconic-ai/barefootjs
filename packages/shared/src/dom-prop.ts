@@ -354,15 +354,22 @@ export function spreadKeysInOtherCase(attrName: string): string[] {
  * it writes the attribute itself under ({@link jsxAttrKey}): each key the
  * reference renames to it (`htmlFor` for `for`, `crossOrigin` for
  * `crossorigin`) and each key that spells it in another letter case
- * (`tabIndex` for `tabindex`). An element that writes the attribute and
- * spreads a bag holding one of these keys holds two props for one
- * attribute. `class` lists none: a bag's `className` is the runtime's own key.
+ * (`tabIndex` for `tabindex`), the lowercase spelling of an attribute
+ * written with capitals (`viewbox` for `viewBox`, which an SVG element keeps
+ * in camelCase) included. An element that writes the attribute and spreads a
+ * bag holding one of these keys holds two props for one attribute. `class`
+ * lists none: a bag's `className` is the runtime's own key.
  */
 export function spreadKeysAliasingAttr(attrName: string): string[] {
   if (attrName === 'class') return []
   const runtimeKey = jsxAttrKey(attrName)
-  const keys = [...spreadKeysRenamedTo(attrName, SPREAD_KEYS_RENAMED_BY_JSX_RUNTIME), ...spreadKeysInOtherCase(attrName)]
-  return keys.filter(key => key !== runtimeKey)
+  const keys = new Set([
+    ...spreadKeysRenamedTo(attrName, SPREAD_KEYS_RENAMED_BY_JSX_RUNTIME),
+    ...spreadKeysInOtherCase(attrName),
+    foldAttrName(attrName),
+  ])
+  keys.delete(runtimeKey)
+  return [...keys]
 }
 
 /** Every {@link SPREAD_KEY_ATTR_NAMES} key: a JSX runtime renames all of them. */
