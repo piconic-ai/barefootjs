@@ -198,7 +198,7 @@ import { optFieldElemType, propertyInfoToGo, typeInfoToGo, withoutNilMembers } f
 import { declaredNilRead, isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { isAnonymousObjectType, planSynthPropStructs, readsThroughBfGet } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
-import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
+import { CHILDREN_FIELD, propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
@@ -208,7 +208,7 @@ import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWrit
 import { passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
-import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
+import { childInputFieldValue, childrenInputFieldValue, childrenInputRead, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
 import { lowerChildInputFields, lowerLoopRowChildInputFields, lowerStaticChildDataKey, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
@@ -340,6 +340,41 @@ function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) =
   )
   if (!memos.some((m, i) => m.parsed !== ir.metadata.memos[i].parsed)) return ir
   return { ...ir, metadata: { ...ir.metadata, memos } }
+}
+
+/**
+ * Write the constructor's `in` struct (`bf<Name>In`) after the Input: every
+ * Input field, a `bf.Opt[T]` one (`copies`, in `shadowLines`' type) in the
+ * type the constructor reads it as, and the children slot through
+ * `childrenRead` when it is set (`childrenInputRead`). Returns the shadow with
+ * a copy for every field.
+ */
+function emitInputShadow(
+  outer: string[],
+  componentName: string,
+  lines: readonly string[],
+  shadowLines: readonly string[],
+  copies: InputShadow['copies'],
+  childrenRead: string | undefined,
+): InputShadow {
+  const optFields = new Set(copies.map(c => c.field))
+  const typeName = inputShadowTypeName(componentName)
+  let next = 0
+  outer.push(`// ${typeName} is ${componentName}Input as New${componentName}Props reads it: each`)
+  outer.push('// bf.Opt field as its JS value.')
+  outer.push(`type ${typeName} struct {`)
+  for (const line of lines) {
+    const name = line.trim().split(/\s+/)[0]
+    if (optFields.has(name)) {
+      outer.push(shadowLines[next++])
+    } else {
+      outer.push(line)
+      copies.push({ field: name, value: name === CHILDREN_FIELD && childrenRead !== undefined ? childrenRead : `input.${name}` })
+    }
+  }
+  outer.push('}')
+  outer.push('')
+  return { typeName, copies }
 }
 
 /**
@@ -1967,7 +2002,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (usesSearchParams) lines.push('\t\t\tSearchParams: b.SearchParams,')
     for (const { propsField, inputField, opt } of params) {
       // A `bf.Opt[T]` field takes the Props field's JS value as its state.
-      const value = opt ? childInputFieldValue(componentName, inputField, `b.${propsField}`, false) : `b.${propsField}`
+      // The children slot carries a `null` across the rebuild (`childrenInputFieldValue`).
+      const value = opt ? childInputFieldValue(componentName, inputField, `b.${propsField}`, false)
+        : inputField === CHILDREN_FIELD ? childrenInputFieldValue(componentName, inputField, `b.${propsField}`)
+        : `b.${propsField}`
       lines.push(`\t\t\t${inputField}: ${value},`)
     }
     lines.push('\t\t}')
@@ -2202,6 +2240,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (`Label redeclared`). Track emitted field names and keep only the
     // first entry for a given name.
     const emittedInputFields = new Set<string>()
+    // The children slot's read when it holds the JS value (`childrenInputRead`).
+    let childrenRead: string | undefined
     for (const param of ir.metadata.propsParams) {
       // #2525: caller-facing name, not the local destructure binding — a
       // caller-side composite `BadgeInput{N: 5}` literal is written against
@@ -2222,6 +2262,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         copies.push({ field: fieldName, value: optDefaultedInputRead(this.emitCtx, param, ir.metadata.propsParams, goType) ?? optInputRead(fieldName, goType) })
         continue
       }
+      childrenRead ??= childrenInputRead(param, goType, fieldName)
       lines.push(`\t${fieldName} ${goType}`)
     }
 
@@ -2280,27 +2321,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     outer.push('}')
     outer.push('')
     this.inputShadows.delete(componentName)
-    if (copies.length === 0) return
-    // Every field the Input declares, a `bf.Opt[T]` one in the type the
-    // constructor reads it as: the constructor's `in`.
-    const optFields = new Set(copies.map(c => c.field))
-    const typeName = inputShadowTypeName(componentName)
-    let next = 0
-    outer.push(`// ${typeName} is ${inputTypeName} as New${componentName}Props reads it: each`)
-    outer.push('// bf.Opt field as its JS value.')
-    outer.push(`type ${typeName} struct {`)
-    for (const line of lines) {
-      const name = line.trim().split(/\s+/)[0]
-      if (optFields.has(name)) {
-        outer.push(shadowLines[next++])
-      } else {
-        outer.push(line)
-        copies.push({ field: name, value: `input.${name}` })
-      }
-    }
-    outer.push('}')
-    outer.push('')
-    this.inputShadows.set(componentName, { typeName, copies })
+    if (copies.length === 0 && childrenRead === undefined) return
+    this.inputShadows.set(componentName, emitInputShadow(outer, componentName, lines, shadowLines, copies, childrenRead))
   }
 
   private generatePropsStruct(
@@ -2819,6 +2841,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childInputField(childName: string, goField: string, goValue: string, coerce = false): string {
     const declaredName = this.resolveChildName(childName)
     const optFields = this.knownOptInputFields.get(declaredName)
+    if (goField === CHILDREN_FIELD) return `${goField}: ${childrenInputFieldValue(declaredName, goField, goValue)}`
     const knownPlain = !coerce && optFields !== undefined && !optFields.has(goField)
     return `${goField}: ${childInputFieldValue(declaredName, goField, goValue, knownPlain)}`
   }

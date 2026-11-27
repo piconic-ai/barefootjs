@@ -12,7 +12,7 @@ import { capitalizeFieldName } from './go-naming.ts'
 export type PropsFieldMeta = Pick<ComponentIR['metadata'], 'propsParams' | 'signals' | 'memos'>
 
 /** The field name `Children`, which only the children prop may hold. */
-const CHILDREN_FIELD = capitalizeFieldName('children')
+export const CHILDREN_FIELD = capitalizeFieldName('children')
 
 /**
  * The Props struct field each props param is held in, by local binding.

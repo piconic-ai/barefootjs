@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // Forwarding `children={props.children}` from a call without children:
+  // the template passes an undefined variable to the child and raises.
+  'children-absent-forwarded': { limitation: 'forwarded-absent-children' },
   // A children fallback const read in a loop row whose parameter shadows a
   // name its initializer reads: the row renders empty.
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },

@@ -4041,12 +4041,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -4173,21 +4167,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -4333,12 +4315,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -4447,21 +4423,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -4607,12 +4571,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -4745,21 +4703,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -4905,12 +4851,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -5037,21 +4977,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -5197,12 +5125,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -5329,21 +5251,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -5489,12 +5399,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
@@ -5609,21 +5513,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -5769,12 +5661,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -5901,21 +5787,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -6061,12 +5935,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -6193,21 +6061,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -6353,12 +6209,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -6479,21 +6329,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -7359,6 +7197,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -8711,12 +8555,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8957,21 +8795,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -9393,9 +9219,27 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-markup-nullish-memo",
               "limitations": [
-                "const-iife-unlowered"
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -9621,21 +9465,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -10045,9 +9877,27 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -10060,12 +9910,6 @@
               "fixture": "children-read-into-state-shadow-transform",
               "limitations": [
                 "template-time-children-read-into-state"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -10387,21 +10231,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -10486,12 +10318,6 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -10925,12 +10751,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11171,21 +10991,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -11601,12 +11409,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11847,21 +11649,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -12277,12 +12067,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -12511,21 +12295,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -12941,12 +12713,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -13181,21 +12947,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -13593,12 +13347,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -13839,21 +13587,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -14269,12 +14005,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -14509,21 +14239,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -16141,12 +15859,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -16453,21 +16165,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -17111,9 +16811,27 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-markup-nullish-memo",
               "limitations": [
-                "const-iife-unlowered"
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -17399,21 +17117,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -18021,6 +17727,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -18039,6 +17751,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -18048,12 +17772,6 @@
               "fixture": "children-read-into-state-shadow-transform",
               "limitations": [
                 "template-time-children-read-into-state"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -18543,21 +18261,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -18660,12 +18366,6 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -19363,6 +19063,12 @@
               ]
             },
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
@@ -19372,12 +19078,6 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -19687,21 +19387,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -20339,12 +20027,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -20651,21 +20333,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -21309,12 +20979,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -21603,21 +21267,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -22261,12 +21913,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -22561,21 +22207,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -23177,12 +22811,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -23489,21 +23117,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -24147,12 +23763,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -24447,21 +24057,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -25638,12 +25236,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25890,15 +25482,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -26422,9 +26008,27 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-markup-nullish-memo",
               "limitations": [
-                "const-iife-unlowered"
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -26662,15 +26266,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -27182,6 +26780,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -27200,6 +26804,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -27209,12 +26825,6 @@
               "fixture": "children-read-into-state-shadow-transform",
               "limitations": [
                 "template-time-children-read-into-state"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -27566,15 +27176,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -27677,12 +27281,6 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -28242,6 +27840,12 @@
               ]
             },
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
@@ -28251,12 +27855,6 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -28506,15 +28104,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -29044,12 +28636,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -29296,15 +28882,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -29840,12 +29420,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -30086,15 +29660,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -30642,12 +30210,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -30882,15 +30444,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -31396,12 +30952,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -31648,15 +31198,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -32186,12 +31730,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -32426,15 +31964,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -33113,6 +32645,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -33267,6 +32823,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -33282,6 +32844,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -34723,12 +34297,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -34987,21 +34555,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -35477,9 +35033,21 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-markup-nullish-memo",
               "limitations": [
-                "const-iife-unlowered"
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -35717,21 +35285,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -36171,6 +35727,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -36189,6 +35751,12 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -36198,12 +35766,6 @@
               "fixture": "children-read-into-state-shadow-transform",
               "limitations": [
                 "template-time-children-read-into-state"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -36627,21 +36189,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -36732,12 +36282,6 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -37177,6 +36721,12 @@
               ]
             },
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
@@ -37186,12 +36736,6 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -37453,21 +36997,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -37937,12 +37469,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -38201,21 +37727,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -38691,12 +38205,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -38937,21 +38445,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -39427,12 +38923,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -39685,21 +39175,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -40151,12 +39629,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -40415,21 +39887,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -40905,12 +40365,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -41157,21 +40611,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -41684,12 +41126,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -41732,21 +41168,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -42090,12 +41514,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -42138,21 +41556,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -42490,12 +41896,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -42562,21 +41962,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -42673,12 +42061,6 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -42950,12 +42332,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -42998,21 +42374,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -43356,12 +42720,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -43404,21 +42762,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -43762,12 +43108,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
@@ -43816,21 +43156,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -44186,12 +43514,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -44234,21 +43556,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -44574,12 +43884,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -44622,21 +43926,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -44980,12 +44272,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "destructure-default-spread-method-memo",
               "limitations": [
                 "array-literal-element-spread"
@@ -45028,21 +44314,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -46128,12 +45402,6 @@
               ]
             },
             {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -46267,12 +45535,6 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -46412,12 +45674,6 @@
               ]
             },
             {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -46554,12 +45810,6 @@
               ]
             },
             {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -46693,12 +45943,6 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -46844,12 +46088,6 @@
               ]
             },
             {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -46983,12 +46221,6 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -47128,12 +46360,6 @@
               ]
             },
             {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -47267,12 +46493,6 @@
               "fixture": "module-const-array-spread-unresolved",
               "limitations": [
                 "module-const-array-spread-unresolved"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-sampling-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -50741,6 +49961,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-absent-forwarded",
+              "limitations": [
+                "forwarded-absent-children"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
                 "array-equality-through-inlined-const"
@@ -53276,12 +52502,6 @@
               ]
             },
             {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
-              ]
-            },
-            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -54931,12 +54151,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -55141,15 +54355,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -55595,9 +54803,27 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-markup-nullish-memo",
               "limitations": [
-                "const-iife-unlowered"
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -55793,15 +55019,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -56235,6 +55455,12 @@
               ]
             },
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -56247,6 +55473,18 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -56256,12 +55494,6 @@
               "fixture": "children-read-into-state-shadow-transform",
               "limitations": [
                 "template-time-children-read-into-state"
-              ]
-            },
-            {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
               ]
             },
             {
@@ -56553,15 +55785,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -56664,12 +55890,6 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-object-member-signal-seed",
-              "limitations": [
-                "module-const-object-member-signal-seed"
               ]
             },
             {
@@ -57145,15 +56365,15 @@
               ]
             },
             {
-              "fixture": "children-fallback-const-row-shadow",
+              "fixture": "children-absent-forwarded",
               "limitations": [
-                "children-fallback-const-shadowed-read"
+                "forwarded-absent-children"
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
+              "fixture": "children-fallback-const-row-shadow",
               "limitations": [
-                "const-iife-unlowered"
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -57361,15 +56581,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -57815,12 +57029,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -58025,15 +57233,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -58479,12 +57681,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -58683,15 +57879,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -59155,12 +58345,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -59353,15 +58537,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -59789,12 +58967,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -59999,15 +59171,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -60453,12 +59619,6 @@
               ]
             },
             {
-              "fixture": "component-const-iife-block-body",
-              "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -60651,15 +59811,9 @@
               ]
             },
             {
-              "fixture": "module-const-iife-block-body",
+              "fixture": "module-const-iife-reads-module-const",
               "limitations": [
-                "const-iife-unlowered"
-              ]
-            },
-            {
-              "fixture": "module-const-iife-with-argument",
-              "limitations": [
-                "const-iife-unlowered"
+                "module-const-iife-reads-module-const"
               ]
             },
             {
@@ -61468,6 +60622,30 @@
               ]
             },
             {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-seed-bindings",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -61616,6 +60794,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "children-body-default-nullish-seed",
+              "limitations": [
+                "body-default-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -61631,6 +60815,18 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-markup-nullish-memo",
+              "limitations": [
+                "children-element-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-param-default-nullish-seed",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {

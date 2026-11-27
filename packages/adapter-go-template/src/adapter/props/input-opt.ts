@@ -88,3 +88,24 @@ export function optInputRead(field: string, internalType: string): string {
 export function childInputFieldValue(declaredName: string, goField: string, goValue: string, knownPlain: boolean): string {
   return knownPlain ? goValue : `bf.Coerce(${declaredName}Input{}.${goField}, ${goValue})`
 }
+
+/**
+ * The constructor's read of the children slot's Input field (#3987), when the
+ * field holds the JS value (`interface{}`): through `bf.ChildrenIn`, so an
+ * Input that leaves the field out reads as `undefined`, as a JS call without
+ * children does, and a `null` a parent passed (`bf.PassChildren`) as `null`.
+ * Undefined for a concrete field, which is read as it is.
+ */
+export function childrenInputRead(param: PropParam, goType: string, field: string): string | undefined {
+  if (param.isRest || !isChildrenPropParam(param) || !isAnyGoType(goType)) return undefined
+  return `bf.ChildrenIn(input.${field})`
+}
+
+/**
+ * The value a parent writes into a child's Children Input field: through
+ * `bf.PassChildren`, which keeps a passed `null` apart from an omitted field
+ * for {@link childrenInputRead}, and is `bf.Coerce` otherwise.
+ */
+export function childrenInputFieldValue(declaredName: string, goField: string, goValue: string): string {
+  return `bf.PassChildren(${declaredName}Input{}.${goField}, ${goValue})`
+}
