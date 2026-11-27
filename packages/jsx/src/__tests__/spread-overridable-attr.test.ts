@@ -81,6 +81,14 @@ export function C({ ...rest }: P) { return <img crossOrigin="anonymous" {...rest
     expect(attrOf(elementOf(ir, 'img'), 'crossorigin').spreadOverridable?.expr).toBe('rest.crossorigin == null ? "anonymous" : undefined')
   })
 
+  test('the lowercase spelling of that literal is guarded the same way, never against `crossOrigin`', () => {
+    // A literal `crossorigin` is the same write as a `crossOrigin` literal, so a
+    // bag carrying `crossOrigin` must not remove it (#3995).
+    const ir = irOf(`${open}
+export function C({ ...rest }: P) { return <img crossorigin="anonymous" {...rest} /> }`)
+    expect(attrOf(elementOf(ir, 'img'), 'crossorigin').spreadOverridable?.expr).toBe('rest.crossorigin == null ? "anonymous" : undefined')
+  })
+
   test('a guarded literal prints as written, whatever the attribute name', () => {
     const ir = irOf(`${open}
 export function C({ ...rest }: P) { return <input disabled="" hidden {...rest} /> }`)

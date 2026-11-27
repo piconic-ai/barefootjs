@@ -19587,6 +19587,12 @@
               ]
             },
             {
+              "fixture": "component-open-rest-key-override",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -29336,6 +29342,12 @@
               ]
             },
             {
+              "fixture": "component-open-rest-key-override",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -38892,6 +38904,12 @@
               "fixture": "component-const-prop-object-identity",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "component-open-rest-key-override",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
               ]
             },
             {
@@ -57311,6 +57329,12 @@
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
+              ]
+            },
+            {
+              "fixture": "component-open-rest-key-override",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
               ]
             },
             {
