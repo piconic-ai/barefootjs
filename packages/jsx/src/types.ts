@@ -2659,6 +2659,19 @@ export interface ConstantInfo {
    */
   identityBound?: boolean
   /**
+   * When true, two evaluations of the initializer can give different values:
+   * it evaluates an allocating expression somewhere (an object or array
+   * literal, `new X()`, a call, a function expression; `initializerMayDiffer`),
+   * whatever it reads. Evaluating it twice gives two objects (`{ k: 'v' }`,
+   * `mk()`), or two samples (`'x' + Math.random()`). Set by
+   * `recordIdentityCandidate` (`const-identity.ts`). The CSR template binds
+   * such a const once per template evaluation instead of splicing the
+   * initializer at each read (#4021); unlike `identityBound` it ignores
+   * reactive reads, because one template evaluation reads each signal, memo
+   * and prop at one value anyway.
+   */
+  freshPerEvaluation?: boolean
+  /**
    * When true, this module-level const is shadowed inside the component: a
    * destructured prop, the props object, or a component-scope const,
    * function, signal or memo binds the same name, so a read of the name in

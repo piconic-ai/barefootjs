@@ -9,6 +9,7 @@ import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, extractFreeIdentifiersFromText, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
+import { bindTemplateConsts, noteBindingReads, templateBoundConstNames, wrapTemplateConstBindings, type TemplateConstBindings } from './template-const-bindings.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
 import { BF_KEY, BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml, isRawTextTag } from '@barefootjs/shared'
@@ -1953,6 +1954,19 @@ export interface TemplateOptions {
    * — never re-derived here.
    */
   markupSlotIds?: ReadonlySet<string>
+  /**
+   * The consts this template evaluation binds once (#4021,
+   * `template-const-bindings.ts`): the env substitutes each with its
+   * parameter, and every emitted expression records the parameters it reads
+   * here, so the top of the recursion wraps the body in only those.
+   */
+  constBindings?: TemplateConstBindings
+  /**
+   * The static template path's constant env, when the top of the recursion
+   * built it (with `constBindings`' parameters in place of bound consts).
+   * Absent: built from `inlinableConstants`.
+   */
+  constantEnv?: CsrEnv | null
 }
 
 /**
@@ -1970,9 +1984,20 @@ export function irToComponentTemplate(
   restSpreadNames?: ReadonlySet<string>,
   propsObjectName?: string | null,
   markupSlotIds?: ReadonlySet<string>,
-  restPropsName?: string | null
+  restPropsName?: string | null,
+  boundConstNames?: ReadonlySet<string>,
 ): string {
-  return irToComponentTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName })
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName }
+  const constantEnv = inlinableConstantEnv(inlinableConstants)
+  if (!constantEnv || !boundConstNames || boundConstNames.size === 0) {
+    return irToComponentTemplateWithOpts(node, opts)
+  }
+  // A read of a fresh-per-evaluation const sees the one value the template
+  // evaluation binds (#4021); the value is what a top-level read splices.
+  const { env, bindings } = bindTemplateConsts(constantEnv, boundConstNames, (name) =>
+    staticTemplateExpr(name, constantEnv, opts).text)
+  const html = irToComponentTemplateWithOpts(node, { ...opts, constantEnv: env, constBindings: bindings })
+  return wrapTemplateConstBindings(html, bindings)
 }
 
 /**
@@ -1988,9 +2013,53 @@ function inlinableConstantEnv(inlinableConstants: ReadonlyMap<string, string> | 
   return { substitutions, propsObjectName: null }
 }
 
+/**
+ * A template expression in the static template path: each constant inlined
+ * (#343, #3535) and source-level props access normalized. Returns the text
+ * and the free identifiers of the substituted form (empty when nothing was
+ * substituted).
+ */
+function staticTemplateExpr(
+  source: JsSourceText,
+  constantEnv: CsrEnv | null,
+  opts: TemplateOptions,
+): { text: string; freeIdentifiers: ReadonlySet<string> } {
+  const { propsObjectName, restPropsName } = opts
+  // Inline constant references with their resolved values (#343), on the
+  // expression tree: a constant's name inside a string or template
+  // literal, a member name, or a binding that shadows it is never
+  // replaced, and a shorthand `{ size }` expands to `size: (value)`
+  // (#3535).
+  const substituted = constantEnv ? csrSubstitute(source, constantEnv, opts.scope) : null
+  const restored = substituted ? substituted.rewritten : source
+
+  // Normalize source-level props object access (e.g., props.xxx → _p.xxx),
+  // also on the tree: a parenthesised receiver — `(props).label`, produced
+  // by the constant inlining just above when the inlined value is itself
+  // `props` (a local alias of the whole props object) — resolves too.
+  //
+  // The gate stays keyed on `propsObjectName` for the destructured-prop
+  // case (unconditionally rewriting here would also change static-path
+  // output for components with neither a props object nor a rest binding
+  // — a separate alignment, not this fix) but widens to fire when only
+  // a rest binding exists (`{ children, ...rest }` with no whole-props
+  // param), so `rest.header` resolves to `_p.header` here the same way
+  // it already does in the init body (`generate-init.ts`, #2723) instead
+  // of reaching the template as a bare, undeclared `rest` (#2806).
+  const text = (propsObjectName && propsObjectName !== PROPS_PARAM) || restPropsName
+    ? rewritePropsObjectRef(restored, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
+    : restored
+  return { text, freeIdentifiers: substituted?.freeIdentifiers ?? new Set() }
+}
+
+/** The static path's constant env: the one the top of the recursion built, else one from `inlinableConstants`. */
+function staticConstantEnv(opts: TemplateOptions): CsrEnv | null {
+  return opts.constantEnv !== undefined ? opts.constantEnv : inlinableConstantEnv(opts.inlinableConstants)
+}
+
 function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { inlinableConstants, restSpreadNames, propsObjectName, restPropsName, loopDepth = 0 } = opts
-  const constantEnv = inlinableConstantEnv(inlinableConstants)
+  const { restSpreadNames, loopDepth = 0 } = opts
+  const constantEnv = staticConstantEnv(opts)
   // `recurse` preserves `inHoistedChildren` for structural pass-through
   // (fragment / conditional); `childrenRecurse` clears it so element
   // descendants don't re-emit the placeholder. (#1320)
@@ -2001,30 +2070,9 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
   // from Phase 1 AST rewrite. Only constant inlining and props object
   // normalization are done here. (#807)
   const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string => {
-    // Inline constant references with their resolved values (#343), on the
-    // expression tree: a constant's name inside a string or template
-    // literal, a member name, or a binding that shadows it is never
-    // replaced, and a shorthand `{ size }` expands to `size: (value)`
-    // (#3535).
-    const source = templateExpr ?? expr
-    const restored = constantEnv ? csrSubstitute(source, constantEnv, opts.scope).rewritten : source
-
-    // Normalize source-level props object access (e.g., props.xxx → _p.xxx),
-    // also on the tree: a parenthesised receiver — `(props).label`, produced
-    // by the constant inlining just above when the inlined value is itself
-    // `props` (a local alias of the whole props object) — resolves too.
-    //
-    // The gate stays keyed on `propsObjectName` for the destructured-prop
-    // case (unconditionally rewriting here would also change static-path
-    // output for components with neither a props object nor a rest binding
-    // — a separate alignment, not this fix) but widens to fire when only
-    // a rest binding exists (`{ children, ...rest }` with no whole-props
-    // param), so `rest.header` resolves to `_p.header` here the same way
-    // it already does in the init body (`generate-init.ts`, #2723) instead
-    // of reaching the template as a bare, undeclared `rest` (#2806).
-    return (propsObjectName && propsObjectName !== PROPS_PARAM) || restPropsName
-      ? rewritePropsObjectRef(restored, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
-      : restored
+    const { text, freeIdentifiers } = staticTemplateExpr(templateExpr ?? expr, constantEnv, opts)
+    noteBindingReads(freeIdentifiers, opts.constBindings)
+    return text
   }
 
   switch (node.type) {
@@ -2388,7 +2436,15 @@ export function generateCsrTemplate(
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
   const markupSlotIds = markupSlotIdsOf(ctx)
-  return generateCsrTemplateWithOpts(node, { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName })
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName }
+  const boundNames = templateBoundConstNames(ctx.localConstants)
+  if (boundNames.size === 0) return generateCsrTemplateWithOpts(node, opts)
+  // A read of a fresh-per-evaluation const sees the one value the template
+  // evaluation binds (#4021); the value is what a top-level read splices,
+  // and a const the template cannot evaluate keeps its splice.
+  const { env, bindings } = bindTemplateConsts(csrEnv, boundNames, (name) => csrTemplateExpr(name, csrEnv, opts)?.text ?? null)
+  const html = generateCsrTemplateWithOpts(node, { ...opts, csrEnv: env, constBindings: bindings })
+  return wrapTemplateConstBindings(html, bindings)
 }
 
 /**
@@ -2625,8 +2681,66 @@ export function computeDeferredChildSlots(
   return deferred
 }
 
+/**
+ * A template expression in the CSR template path, or `null` when it cannot
+ * run in the module-scope template (it writes a binding or reads an
+ * init-only name). Call sites that drop or replace such an expression test
+ * this, not `transformExpr`'s `UNSAFE_TEMPLATE_EXPR` spelling: that sentinel
+ * is also what a source written as the literal `undefined` transforms to,
+ * and a child prop `label={undefined}` must keep its key (it overrides an
+ * earlier spread value, #3752). `freeIdentifiers` is the substituted form's.
+ */
+function csrTemplateExpr(
+  source: JsSourceText,
+  env: CsrEnv,
+  opts: TemplateOptions,
+): { text: string; freeIdentifiers: ReadonlySet<string> } | null {
+  // Single AST substitution pass: replaces signal getter calls
+  // (`count()` → `(initialValue)`), memo calls (`bars()` → `(body)`),
+  // and inlinable-const refs (`label` → `(rewrittenValue)`) in one
+  // walk. The walker uses structural position checks instead of
+  // regex lookbehind, so `ctx.bars()` survives intact when a local
+  // memo `bars` exists (#1100). All substitution values come from
+  // the IR — emit does no string transformation of its own (#1277).
+  if (!source) return { text: source, freeIdentifiers: new Set() }
+  const { rewritten, freeIdentifiers, writes } = csrSubstitute(source, env, opts.scope)
+
+  // An expression that writes a binding (`{++nextId}`, a child prop
+  // `() => ++start`) cannot run here: the template has no binding to
+  // write, and the write belongs to init's run of the component.
+  if (writes.size > 0) return null
+
+  // The CSR template runs at module scope, so any post-substitution
+  // free identifier that lands in `unsafeLocalNames` (init-body-only
+  // bindings, demoted const refs) is unreachable. Surface the UNSAFE
+  // sentinel; per-AST-context call sites translate it (loop array →
+  // `[]`, text expression → `''`, child component prop → drop) and
+  // init's createEffect / initChild bindings repaint the real value
+  // once init runs (#1128).
+  //
+  // The check is now a pure set intersection of IR-tracked
+  // identifiers; the legacy `tokenContainsAny` lexer scan
+  // (and its `'foo-className'` / `a.className` false-match risk)
+  // is gone (#1267 / #1277).
+  if (opts.unsafeLocalNames && opts.unsafeLocalNames.size > 0 && setIntersects(freeIdentifiers, opts.unsafeLocalNames)) {
+    return null
+  }
+  // Final emit-form: rewrite `propsName.X → _p.X` (and a direct
+  // rest-bag read, `restName.X → _p.X` — the rest binding IS `_p` at
+  // runtime, same as the init body's `rewritePropsObjectRef` call and
+  // `applyRestAttrs`'s exclude-key filtering both already assume; a
+  // computed "props minus consumed keys" object here would be a second,
+  // divergent implementation of that same decision, #2806). Deferred
+  // until after the unsafe-name check because the check used raw form
+  // (consistent with `populateCsrInlinable`'s `isInlinableInTemplate`
+  // gate — #1138).
+  const { propsObjectName, restPropsName } = opts
+  const text = rewritePropsObjectRef(rewritten, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
+  return { text, freeIdentifiers }
+}
+
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
-  const { restSpreadNames, propsObjectName, restPropsName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
+  const { restSpreadNames, propsObjectName, restPropsName, csrEnv, loopDepth = 0 } = opts
   const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
   // `null` when the expression cannot run in the module-scope template
   // (it writes a binding or reads an init-only name). Call sites that drop
@@ -2636,47 +2750,10 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
   // `label={undefined}` must keep its key (it overrides an earlier
   // spread value, #3752).
   const transformExprOrUnsafe = (expr: JsSourceText, templateExpr?: JsSourceText): string | null => {
-    // Single AST substitution pass: replaces signal getter calls
-    // (`count()` → `(initialValue)`), memo calls (`bars()` → `(body)`),
-    // and inlinable-const refs (`label` → `(rewrittenValue)`) in one
-    // walk. The walker uses structural position checks instead of
-    // regex lookbehind, so `ctx.bars()` survives intact when a local
-    // memo `bars` exists (#1100). All substitution values come from
-    // the IR — emit does no string transformation of its own (#1277).
-    const source = templateExpr ?? expr
-    if (!source) return source
-    const { rewritten, freeIdentifiers, writes } = csrSubstitute(source, env, opts.scope)
-
-    // An expression that writes a binding (`{++nextId}`, a child prop
-    // `() => ++start`) cannot run here: the template has no binding to
-    // write, and the write belongs to init's run of the component.
-    if (writes.size > 0) return null
-
-    // The CSR template runs at module scope, so any post-substitution
-    // free identifier that lands in `unsafeLocalNames` (init-body-only
-    // bindings, demoted const refs) is unreachable. Surface the UNSAFE
-    // sentinel; per-AST-context call sites translate it (loop array →
-    // `[]`, text expression → `''`, child component prop → drop) and
-    // init's createEffect / initChild bindings repaint the real value
-    // once init runs (#1128).
-    //
-    // The check is now a pure set intersection of IR-tracked
-    // identifiers; the legacy `tokenContainsAny` lexer scan
-    // (and its `'foo-className'` / `a.className` false-match risk)
-    // is gone (#1267 / #1277).
-    if (unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIdentifiers, unsafeLocalNames)) {
-      return null
-    }
-    // Final emit-form: rewrite `propsName.X → _p.X` (and a direct
-    // rest-bag read, `restName.X → _p.X` — the rest binding IS `_p` at
-    // runtime, same as the init body's `rewritePropsObjectRef` call and
-    // `applyRestAttrs`'s exclude-key filtering both already assume; a
-    // computed "props minus consumed keys" object here would be a second,
-    // divergent implementation of that same decision, #2806). Deferred
-    // until after the unsafe-name check because the check used raw form
-    // (consistent with `populateCsrInlinable`'s `isInlinableInTemplate`
-    // gate — #1138).
-    return rewritePropsObjectRef(rewritten, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
+    const result = csrTemplateExpr(templateExpr ?? expr, env, opts)
+    if (result === null) return null
+    noteBindingReads(result.freeIdentifiers, opts.constBindings)
+    return result.text
   }
   const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string =>
     transformExprOrUnsafe(expr, templateExpr) ?? UNSAFE_TEMPLATE_EXPR

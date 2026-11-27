@@ -77,6 +77,21 @@ export function initializerAllocates(initializer: ts.Expression): boolean {
   return false
 }
 
+/**
+ * Can two evaluations of `initializer` give different values? True when it
+ * evaluates an allocating expression anywhere (an object or array literal,
+ * `new X()`, a call, a tagged template, a function or class expression, a
+ * regex literal): the result may be a new object, or a sample such as
+ * `'x' + Math.random()`. An initializer without one only reads names and
+ * combines them with operators, so a second evaluation repeats the first.
+ * A function literal counts as one allocation; its body is not evaluated.
+ */
+export function initializerMayDiffer(initializer: ts.Expression): boolean {
+  const visit = (node: ts.Node): boolean =>
+    (ts.isExpression(node) && isAllocatingNode(node)) || (ts.forEachChild(node, visit) ?? false)
+  return visit(initializer)
+}
+
 /** Is `initializer` an arrow or function expression (evaluating it reads nothing)? */
 function isFunctionExpressionNode(initializer: ts.Expression): boolean {
   const node = unwrapTransparent(initializer)
@@ -103,6 +118,7 @@ export function recordIdentityCandidate(
   initializer: ts.Expression | undefined,
   checker: ts.TypeChecker | null,
 ): void {
+  if (initializer && initializerMayDiffer(initializer)) constant.freshPerEvaluation = true
   if (!initializer || !initializerAllocates(initializer)) return
   if (isFunctionExpressionNode(initializer)) {
     // Evaluating a function expression reads none of the names its body

@@ -16,6 +16,7 @@ import { generateInitFunction } from './generate-init.ts'
 import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
 import { addConstantPropRefsToSet, classifyLocalDeclarations } from './init-declarations.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
+import { templateBoundConstNames } from './template-const-bindings.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { PROPS_PARAM, initFunctionName, componentDefScopeFlags, isTransparentFragmentRoot } from './utils.ts'
 import { collectReactiveGetterNames } from '../analyzer-context.ts'
@@ -385,7 +386,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext, localI
     // (`needsClientJs(ctx)` gates it) — derived through the shared function
     // anyway rather than special-casing "no markup slots here" (#2651).
     const markupSlotIds = markupSlotIdsOf(ctx)
-    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName)
+    templateHtml = irToComponentTemplate(ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName, templateBoundConstNames(ctx.localConstants))
   }
 
   // CSR fallback: when static template generation fails (e.g., components with
