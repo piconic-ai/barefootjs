@@ -2518,6 +2518,88 @@
         "text"
       ]
     },
+    "children-forwarded-into-child-prop-delivered": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "children-forwarded-into-child-prop-plain": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "children-forwarded-into-child-prop-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "children-forwarded-into-child-prop-seed-forms": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "children-jsx-expression": {
       "kinds": [
         "identifier"

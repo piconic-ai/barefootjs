@@ -206,7 +206,8 @@ import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemo
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWriters } from "./props/props-spread.ts"
-import { passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
+import { derivedFieldReading, passthroughReadField, refuseTemplateTimeDeliveryToDerivedField, refuseTemplateTimeDeliveryToNestedDerivedField, refuseUndeliveredLoopRowJsxProp } from "./props/derived-field-delivery.ts"
+import { callWrites, collectNestedInputForwards, nestedDerivedReading, passedKeys, type NestedInputForward } from "./props/nested-input-forwards.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, childrenInputFieldValue, childrenInputRead, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -1347,6 +1348,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childShadowTransformDeps: Map<string, Map<string, ReadonlySet<string>>> = new Map()
 
   /**
+   * component name -> the props of nested components in its tree whose value
+   * reads one of its own props (`collectNestedInputForwards`, #3986). Its
+   * constructor builds those nested Props once, so a value it receives after
+   * construction never reaches them. Read only for such a late delivery
+   * (`refuseLateDelivery`). Registered with the component's shape.
+   */
+  private childNestedInputForwards: Map<string, NestedInputForward[]> = new Map()
+
+  /**
    * component name -> (JSX-attribute name -> that component's own Props
    * field, LOCAL binding). `bf.WithProps` treats an unknown field as a
    * silent passthrough, so `bf_with_props`/`bf_reprops` call sites cannot
@@ -1498,6 +1508,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * BF101 when `propName` (`children` or a JSX-valued prop), delivered to
+   * the call `comp` (of `declaredName`) after its construction, reaches
+   * a constructor-derived field: one of its own (#3961), or one of a nested
+   * component it forwards the value into (#3986). Returns whether it refused.
+   */
+  private refuseLateDelivery(comp: IRComponent, declaredName: string, propName: string, loc: SourceLocation): boolean {
+    if (refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), propName, loc)) return true
+    const nested = nestedDerivedReading(
+      declaredName,
+      propName,
+      // Which keys this component's own caller passes is unknown here, so
+      // a key a spread carries from an optional param is not counted.
+      passedKeys(callWrites(comp, { propsObjectName: this.state.propsObjectName, propsParams: this.state.currentPropsParams }), new Set()),
+      (component) => this.childNestedInputForwards.get(component),
+      (component, prop) => derivedFieldReading(this.lateDeliveryDerivedDeps(component), prop),
+    )
+    if (!nested) return false
+    refuseTemplateTimeDeliveryToNestedDerivedField(this.state, comp.name, nested, propName, loc)
+    return true
+  }
+
+  /**
    * `ir`'s nillable params by caller-facing name: the child's own nillable
    * decision, primed on a separate instance so this compile's state is
    * untouched (#3323). The instance reads the shapes registered so far, so a
@@ -1639,6 +1671,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // make an aliased child's derived field look dependency-free and silently
     // un-refuse / un-rebuild it.
     this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
+    this.childNestedInputForwards.set(name, collectNestedInputForwards(ir))
     // The child's `bf.Opt[T]` Input fields (`isOptInputParam`), so a parent
     // compiled before the child knows which of its fields take a value as
     // it is (`childInputField`).
@@ -7171,7 +7204,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (this.extractScopedHtmlChildren(children) !== null) continue
       const name = `${this.state.componentName}__prop_${prop.name}_${comp.slotId}`
       if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
-        refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), prop.name, prop.loc)
+        this.refuseLateDelivery(comp, declaredName, prop.name, prop.loc)
         this.state.pendingChildrenDefines.push({
           name,
           content: this.renderWrapperRowDefine(children),
@@ -7215,7 +7248,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private refuseTemplateTimeChildren(comp: IRComponent): void {
     const declaredName = this.resolveChildName(comp.name)
-    refuseTemplateTimeDeliveryToDerivedField(this.state, comp.name, this.lateDeliveryDerivedDeps(declaredName), 'children', comp.loc)
+    this.refuseLateDelivery(comp, declaredName, 'children', comp.loc)
   }
 
   /**

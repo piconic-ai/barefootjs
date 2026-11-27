@@ -3976,6 +3976,42 @@
           ]
         }
       },
+      "children-forwarded-into-child-prop-plain": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "template-time-children-forwarded-into-child-prop"
+          ]
+        }
+      },
+      "children-forwarded-into-child-prop-seed": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "children-forwarded-into-child-prop-seed-forms": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "children-markup-nullish-memo": {
         "erb": {
           "kind": "render",
@@ -22672,6 +22708,18 @@
         "description": "A fallback read of the children prop with a boolean or number fallback keeps present children markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-value-shapes.ts"
       },
+      "children-forwarded-into-child-prop-plain": {
+        "description": "Children a component forwards into a nested child's prop reach that child's markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-forwarded-into-child-prop-plain.ts"
+      },
+      "children-forwarded-into-child-prop-seed": {
+        "description": "Children a component forwards into a nested child's non-children prop reach that child's signal seed",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-forwarded-into-child-prop-seed.ts"
+      },
+      "children-forwarded-into-child-prop-seed-forms": {
+        "description": "Children a component forwards into a nested child's non-children prop reach that child's state, in…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-forwarded-into-child-prop-seed-forms.ts"
+      },
       "children-markup-nullish-memo": {
         "description": "Markup children read through a ?? memo render as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-memo.ts"
@@ -26283,14 +26331,29 @@
         "xslate"
       ]
     },
+    "template-time-children-forwarded-into-child-prop": {
+      "title": "JSX children the server renders at template time forwarded into a nested component prop",
+      "kind": "silent",
+      "given": "a component that forwards its JSX children into a prop of a nested component (`<Plain seed={props.children} />`), which reads the prop without computing state of its own from it (`{props.seed ? 'children' : 'fallback'}`, or a signal named like the prop that passes it through, `const [seed] = createSignal(props.seed ?? 'none')`), called with JSX children that read the caller's data (`<Inner>{props.label}</Inner>`)",
+      "expected": "the nested component reads the forwarded children (`children`)",
+      "actual": "renders the nested component as if the prop were absent (`fallback`)",
+      "fixtures": [
+        "children-forwarded-into-child-prop-plain"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "template-time-children-read-into-state": {
       "title": "State computed from JSX children the server renders at template time",
       "kind": "refusal",
-      "given": "a component whose signal seed or memo reads its children or another JSX-valued prop (`createSignal(props.children ?? 'missing')`, or one named like the prop that transforms it, `const [children] = createSignal(props.children + '!')`), called with JSX children or a JSX prop that read the caller's data (`<Note>{props.label}!</Note>`, `header={<i>{props.label}</i>}`) or as the element a loop row returns, whatever its children (`items.map((x) => <Note key={x}>own</Note>)`)",
-      "expected": "the state holds the children the call passes (`hi!` for `<Note>{props.label}!</Note>`), not the fallback (`'missing'`)",
+      "given": "a component whose signal seed or memo reads its children or another JSX-valued prop (`createSignal(props.children ?? 'missing')`, or one named like the prop that transforms it, `const [children] = createSignal(props.children + '!')`), called with JSX children or a JSX prop that read the caller's data (`<Note>{props.label}!</Note>`, `header={<i>{props.label}</i>}`) or as the element a loop row returns, whatever its children (`items.map((x) => <Note key={x}>own</Note>)`); or a component that forwards such children or such a JSX prop into a prop of a nested component whose signal seed or memo reads it (`<Kid seed={props.children} />` with `createSignal(props.seed ?? 'none')` in `Kid`), directly or through further components",
+      "expected": "the state holds the children the call passes (`hi!` for `<Note>{props.label}!</Note>`), not the fallback (`'missing'`); a nested component's state holds the children forwarded to it",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "children-dynamic-read-into-state",
+        "children-forwarded-into-child-prop-seed",
+        "children-forwarded-into-child-prop-seed-forms",
         "children-read-into-state-forms",
         "children-read-into-state-shadow-transform",
         "open-rest-spread-child-children"

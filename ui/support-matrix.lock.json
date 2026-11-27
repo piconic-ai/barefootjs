@@ -7644,6 +7644,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -11348,6 +11366,24 @@
             },
             {
               "fixture": "children-dynamic-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -20754,6 +20790,24 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -31202,6 +31256,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -37857,6 +37929,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -41052,6 +41142,24 @@
               "fixture": "children-fallback-value-shapes",
               "limitations": [
                 "children-fallback-boolean-display"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
               ]
             },
             {
@@ -58063,6 +58171,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-read-into-state-forms",
               "limitations": [
                 "template-time-children-read-into-state"
@@ -64593,6 +64719,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -70448,6 +70592,24 @@
               ]
             },
             {
+              "fixture": "children-forwarded-into-child-prop-plain",
+              "limitations": [
+                "template-time-children-forwarded-into-child-prop"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -71981,6 +72143,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-forwarded-into-child-prop-seed-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
             {
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
