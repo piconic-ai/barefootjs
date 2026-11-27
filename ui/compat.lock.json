@@ -4188,6 +4188,98 @@
           ]
         }
       },
+      "date-loop-row-member": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF021"
+          ],
+          "limitations": [
+            "date-loop-row-receiver"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -8626,6 +8718,14 @@
           }
         }
       },
+      "module-const-array-member-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-member-signal-seed"
+          ]
+        }
+      },
       "module-const-array-method-call": {
         "blade": {
           "kind": "render",
@@ -8679,6 +8779,70 @@
           "kind": "render",
           "limitations": [
             "module-const-array-method-call"
+          ]
+        }
+      },
+      "module-const-array-spread-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-member-signal-seed"
+          ]
+        }
+      },
+      "module-const-array-spread-unresolved": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-spread-unresolved"
           ]
         }
       },
@@ -18769,6 +18933,10 @@
         "description": "Nested Date member declared as Date & Date | null across intersection arms renders via the date…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-nested-narrowing.ts"
       },
+      "date-loop-row-member": {
+        "description": "A catalogued Date accessor on a loop row member refuses with BF021 naming the loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-loop-row-member.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -19033,9 +19201,21 @@
         "description": "A memo calling a local function named like a typed prop that a template cannot inline refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop.ts"
       },
+      "module-const-array-member-signal-seed": {
+        "description": "A signal seeded from the length of a module-level literal array const renders the seed",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-member-signal-seed.ts"
+      },
       "module-const-array-method-call": {
         "description": "a method call on a module array const renders its result",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-method-call.ts"
+      },
+      "module-const-array-spread-signal-seed": {
+        "description": "A signal seeded from a module-level array const built with a spread renders the seed (#3979)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-spread-signal-seed.ts"
+      },
+      "module-const-array-spread-unresolved": {
+        "description": "A memo over a module-level array const spreading a Set renders its length (#3979)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-spread-unresolved.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -20610,6 +20790,31 @@
         "xslate"
       ]
     },
+    "date-loop-row-receiver": {
+      "title": "A catalogued Date method on a loop row",
+      "kind": "refusal",
+      "given": "a catalogued `Date` accessor called on a value read through a `.map()` row (`props.rows.map(r => r.at.getUTCFullYear())`, with `rows: { at: Date }[]`)",
+      "expected": "each row renders the accessor result (`2024`, `2025`)",
+      "actual": "the compiler refuses with BF021",
+      "fixtures": [
+        "date-loop-row-member"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF021"
+      ]
+    },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
       "kind": "refusal",
@@ -21044,6 +21249,20 @@
         "go-template"
       ]
     },
+    "module-const-array-member-signal-seed": {
+      "title": "A signal seeded from a member of a module-scope literal array const",
+      "kind": "silent",
+      "given": "a `createSignal` whose initial value reads a member of a module-scope literal array const (`const ALL = ['y', 'z']; createSignal(ALL.length)`, `ALL[1]`, `ALL.join('-')`), the const written as a literal or built with a spread of one, rendered as text",
+      "expected": "the server HTML renders the seed (`2`)",
+      "actual": "renders the seed type's zero value (`0`, or empty)",
+      "fixtures": [
+        "module-const-array-member-signal-seed",
+        "module-const-array-spread-signal-seed"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "module-const-array-method-call": {
       "title": "A method call on a module array-literal const",
       "kind": "silent",
@@ -21052,6 +21271,27 @@
       "actual": "renders the result empty or false, or fails the render, since the call reads the const as a template variable the backend does not bind",
       "fixtures": [
         "module-const-array-method-call"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "module-const-array-spread-unresolved": {
+      "title": "Module array const spreading a value with no compile-time elements",
+      "kind": "silent",
+      "given": "a module-scope array const with a spread of a value other than a literal array const or an inline array literal (`const ALL = [...new Set(['y', 'y']), 'z']`, a call, an import), read by a memo (`createMemo(() => ALL.length)`)",
+      "expected": "the read computes over the spread array (`2`)",
+      "actual": "renders empty, or `0`",
+      "fixtures": [
+        "module-const-array-spread-unresolved"
       ],
       "adapters": [
         "blade",

@@ -36,7 +36,8 @@ import { resolveBodyDestructuredPropAliases, templatePropReadParams } from './pr
 import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import { stringifyParsedExpr } from './expression-parser.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
-import type { IRMetadata } from './types.ts'
+import type { ConstantInfo, IRMetadata } from './types.ts'
+import { evaluateStaticLiteral } from './static-literal.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
 /**
@@ -347,6 +348,7 @@ export function evaluateSeeds(metadata: IRMetadata): SeedEvaluation {
     if (c.name in bindings) continue
     const v = tryStaticEval(c.value, { bindings, propsLike })
     if (v !== UNRESOLVED) bindings[c.name] = v
+    else seedExpandedArray(c, bindings)
   }
   // Signals and memos read the names their component scope binds (#3721).
   const scope = componentEvalScope(metadata, bindings)
@@ -902,6 +904,17 @@ function tryStaticEval(expr: string, ctx: EvalContext): EvalResult {
   const node = parseExpression(expr)
   if (!node) return UNRESOLVED
   return evalNode(node, ctx)
+}
+
+/**
+ * Bind a module array const whose source text spreads another const
+ * (`[...BASE, 'z']`) to the elements Phase 1 expanded in its parsed tree
+ * (`expandModuleArraySpreads`, #3979), when they are all literal.
+ */
+function seedExpandedArray(c: ConstantInfo, bindings: Record<string, EvalResult>): void {
+  if (c.parsed?.kind !== 'array-literal') return
+  const resolved = evaluateStaticLiteral(c.parsed)
+  if (resolved) bindings[c.name] = resolved.value
 }
 
 /**

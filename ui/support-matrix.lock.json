@@ -298,6 +298,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -599,6 +605,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -948,9 +960,27 @@
               ]
             },
             {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -1300,6 +1330,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -1622,6 +1658,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -1929,6 +1971,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -2254,6 +2302,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -2570,6 +2624,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -2877,6 +2937,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -8353,6 +8419,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -8450,6 +8522,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -8624,6 +8702,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -9117,6 +9201,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -9270,6 +9360,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -9769,6 +9865,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -10000,6 +10102,24 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -10577,6 +10697,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -10748,6 +10874,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -11223,6 +11355,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -11394,6 +11532,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -11875,6 +12019,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -12028,6 +12178,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -12503,6 +12659,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -12668,6 +12830,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -13125,6 +13293,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -13296,6 +13470,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -13771,6 +13951,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -13936,6 +14122,12 @@
               "fixture": "memo-uninlinable-local-function-named-like-prop",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -15423,6 +15615,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -15592,6 +15790,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -15832,6 +16036,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -16511,6 +16721,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -16724,6 +16940,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -17391,6 +17613,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -17787,9 +18015,27 @@
               ]
             },
             {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -18625,6 +18871,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -18862,6 +19114,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -19517,6 +19775,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -19754,6 +20018,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -20421,6 +20691,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -20634,6 +20910,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -21295,6 +21577,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -21520,6 +21808,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -22139,6 +22433,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -22376,6 +22676,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -23037,6 +23343,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -23262,6 +23574,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -24642,6 +24960,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -25393,6 +25717,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -26252,9 +26582,27 @@
               ]
             },
             {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -27162,6 +27510,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -27916,6 +28270,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -28667,6 +29027,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -29430,6 +29796,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -30157,6 +30529,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -30899,6 +31277,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -33003,6 +33387,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -33130,6 +33520,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
               ]
             },
             {
@@ -33334,6 +33730,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -33857,6 +34259,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -34034,6 +34442,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -34545,6 +34959,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -34890,6 +35310,24 @@
               "fixture": "memo-over-array-const-index",
               "limitations": [
                 "memo-array-literal-element-read"
+              ]
+            },
+            {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -35467,6 +35905,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -35668,6 +36112,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -36167,6 +36617,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -36368,6 +36824,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -36879,6 +37341,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -37056,6 +37524,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -37561,6 +38035,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -37756,6 +38236,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -38237,6 +38723,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -38438,6 +38930,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -38943,6 +39441,12 @@
               ]
             },
             {
+              "fixture": "date-loop-row-member",
+              "limitations": [
+                "date-loop-row-receiver"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -39132,6 +39636,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -43938,6 +44448,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -44065,6 +44581,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -44198,6 +44720,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -44328,6 +44856,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -44455,6 +44989,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -44594,6 +45134,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -44721,6 +45267,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -44854,6 +45406,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "reduce-right-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
@@ -44981,6 +45539,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -52603,6 +53167,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -53240,6 +53810,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -53967,9 +54543,27 @@
               ]
             },
             {
+              "fixture": "module-const-array-member-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-signal-seed",
+              "limitations": [
+                "module-const-array-member-signal-seed"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -54757,6 +55351,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -55397,6 +55997,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -56028,6 +56634,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -56677,6 +57289,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-helper-call-child",
               "limitations": [
                 "module-scope-helper-call"
@@ -57296,6 +57914,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {
@@ -57924,6 +58548,12 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
+              ]
+            },
+            {
+              "fixture": "module-const-array-spread-unresolved",
+              "limitations": [
+                "module-const-array-spread-unresolved"
               ]
             },
             {

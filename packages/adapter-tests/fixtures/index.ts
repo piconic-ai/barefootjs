@@ -1115,6 +1115,9 @@ import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './co
 import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateClientRevival } from './date-client-revival'
+import { fixture as dateLoopRowMember } from './date-loop-row-member'
+import { fixture as dateLoopRowMemberPrecomputed } from './date-loop-row-member-precomputed'
+import { fixture as dateLoopRowMemberClient } from './date-loop-row-member-client'
 import { fixture as dateIntersectionNestedNarrowing } from './date-intersection-nested-narrowing'
 import { fixture as dateInheritedPropParenthesized } from './date-inherited-prop-parenthesized'
 import { fixture as dateIntersectionRefineBaseFirst } from './date-intersection-refine-base-first'
@@ -1690,6 +1693,16 @@ import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inh
 import { fixture as memoObjectConstArrowSiblingKey } from './memo-object-const-arrow-sibling-key'
 import { fixture as memoModuleObjectConstArrowSiblingKey } from './memo-module-object-const-arrow-sibling-key'
 import { fixture as moduleConstObjectSpreadLiteral } from './module-const-object-spread-literal'
+import { fixture as moduleConstArraySpreadMemo } from './module-const-array-spread-memo'
+import { fixture as moduleConstArraySpreadInPlace } from './module-const-array-spread-in-place'
+import { fixture as moduleConstArraySpreadSignalSeed } from './module-const-array-spread-signal-seed'
+import { fixture as moduleConstArraySpreadLoop } from './module-const-array-spread-loop'
+import { fixture as moduleConstArraySpreadChildProp } from './module-const-array-spread-child-prop'
+import { fixture as moduleConstArraySpreadObjectRows } from './module-const-array-spread-object-rows'
+import { fixture as moduleConstArraySpreadUnresolved } from './module-const-array-spread-unresolved'
+import { fixture as moduleConstArraySpreadWholeSeed } from './module-const-array-spread-whole-seed'
+import { fixture as moduleConstArraySpreadChildArrayProp } from './module-const-array-spread-child-array-prop'
+import { fixture as moduleConstArrayMemberSignalSeed } from './module-const-array-member-signal-seed'
 import { fixture as moduleConstObjectSpreadChainOverride } from './module-const-object-spread-chain-override'
 import { fixture as moduleConstObjectSpreadUnresolvedCall } from './module-const-object-spread-unresolved-call'
 import { fixture as moduleConstObjectSpreadUnresolvedMember } from './module-const-object-spread-unresolved-member'
@@ -2649,6 +2662,9 @@ export const jsxFixtures: JSXFixture[] = [
   computedConstLoopSourceParenthesizedClient,
   dateMethodUncatalogued,
   dateClientRevival,
+  dateLoopRowMember,
+  dateLoopRowMemberPrecomputed,
+  dateLoopRowMemberClient,
   dateClientCatalogued,
   dateClientAttrCatalogued,
   dateCataloguedAttr,
@@ -3063,6 +3079,16 @@ export const jsxFixtures: JSXFixture[] = [
   memoObjectConstArrowSiblingKey,
   memoModuleObjectConstArrowSiblingKey,
   moduleConstObjectSpreadLiteral,
+  moduleConstArraySpreadMemo,
+  moduleConstArraySpreadInPlace,
+  moduleConstArraySpreadSignalSeed,
+  moduleConstArraySpreadLoop,
+  moduleConstArraySpreadChildProp,
+  moduleConstArraySpreadObjectRows,
+  moduleConstArraySpreadUnresolved,
+  moduleConstArraySpreadWholeSeed,
+  moduleConstArraySpreadChildArrayProp,
+  moduleConstArrayMemberSignalSeed,
   moduleConstObjectSpreadChainOverride,
   moduleConstObjectSpreadUnresolvedCall,
   moduleConstObjectSpreadUnresolvedMember,

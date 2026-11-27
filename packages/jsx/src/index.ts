@@ -105,6 +105,7 @@ export { createProgramForCorpus, type SharedProgramOptions } from './shared-prog
 export { jsxToIR } from './jsx-to-ir.ts'
 export { decideClientOnlyElision } from './ir-to-client-js/client-only-elision.ts'
 export { checkStatementWrites } from './statement-write-refusal.ts'
+export { checkRichTypeMethodCalls } from './rich-type-refusal.ts'
 
 // Module exports generation (compiler layer)
 export { generateModuleExports, extractFunctionParams, formatParamWithType, findReachableNames } from './module-exports.ts'

@@ -4773,6 +4773,30 @@
       }
     }
   ],
+  "date-loop-row-member": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "date-loop-row-member-client": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "date-loop-row-member-precomputed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "date-parenthesized-member-destructured": [
     {
       "name": "gen:data:object:minimal",
