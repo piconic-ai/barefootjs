@@ -18,6 +18,8 @@ export default defineLimitation({
     'memo-block-return-reads-typeof-const',
     'signal-seed-reads-typeof-const',
     'memo-block-called-function-reads-typeof-const',
+    'memo-block-shadowing-local-reads-typeof-const',
+    'memo-block-local-chain-reads-typeof-const',
     'memo-exponent-operator',
     'const-typeof-prop',
     'memo-typeof-child-prop',

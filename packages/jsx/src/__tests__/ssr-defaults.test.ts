@@ -495,6 +495,28 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.sorted).toEqual({ value: [{ id: 'a' }, { id: 'b' }] })
   })
 
+  test('a block-memo local the evaluator cannot resolve shadows an outer name (#3981)', () => {
+    // `label` inside the block is the local, not the module const: with its
+    // initializer unresolved, the memo has no static value.
+    const metadata = metadataFor(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      import { lookup } from './lookup'
+      const label = 'fallback'
+      const other = 'kept'
+      function Foo() {
+        const m = createMemo(() => { const label = lookup(); return label })
+        const n = createMemo(() => { const { other } = lookup(); return other })
+        const k = createMemo(() => { const v = 'a'; const label = v + 'b'; return label })
+        return <p>{m()}{n()}{k()}</p>
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.m).toEqual({ value: null })
+    expect(defaults?.n).toEqual({ value: null })
+    expect(defaults?.k).toEqual({ value: 'ab' })
+  })
+
   test('non-evaluable initials yield null (caller falls back at render time)', () => {
     const metadata = metadataFor(`
       'use client'

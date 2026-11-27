@@ -11,10 +11,11 @@ import { refuseUnloweredOperators } from '../adapters/unlowered-operator'
 import { parseExpression, unloweredOperator } from '../expression-parser'
 import type { CompilerError, ComponentIR } from '../types'
 
-function irFor(body: string): ComponentIR {
+function irFor(body: string, moduleScope = ''): ComponentIR {
   const ctx = analyzeComponent(`
     'use client'
     import { createSignal, createMemo } from '@barefootjs/client'
+    ${moduleScope}
     function Kid(props: { v?: unknown }) { return <b>{String(props.v)}</b> }
     export function C(props: { x?: string; n?: number; items?: unknown[] }) {
       ${body}
@@ -23,9 +24,9 @@ function irFor(body: string): ComponentIR {
   return { version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }
 }
 
-function errorsOf(body: string): CompilerError[] {
+function errorsOf(body: string, moduleScope = ''): CompilerError[] {
   const errors: CompilerError[] = []
-  refuseUnloweredOperators(irFor(body), { errors, componentName: 'C' })
+  refuseUnloweredOperators(irFor(body, moduleScope), { errors, componentName: 'C' })
   expect(errors.every(e => e.code === 'BF101')).toBe(true)
   return errors
 }
@@ -33,6 +34,11 @@ function errorsOf(body: string): CompilerError[] {
 /** The subject of each refusal, up to the shared wording. */
 function refused(body: string): string[] {
   return errorsOf(body).map(e => e.message.slice(0, e.message.indexOf(' an expression applying')))
+}
+
+/** {@link refused} with module-scope declarations before the component. */
+function refusedWith(moduleScope: string, body: string): string[] {
+  return errorsOf(body, moduleScope).map(e => e.message.slice(0, e.message.indexOf(' an expression applying')))
 }
 
 /** The operator each refusal names. */
@@ -104,6 +110,12 @@ describe('refuseUnloweredOperators', () => {
     for (const body of ['const f = () => o.kind; return f()', 'function g() { return o.kind } return g()', 'const xs = [1].map(() => o.kind); return xs.join()', 'const cfg = { f: () => o.kind }; return cfg.f()']) {
       expect(refused(`${decl}; const m = createMemo(() => { ${body} }); return <p>{m()}{o.n}</p>`)).toEqual([`'o' is initialized from`])
     }
+    // A block local the evaluator cannot resolve shadows an outer name of it:
+    // the memo has no static value, so the const it reads is refused.
+    for (const body of ['const label = o.kind; const unused = () => false; return label', 'const a = o.kind; const label = a; return label', 'const { kind: label } = o; return label']) {
+      expect(refusedWith(`const label = 'fallback'`, `${decl}; const m = createMemo(() => { ${body} }); return <p>{m()}</p>`)).toEqual([`'o' is initialized from`])
+    }
+    expect(refusedWith(`const label = 'fallback'`, `${decl}; const m = createMemo(() => { const label = 'x'; const unused = () => o.kind; return label }); return <p>{m()}{o.n}</p>`)).toEqual([])
     // A block memo that does not name the const leaves it to the template reads.
     expect(refused(`${decl}; const m = createMemo(() => { const v = 2; return v }); return <p>{m()}{o.n}</p>`)).toEqual([])
     expect(refused(`${decl}; const m = createMemo(() => ({ n: o.n })); return <p>{/* @client */ m().n}</p>`)).toEqual([])

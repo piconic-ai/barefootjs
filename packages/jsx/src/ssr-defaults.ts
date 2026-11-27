@@ -920,7 +920,8 @@ function seedExpandedArray(c: ConstantInfo, bindings: Record<string, EvalResult>
 /**
  * Evaluate a block-body's statements for its returned value. Handles
  * `const` declarations (bound into `ctx.bindings`, which mutate in
- * place so later statements and nested branches see them), `return`
+ * place so later statements and nested branches see them; an unresolved
+ * or destructured one is bound to UNRESOLVED, so it shadows), `return`
  * statements, and `if (cond) …` guards whose condition is statically
  * resolvable — the early-return-on-default-state shape of
  * an `@client`-annotated memo (`const key = sortKey(); if (!key)
@@ -935,13 +936,7 @@ function evalStatementsForReturn(
 ): EvalResult | typeof NO_RETURN {
   for (const stmt of statements) {
     if (ts.isVariableStatement(stmt)) {
-      for (const d of stmt.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name) || !d.initializer) continue
-        const v = evalNode(d.initializer, ctx)
-        // Leave unresolved locals unbound; only a `return` / guard
-        // referencing one would then surface UNRESOLVED.
-        if (v !== UNRESOLVED) ctx.bindings[d.name.text] = v
-      }
+      bindLocals(stmt, ctx)
     } else if (ts.isReturnStatement(stmt)) {
       return stmt.expression ? evalNode(stmt.expression, ctx) : UNRESOLVED
     } else if (ts.isIfStatement(stmt)) {
@@ -962,6 +957,28 @@ function evalStatementsForReturn(
     }
   }
   return NO_RETURN
+}
+
+/**
+ * Bind each name `stmt` declares to its initializer's value. A local
+ * shadows the name it declares for the rest of the block, resolved or not:
+ * bound to UNRESOLVED (a destructured one always is), a `return` / guard
+ * reading it surfaces UNRESOLVED instead of an outer binding of that name
+ * (`const label = o.kind; return label` beside a module `label`).
+ */
+function bindLocals(stmt: ts.VariableStatement, ctx: EvalContext): void {
+  for (const d of stmt.declarationList.declarations) {
+    const v = ts.isIdentifier(d.name) && d.initializer ? evalNode(d.initializer, ctx) : UNRESOLVED
+    for (const name of bindingNames(d.name)) ctx.bindings[name] = v
+  }
+}
+
+/** The names a declaration binds, through destructuring patterns. */
+function bindingNames(name: ts.BindingName): string[] {
+  if (ts.isIdentifier(name)) return [name.text]
+  const names: string[] = []
+  for (const element of name.elements) if (!ts.isOmittedExpression(element)) names.push(...bindingNames(element.name))
+  return names
 }
 
 function parseExpression(expr: string): ts.Expression | null {

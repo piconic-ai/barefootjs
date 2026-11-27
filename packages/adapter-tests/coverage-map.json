@@ -12674,6 +12674,38 @@
         "text"
       ]
     },
+    "memo-block-local-chain-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-local-chain-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-block-return-reads-typeof-const": {
       "kinds": [
         "call",
@@ -12696,6 +12728,42 @@
         "unsupported"
       ],
       "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-shadowing-local-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-shadowing-local-reads-typeof-const-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
       "contexts": [
         "text"
       ]
