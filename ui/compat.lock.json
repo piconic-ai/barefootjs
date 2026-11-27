@@ -3744,6 +3744,112 @@
           ]
         }
       },
+      "children-fallback-const-row-shadow": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-const-shadowed-read"
+          ]
+        }
+      },
+      "children-fallback-value-shapes": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "children-fallback-boolean-display"
+          ]
+        }
+      },
       "children-markup-nullish-memo": {
         "erb": {
           "kind": "render",
@@ -19207,6 +19313,14 @@
         "description": "An element child a component reads into state renders as that element",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-element-read-into-state.ts"
       },
+      "children-fallback-const-row-shadow": {
+        "description": "A children fallback const read in a row whose parameter shadows a name its initializer reads",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-const-row-shadow.ts"
+      },
+      "children-fallback-value-shapes": {
+        "description": "A fallback read of the children prop with a boolean or number fallback keeps present children markup",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-value-shapes.ts"
+      },
       "children-markup-nullish-memo": {
         "description": "Markup children read through a ?? memo render as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-memo.ts"
@@ -20822,6 +20936,69 @@
         "children-markup-nullish-seed",
         "children-markup-nullish-seed-bindings",
         "children-param-default-nullish-seed"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-boolean-display": {
+      "title": "A children fallback read with a boolean fallback",
+      "kind": "silent",
+      "given": "a `??` / `||` read of the children prop whose fallback is a boolean (`{props.children ?? false}`, `{children || false}`), read directly or through a body const (`const label = props.children ?? false`), rendered as text",
+      "expected": "present children render as markup (`<p><i>a</i></p>`); absent children render nothing, as `{false}` does",
+      "actual": "drops present children read through the const (`<p></p>`) and renders absent children as `false` (`<p>false</p>`)",
+      "fixtures": [
+        "children-fallback-value-shapes"
+      ],
+      "adapters": [
+        "blade",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-const-shadowed-read": {
+      "title": "A children fallback const read where a name its initializer reads is shadowed",
+      "kind": "silent",
+      "given": "a component-scope const holding a `??` / `||` read of the children prop (`const label = props.children ?? '<s>row</s>'`) rendered as text in a loop row whose parameter has the name of something the initializer reads (`[1].map((props) => <li key={props}>{label}</li>)`)",
+      "expected": "the initializer reads the component's props where it is declared: present children render as markup (`<li><i>a</i></li>`), absent children render the fallback as escaped text",
+      "actual": "renders the row empty (`<li></li>`)",
+      "fixtures": [
+        "children-fallback-const-row-shadow"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "children-fallback-reactive-slot": {
+      "title": "A children fallback read whose fallback is reactive",
+      "kind": "silent",
+      "given": "a client component that renders a `??` / `||` read of `props.children` whose fallback reads another prop or a signal (`{props.children ?? props.alt}`, `{props.children || text()}`), directly or through a body const (`const label = props.children ?? props.alt`), called with an element as its JSX children (`<Alt><i>a</i></Alt>`)",
+      "expected": "the element renders inside the read's text slot (`<!--bf:s0--><i>a</i><!--/-->`); absent children render the fallback as escaped text",
+      "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
+      "fixtures": [
+        "children-fallback-reactive-read"
       ],
       "adapters": [
         "hono",

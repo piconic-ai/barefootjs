@@ -125,6 +125,13 @@ export const renderDivergences: RenderDivergences = {
   'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
   // A defaulted body destructure of children read into state seeds nil.
   'children-body-default-nullish-seed': { limitation: 'body-default-children-read-into-state' },
+  // #3988: a children fallback of `false` / `0` read through a const (or a
+  // destructured children) drops present children and prints the fallback
+  // for absent ones, on every DSL adapter but ERB (as on main).
+  'children-fallback-value-shapes': { limitation: 'children-fallback-boolean-display' },
+  // #3988: a const read in a loop row whose parameter shadows a name the
+  // initializer reads renders an empty row (as on main).
+  'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
   // #3975: a module const initialized by an immediately invoked arrow that
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.

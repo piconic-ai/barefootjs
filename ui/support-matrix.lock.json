@@ -136,6 +136,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -464,6 +470,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -765,6 +777,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -1168,6 +1186,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -1493,6 +1517,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -1824,6 +1854,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
@@ -2152,6 +2188,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -2459,6 +2501,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -2787,6 +2835,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -15793,6 +15847,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -16739,6 +16805,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -17664,6 +17736,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -18985,6 +19069,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -19916,6 +20012,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -20859,6 +20967,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -21781,6 +21901,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -22664,6 +22796,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -23604,6 +23748,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -25068,6 +25224,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25831,6 +25999,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -26615,6 +26789,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -27660,6 +27846,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -28423,6 +28621,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -29195,6 +29405,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -29976,6 +30198,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -30703,6 +30937,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -31469,6 +31715,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -32209,6 +32467,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -32368,6 +32638,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
             {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
@@ -32556,6 +32832,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -32791,6 +33079,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -32950,6 +33250,18 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -33111,6 +33423,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -33271,6 +33595,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -33412,6 +33748,18 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -33572,6 +33920,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -33922,6 +34282,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -34655,6 +35027,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
                 "children-element-read-into-state"
@@ -35358,6 +35736,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -36337,6 +36727,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -37052,6 +37454,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -37779,6 +38193,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -38485,6 +38911,18 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -39176,6 +39614,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -39900,6 +40350,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -50732,6 +51194,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -50781,6 +51249,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -50840,6 +51314,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -50868,6 +51348,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -50893,6 +51379,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -50936,6 +51428,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -50964,6 +51462,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -50989,6 +51493,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -51450,6 +51960,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -51652,6 +52174,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -51853,6 +52381,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -52128,6 +52668,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -52329,6 +52881,18 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -52537,6 +53101,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -52758,6 +53334,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -52947,6 +53535,18 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -53149,6 +53749,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
@@ -53530,6 +54142,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -54176,6 +54794,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -54840,6 +55464,12 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -55741,6 +56371,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -56387,6 +57023,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -57030,6 +57672,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -57691,6 +58339,12 @@
               ]
             },
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -58304,6 +58958,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -58950,6 +59610,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
               ]
             },
             {
@@ -59784,6 +60450,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -59937,6 +60615,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
             {
               "fixture": "children-markup-nullish-memo",
               "limitations": [
@@ -60119,6 +60803,18 @@
               "fixture": "children-dynamic-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
               ]
             },
             {
@@ -60348,6 +61044,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -60501,6 +61209,18 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -60656,6 +61376,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -60804,6 +61536,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -60939,6 +61683,18 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -61093,6 +61849,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "children-fallback-const-row-shadow",
+              "limitations": [
+                "children-fallback-const-shadowed-read"
+              ]
+            },
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
@@ -61254,13 +62022,55 @@
     "logical:||": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
         "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
@@ -61269,10 +62079,34 @@
             }
           ]
         },
-        "pebble": {},
-        "twig": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            }
+          ]
+        },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "children-fallback-value-shapes",
+              "limitations": [
+                "children-fallback-boolean-display"
+              ]
+            },
             {
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [

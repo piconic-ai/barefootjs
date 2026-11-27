@@ -43,6 +43,12 @@ export const renderDivergences: RenderDivergences = {
   // Forwarding `children={props.children}` from a call without children:
   // the template passes an undefined variable to the child and raises.
   'children-absent-forwarded': { limitation: 'forwarded-absent-children' },
+  // A children fallback const read in a loop row whose parameter shadows a
+  // name its initializer reads: the row renders empty.
+  'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
+  // A children fallback read with a boolean fallback: present children read
+  // through a const are dropped, and an absent read prints `false`.
+  'children-fallback-value-shapes': { limitation: 'children-fallback-boolean-display' },
   // #3975: a module const initialized by an immediately invoked arrow that
   // reads another module const: the template has no value for the const,
   // so `{B.k}` renders empty.

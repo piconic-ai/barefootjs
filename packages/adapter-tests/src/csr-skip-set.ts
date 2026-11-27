@@ -411,6 +411,9 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   'children-markup-nullish-memo': { limitation: 'children-element-read-into-state' },
   'children-markup-nullish-seed-bindings': { limitation: 'children-element-read-into-state' },
   'children-param-default-nullish-seed': { limitation: 'children-element-read-into-state' },
+  // A children fallback read with a reactive fallback: its text slot
+  // escapes present children markup.
+  'children-fallback-reactive-read': { limitation: 'children-fallback-reactive-slot' },
   // A module const whose immediately invoked arrow reads another module
   // const: the CSR template has no form for it, so `{B.k}` renders empty.
   'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
