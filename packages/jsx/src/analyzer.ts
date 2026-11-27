@@ -4381,13 +4381,7 @@ function collectConstant(
 
   const isModule = _isModule
   const name = node.name.text
-  // `const B = (() => ({ k: V }))()` holds what `const B = { k: V }` holds:
-  // the const is recorded as initialized by the arrow's body, so every
-  // consumer decides on the body (a template folds `B.k`, #4022). Only a
-  // body that evaluates to the same value each time (`applied-arrow.ts`).
-  const initializer = node.initializer && declarationKind === 'const'
-    ? (repeatableAppliedArrowValue(node.initializer) ?? node.initializer)
-    : node.initializer
+  const initializer = constantInitializer(node, declarationKind)
   let value = initializer
     ? ctx.getJS(initializer)
     : undefined
@@ -4617,7 +4611,7 @@ function collectConstant(
     containsArrow: containsArrow || undefined,
     needsOperandGrouping: initializerNeedsGrouping(unwrappedInitializer),
     isFunctionValue: isFunctionValue || undefined,
-    callsFunctionLiteral: (initializer !== undefined && isFunctionLiteralCall(initializer)) || undefined,
+    callsFunctionLiteral: callsFunctionLiteralFlag(initializer),
     systemConstructKind,
     templateValue,
     origin: {
@@ -4629,6 +4623,24 @@ function collectConstant(
   recordIdentityCandidate(constant, initializer, ctx.checker)
   ctx.localConstants.push(constant)
   recordModuleArraySpread(constant, initializer, ctx.moduleArraySpreads)
+}
+
+/**
+ * The initializer a const is recorded with. `const B = (() => ({ k: V }))()`
+ * holds what `const B = { k: V }` holds, so the const is recorded as
+ * initialized by the arrow's body and every consumer decides on the body (a
+ * template folds `B.k`, #4022). Only a body that evaluates to the same value
+ * each time (`repeatableAppliedArrowValue`), and only for a `const`.
+ */
+function constantInitializer(node: ts.VariableDeclaration, declarationKind: 'const' | 'let'): ts.Expression | undefined {
+  if (!node.initializer || declarationKind !== 'const') return node.initializer
+  return repeatableAppliedArrowValue(node.initializer) ?? node.initializer
+}
+
+/** `ConstantInfo.callsFunctionLiteral` for the recorded initializer (`constantInitializer`). */
+function callsFunctionLiteralFlag(initializer: ts.Expression | undefined): true | undefined {
+  if (initializer === undefined || !isFunctionLiteralCall(initializer)) return undefined
+  return true
 }
 
 // =============================================================================
