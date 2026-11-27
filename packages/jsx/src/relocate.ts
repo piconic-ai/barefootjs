@@ -23,6 +23,7 @@ import type {
 import { ARRAY_METHOD_NAMES, tsNodeToParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { identifierPattern } from './identifier-pattern.ts'
+import { isAppliedZeroParamArrow } from './applied-arrow.ts'
 
 export interface RelocateEnv {
   /**
@@ -762,69 +763,19 @@ function isCallAcceptedByAdapter(
 }
 
 /**
- * Whether a call may run at template scope: an applied arrow literal
- * (`isAppliedZeroParamArrow`), pure by construction (`isPureBuiltinCall`),
- * or accepted by the adapter.
+ * Whether a call may run at template scope: an applied arrow literal whose
+ * body repeats (`isAppliedZeroParamArrow`, `applied-arrow.ts`), pure by
+ * construction (`isPureBuiltinCall`), or accepted by the adapter.
+ *
+ * CSR substitution produces the applied-arrow shape when it splices a
+ * zero-param helper (`zeroArgCallBody`) into a const that calls it: `const B
+ * = mk()` with a non-module `mk = () => ({ k: V })` reads `(() => ({ k: ('v')
+ * }))()` (#3975). Accepting the call does not vouch for its body: the walks
+ * that ask (`hasZeroArgCall`, `hasCallWithBridgedArg`) still descend into the
+ * callee and check the body's own reads, and `relocate` resolves them.
  */
 function isTemplateSafeCall(call: ts.CallExpression, env: RelocateEnv): boolean {
   return isAppliedZeroParamArrow(call) || isPureBuiltinCall(call, env) || isCallAcceptedByAdapter(call, env)
-}
-
-/**
- * `(() => body)()`: a zero-param, synchronous arrow literal with an
- * expression body, called with no arguments, whose body evaluates to the
- * same value each time (`isRepeatableBody`). The call evaluates `body` in the
- * scope it is written in, so it is exactly as safe in template scope as
- * `body` is. Accepting the call does not vouch for `body`: the walks that ask
- * (`hasZeroArgCall`, `hasCallWithBridgedArg`) still descend into the callee
- * and check the body's own reads, and `relocate` resolves them.
- *
- * CSR substitution produces this shape when it splices a zero-param helper
- * (`zeroArgCallBody`) into a const that calls it: `const B = mk()` with a
- * non-module `mk = () => ({ k: V })` reads `(() => ({ k: ('v') }))()` (#3975).
- * The template splices that form at every read of `B`, so a body that samples
- * a value (`Math.random()`, `Date.now()`, `new Date()`) would differ between
- * two reads where the server evaluated `mk()` once; such a call stays refused.
- */
-function isAppliedZeroParamArrow(call: ts.CallExpression): boolean {
-  const cached = appliedArrowVerdicts.get(call)
-  if (cached !== undefined) return cached
-  const body = appliedZeroParamArrowBody(call)
-  const verdict = body !== null && isRepeatableBody(body)
-  appliedArrowVerdicts.set(call, verdict)
-  return verdict
-}
-
-/**
- * Verdicts per call node. The walks that ask (`hasZeroArgCall`,
- * `hasCallWithBridgedArg`) also descend into an accepted call's body and ask
- * again for each nested applied arrow, so without this a chain of helpers
- * spliced into one another (`h2 = () => h1()`, …) re-walked every inner body
- * once per enclosing call. Keyed weakly by the parsed node: a fresh parse
- * starts fresh.
- */
-const appliedArrowVerdicts = new WeakMap<ts.CallExpression, boolean>()
-
-/** The expression body of `call` when it is `(() => body)()` with a synchronous arrow, else null. */
-function appliedZeroParamArrowBody(call: ts.CallExpression): ts.Expression | null {
-  if (call.arguments.length !== 0) return null
-  const callee = unwrapParens(call.expression)
-  if (!ts.isArrowFunction(callee) || callee.parameters.length !== 0 || ts.isBlock(callee.body)) return null
-  if (callee.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword)) return null
-  return callee.body
-}
-
-/**
- * Whether evaluating `node` again yields the same value: it calls nothing but
- * another applied zero-param arrow of the same kind, constructs nothing
- * (`new`) and runs no tag function. Reads, operators and literals repeat.
- * Each node is visited once: an accepted call's verdict already covers its
- * body, so the walk does not descend into it again.
- */
-function isRepeatableBody(node: ts.Node): boolean {
-  if (ts.isNewExpression(node) || ts.isTaggedTemplateExpression(node)) return false
-  if (ts.isCallExpression(node)) return isAppliedZeroParamArrow(node)
-  return ts.forEachChild(node, child => (isRepeatableBody(child) ? undefined : true)) !== true
 }
 
 /**

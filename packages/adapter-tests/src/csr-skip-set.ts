@@ -34,6 +34,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // loop; SSR refuses it on the template adapters and the CSR template has
   // no value for it either.
   'computed-const-read-unlowerable',
+  // #4022: a component const initialized by an immediately invoked arrow
+  // with a block body. SSR refuses it on the template adapters (BF101,
+  // pinned under `const-iife-unlowered`), and the CSR template has no value
+  // for the const either, so `{B.k}` renders empty there too.
+  'component-const-iife-block-body',
   // #3954: a memo calling a literal const's method that spreads a prop
   // (`api.add()`). SSR refuses it on the template adapters (BF101, pinned under
   // `array-literal-element-spread`), and the CSR template does not carry a
@@ -410,7 +415,4 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // A children fallback read with a reactive fallback: its text slot
   // escapes present children markup.
   'children-fallback-reactive-read': { limitation: 'children-fallback-reactive-slot' },
-  // A module const whose immediately invoked arrow reads another module
-  // const: the CSR template has no form for it, so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
 }

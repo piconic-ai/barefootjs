@@ -1727,6 +1727,18 @@ import { fixture as moduleHelperReadsModuleConstPropHidden } from './module-help
 import { fixture as moduleHelperParamReadsModuleConst } from './module-helper-param-reads-module-const'
 import { fixture as moduleFunctionReadsModuleConst } from './module-function-reads-module-const'
 import { fixture as moduleConstIifeReadsModuleConst } from './module-const-iife-reads-module-const'
+import { fixture as moduleConstIifeValues } from './module-const-iife-values'
+import { fixture as moduleConstIifeLoopChildSeed } from './module-const-iife-loop-child-seed'
+import { fixture as componentConstIife } from './component-const-iife'
+import { fixture as componentConstIifeBlockBody } from './component-const-iife-block-body'
+import { fixture as componentConstIifeBlockBodyClient } from './component-const-iife-block-body-client'
+import { fixture as moduleConstIifeBlockBody } from './module-const-iife-block-body'
+import { fixture as moduleConstIifeBlockBodyClient } from './module-const-iife-block-body-client'
+import { fixture as moduleConstIifeWithArgument } from './module-const-iife-with-argument'
+import { fixture as moduleConstIifeWithArgumentClient } from './module-const-iife-with-argument-client'
+import { fixture as moduleConstIifeSamplingBody } from './module-const-iife-sampling-body'
+import { fixture as moduleConstIifeSamplingBodyClient } from './module-const-iife-sampling-body-client'
+import { fixture as moduleConstObjectMemberSignalSeed } from './module-const-object-member-signal-seed'
 import { fixture as componentHelperSignalChildProp } from './component-helper-signal-child-prop'
 import { fixture as moduleHelperConstIdentity } from './module-helper-const-identity'
 import { fixture as moduleConstLiteralIdentity } from './module-const-literal-identity'
@@ -3117,6 +3129,18 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperParamReadsModuleConst,
   moduleFunctionReadsModuleConst,
   moduleConstIifeReadsModuleConst,
+  moduleConstIifeValues,
+  moduleConstIifeLoopChildSeed,
+  componentConstIife,
+  componentConstIifeBlockBody,
+  componentConstIifeBlockBodyClient,
+  moduleConstIifeBlockBody,
+  moduleConstIifeBlockBodyClient,
+  moduleConstIifeWithArgument,
+  moduleConstIifeWithArgumentClient,
+  moduleConstIifeSamplingBody,
+  moduleConstIifeSamplingBodyClient,
+  moduleConstObjectMemberSignalSeed,
   componentHelperSignalChildProp,
   moduleHelperConstIdentity,
   moduleConstLiteralIdentity,

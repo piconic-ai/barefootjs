@@ -124,10 +124,9 @@ export const renderDivergences: RenderDivergences = {
   // #3988: a const read in a loop row whose parameter shadows a name the
   // initializer reads renders an empty row (as on main).
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
-  // #3975: a module const initialized by an immediately invoked arrow that
-  // reads another module const: the template has no value for the const,
-  // so `{B.k}` renders empty.
-  'module-const-iife-reads-module-const': { limitation: 'module-const-iife-reads-module-const' },
+  // A signal seeded from a member of a module object literal const
+  // (`createSignal(CFG.n)`): the constructor has no value for the seed.
+  'module-const-object-member-signal-seed': { limitation: 'module-const-object-member-signal-seed' },
   // A module array const spreading a value no compile-time evaluator
   // computes (`[...new Set(['y', 'y']), 'z']`): a memo reading it renders empty.
   'module-const-array-spread-unresolved': { limitation: 'module-const-array-spread-unresolved' },

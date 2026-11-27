@@ -1,0 +1,6 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/go-template": patch
+---
+
+A const initialized by an immediately invoked zero-param arrow with an expression body that gives the same value each time (`const B = (() => ({ k: V }))()`, also nested, parenthesized or under `as` / `satisfies`, module or component scope) now holds that body for every consumer, as `const B = { k: V }` does. Its reads render on the template adapters as they do on Hono, and on a client mount, where a template adapter rendered them empty before (also when the arrow read no other module const) and a client mount rendered a component const of that shape empty. A const whose initializer calls a function literal no template evaluates (a block body, an argument, a body that constructs or samples a value such as `new Date()`, or any such call in a `let`) is now refused with BF101 on the template adapters when the server render reads it, where its reads rendered empty or failed the render; `/* @client */` defers a markup read. `ConstantInfo.callsFunctionLiteral` marks such a const. The applied-arrow decision the client template uses moved to `applied-arrow.ts` and also no longer accepts a body that builds JSX or an optional call.

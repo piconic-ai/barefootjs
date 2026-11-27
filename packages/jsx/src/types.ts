@@ -2617,6 +2617,14 @@ export interface ConstantInfo {
    */
   isFunctionValue?: boolean
   /**
+   * When true, the initializer (parentheses and type assertions removed)
+   * calls a function literal where it stands (`(() => { return x })()`,
+   * `(function () { … })()`, `((a) => …)(v)`), which the analyzer could not
+   * record as the body it returns (`repeatableAppliedArrowValue`). No template
+   * evaluates the call. Computed from the AST (`isFunctionLiteralCall`).
+   */
+  callsFunctionLiteral?: boolean
+  /**
    * When true, a same-scope statement (a `for`/`while` body, or any other
    * imperative statement) mutates this binding's value AFTER its
    * declaration — in place (`config[k] = …`, `items.push(...)`) or by
