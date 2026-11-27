@@ -153,6 +153,7 @@ export const renderDivergences: RenderDivergences = {
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
   'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-record-prop-bag-boolean-value': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).

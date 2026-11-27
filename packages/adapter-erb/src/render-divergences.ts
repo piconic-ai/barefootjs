@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A bag key that is not one attribute name is written as it is
+  // (`x onmouseover=alert(1)="x"`), where the reference drops it.
+  'spread-bag-unsafe-attr-names': { limitation: 'spread-bag-unsafe-attr-name' },
   // A children fallback const read in a loop row whose parameter shadows a
   // name its initializer reads: the inliner leaves the const as a name the
   // template has no value for, so the row renders empty.
@@ -66,6 +69,7 @@ export const renderDivergences: RenderDivergences = {
   // renders bare / dropped (`readOnly`, `data-x`) instead of as its text.
   'spread-open-bag-boolean-values': { limitation: 'spread-bag-boolean-value' },
   'spread-closed-rest-boolean-values': { limitation: 'spread-bag-boolean-value' },
+  'spread-record-prop-bag-boolean-value': { limitation: 'spread-bag-boolean-value' },
   // The rest's value renders twice ahead of the open bag's (`title="last" title="last" title="middle"`).
   'spread-closed-rest-repeated-both': { limitation: 'closed-rest-repeated' },
   // Every expansion of the repeated rest renders the key (`title="fallback" title="fallback"`).

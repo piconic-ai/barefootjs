@@ -9089,6 +9089,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -9732,6 +9738,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -11243,6 +11255,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -11901,6 +11919,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -12544,6 +12568,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -13199,6 +13229,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -13836,6 +13872,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -14488,6 +14530,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -16477,6 +16525,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -16570,6 +16624,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -17387,6 +17447,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -17480,6 +17546,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -18765,6 +18837,12 @@
               ]
             },
             {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19645,6 +19723,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -19738,6 +19822,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -20591,6 +20681,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -20690,6 +20786,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -21519,6 +21621,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -21612,6 +21720,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -22465,6 +22579,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -22534,6 +22654,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -23381,6 +23507,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -23474,6 +23606,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -24309,6 +24447,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -24402,6 +24546,12 @@
               "fixture": "spread-open-props-object-literal-alias-after",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "spread-record-prop-bag-boolean-value",
+              "limitations": [
+                "spread-bag-boolean-value"
               ]
             },
             {
@@ -25698,6 +25848,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -26455,6 +26611,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -28272,6 +28434,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -29047,6 +29215,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -29834,6 +30008,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -30612,6 +30792,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-boolean-case-keys",
               "limitations": [
                 "rest-key-boolean-name-case"
@@ -31363,6 +31549,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -32135,6 +32327,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -41180,6 +41378,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -41565,6 +41769,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -42386,6 +42596,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -42771,6 +42987,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -43165,6 +43387,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -43568,6 +43796,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated-after-bag",
               "limitations": [
                 "closed-rest-repeated"
@@ -43935,6 +44169,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -44323,6 +44563,12 @@
               "fixture": "signal-const-object-child-prop",
               "limitations": [
                 "signal-const-object-child-prop"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -54397,6 +54643,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -55034,6 +55286,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -56575,6 +56833,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -57224,6 +57488,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -57879,6 +58149,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -58531,6 +58807,12 @@
               ]
             },
             {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
+              ]
+            },
+            {
               "fixture": "spread-closed-rest-repeated",
               "limitations": [
                 "closed-rest-repeated"
@@ -59162,6 +59444,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {
@@ -59808,6 +60096,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-bag-unsafe-attr-names",
+              "limitations": [
+                "spread-bag-unsafe-attr-name"
               ]
             },
             {

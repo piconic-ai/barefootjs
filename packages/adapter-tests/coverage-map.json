@@ -21261,6 +21261,20 @@
         "text"
       ]
     },
+    "spread-bag-unsafe-attr-names": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "spread-body-rest-repeated-omitted": {
       "kinds": [
         "identifier",
@@ -21692,6 +21706,15 @@
       ]
     },
     "spread-record-prop-bag": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "spread-record-prop-bag-boolean-value": {
       "kinds": [
         "identifier"
       ],

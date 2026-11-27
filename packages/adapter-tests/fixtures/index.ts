@@ -626,6 +626,8 @@ import { fixture as spreadClosedRestRepeated } from './spread-closed-rest-repeat
 import { fixture as spreadClosedRestRepeatedOmitted } from './spread-closed-rest-repeated-omitted'
 import { fixture as spreadClosedRestRepeatedPresent } from './spread-closed-rest-repeated-present'
 import { fixture as spreadRecordPropBag } from './spread-record-prop-bag'
+import { fixture as spreadBagUnsafeAttrNames } from './spread-bag-unsafe-attr-names'
+import { fixture as spreadRecordPropBagBooleanValue } from './spread-record-prop-bag-boolean-value'
 import { fixture as spreadOpenObjectPropBag } from './spread-open-object-prop-bag'
 import { fixture as spreadBodyRestRepeatedOmitted } from './spread-body-rest-repeated-omitted'
 import { fixture as spreadClosedRestRepeatedAfterBag } from './spread-closed-rest-repeated-after-bag'
@@ -2320,6 +2322,8 @@ export const jsxFixtures: JSXFixture[] = [
   spreadClosedRestRepeatedOmitted,
   spreadClosedRestRepeatedPresent,
   spreadRecordPropBag,
+  spreadBagUnsafeAttrNames,
+  spreadRecordPropBagBooleanValue,
   spreadOpenObjectPropBag,
   spreadBodyRestRepeatedOmitted,
   spreadClosedRestRepeatedAfterBag,

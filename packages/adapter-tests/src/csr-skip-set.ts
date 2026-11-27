@@ -178,6 +178,7 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'spread-open-bag-literal-alias-before',
   'spread-open-bag-literal-renamed-elsewhere',
   'spread-open-bag-literal-case-alias',
+  'spread-bag-unsafe-attr-names',
   'spread-open-bag-literal-alias-after',
   'spread-open-bag-literal-other-spelling-after',
   'spread-open-props-object-literal-alias-after',
@@ -185,6 +186,7 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // boolean, and the open bag reaches its element only through
   // `applyRestAttrs` (limitation `spread-bag-boolean-value`).
   'spread-open-bag-boolean-values',
+  'spread-record-prop-bag-boolean-value',
   'spread-closed-rest-boolean-values',
   // A DOM serializes an HTML element's attribute names lowercased, so the
   // client-built element shows the closed rest's `tabIndex` as `tabindex`
