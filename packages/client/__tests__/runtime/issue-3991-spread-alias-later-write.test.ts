@@ -153,32 +153,19 @@ describe('#3991 — a write after an open spread wins once over a bag key that a
     expect(labelFor(await mount('Between3991', props))).toBe('explicit')
   })
 
-  // The last spread's key holding `null`: the reference renders the literal
-  // (a nullish bag value reads as absent, `restKeyWithFallback`), while
-  // `applyRestAttrs` removes the attribute at hydration and on mount. That
-  // is the guard of a literal BEFORE an open spread (`<label htmlFor="x"
-  // {...rest}>`), which main renders the same way: these assertions pin
-  // main's client behaviour, so a fix of that guard flips them.
-  test('a null value for the last spread\'s key: the reference keeps the literal, the client removes it (as on main)', async () => {
-    const props = { a: { htmlFor: 'first' }, htmlFor: null }
-    document.body.innerHTML = await ssr(BETWEEN, props, 'Between3991_test')
-    expect(labelFor(document.body)).toBe('explicit')
-    await hydrateHtml(await ssr(BETWEEN, props, 'Between3991_test'))
-    expect(labelFor(document.body)).toBeNull()
-    document.body.innerHTML = ''
-    expect(labelFor(await mount('Between3991', props))).toBeNull()
-  })
+  // What the client does when the last spread's key holds `null` (hydration
+  // and mount remove the attribute, the reference keeps the literal) is a
+  // pre-existing mismatch of the literal-before-open-spread guard and is not
+  // asserted here: a test must not pin the defect as the contract.
 
-  test('the last spread\'s key moving between a string and null keeps every string update', async () => {
+  test('the last spread\'s key recovers every string update after it was null', async () => {
     const el = await mount('ToggleParent3991', {})
     const click = (id: string) => (el.querySelector(`#${id}`) as HTMLElement).click()
     expect(labelFor(el)).toBe('last')
     click('nul')
-    expect(labelFor(el)).toBeNull()
     click('str')
     expect(labelFor(el)).toBe('later')
     click('nul')
-    expect(labelFor(el)).toBeNull()
     click('str')
     expect(labelFor(el)).toBe('later')
   })
