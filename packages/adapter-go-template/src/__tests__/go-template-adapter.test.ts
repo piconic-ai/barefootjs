@@ -6702,7 +6702,7 @@ export function List(props: Props) {
 })
 
 describe('GoTemplateAdapter - collision-derivation lowering (#2683)', () => {
-  test('a signal colliding with its own prop composes the presence-check fold with the surrounding arithmetic', () => {
+  test('a signal transforming its own prop is separated: the prop field stays raw, the signal seeds its own field', () => {
     const result = compileJSX(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -6713,20 +6713,14 @@ export function C(props: { count?: number }) {
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     expect((result.errors ?? []).filter(e => e.code === 'BF101')).toHaveLength(0)
     const types = result.files.find(f => f.type === 'types')!.content
-    // The collision flips the field to the nillable representation — the
-    // SAME flip an ordinary `??`-consumed optional prop gets (#2248) — so an
-    // absent prop (nil) and an explicit `0` stay distinguishable.
+    // The seed is no passthrough of the prop, so the analyzer renames the
+    // signal (`signal-seed-same-named-transform`): the prop field stays raw
+    // and nillable, so the seed's `??` still sees an omitted prop as nil,
+    // and the signal's own field carries the fully derived value.
     expect(types).toContain('Count interface{}')
     const newProps = types.slice(types.indexOf('func NewCProps'))
-    // The presence-check fold (`extractPropFallbackFromParsed`'s shape,
-    // reused unchanged) hoists the RAW coalesced value into a local...
-    expect(newProps).toContain('var count float64 = 1')
-    expect(newProps).toContain('if !bf.IsNullish(in.Count) {')
-    expect(newProps).toContain('count = bf.ToFloat64(in.Count)')
-    // ...and the shared field carries the FULLY DERIVED value — the local
-    // with the surrounding `* 2` composed back on, not just the coalesce
-    // result.
-    expect(newProps).toContain('Count: count * 2,')
+    expect(newProps).toContain('Count: in.Count,')
+    expect(newProps).toContain('BfSignal_count: bf.Number(bf.EvalExpr(')
     // `BfCallerProps` (#2684) keeps carrying the RAW caller value, never the
     // derived one.
     expect(newProps).toContain('if input.Count.Passed() {')
@@ -6791,7 +6785,7 @@ export function ViaConst(props: { count?: number }) {
 `.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
     const directTypes = direct.files.find(f => f.type === 'types')!.content
     const viaConstTypes = viaConst.files.find(f => f.type === 'types')!.content
-    expect(directTypes.slice(directTypes.indexOf('func NewDirectProps'))).toContain('Count: count * 2,')
+    expect(directTypes.slice(directTypes.indexOf('func NewDirectProps'))).toContain('BfSignal_count: ')
     // The const reads the raw prop outside the signal's own initializer, so
     // the analyzer separates the signal (`signal-from-same-named-prop-raw-read`):
     // the prop field stays raw and nillable, so the seed's `??` still sees

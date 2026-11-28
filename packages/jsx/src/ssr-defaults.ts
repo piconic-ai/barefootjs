@@ -705,7 +705,9 @@ export function localConstValuesByName(metadata: Pick<IRMetadata, 'localConstant
  * Also the analyzer's test for which same-named signal/memo keeps sharing
  * the prop's template variable (`separateSignalPropBindings`): a binding
  * this answers `false` for is renamed before IR is built, and so is one it
- * answers `true` for when the component also reads the raw prop elsewhere.
+ * answers `true` for when its seed is anything but the prop or its `??`
+ * fallback to literal data, or the component also reads the raw prop
+ * elsewhere.
  * A renamed binding no longer matches here, so the two callers cannot
  * disagree about which collisions stay collapsed.
  */
