@@ -876,15 +876,12 @@ function buildDynamicChildLoopSeeding(
       if (datumField) {
         // One hop (#2630): derive each child Input row from the driving
         // prop's own (already caller-populated) Go field.
-        const inputFields = loopRowChildInputFields(
-          nested,
-          parsed => goItemExprForLoopProp(parsed, row),
-          goTypes,
-        )
+        const rowReads = trackRowReads(parsed => goItemExprForLoopProp(parsed, row))
+        const inputFields = loopRowChildInputFields(nested, rowReads.resolve, goTypes)
         if (!inputFields) continue
         const datum = `in.${capitalizeFieldName(datumField)}`
         inputLines.push(`\tin.${rowsField} = make([]${nested.name}Input, len(${datum}))`)
-        inputLines.push(`\tfor i, item := range ${datum} {`)
+        inputLines.push(`\tfor i, ${rowValueBinding(rowReads.read)} := range ${datum} {`)
         inputLines.push(`\t\tin.${rowsField}[i] = ${nested.name}Input{${inputFields.join(', ')}}`)
         inputLines.push(`\t}`)
         continue
@@ -912,28 +909,73 @@ function buildDynamicChildLoopSeeding(
     if (!nested.isDynamic) continue
     const datumField = findBaseSignalGetter(nested.loopArrayParsed, datumGetters)
     if (!datumField) continue
-    const inputFields = loopRowChildInputFields(
-      nested,
-      parsed => goItemExprForLoopProp(parsed, row) ?? goOuterSignalExprForLoopProp(parsed, signalGetters),
-      goTypes,
-    )
-    if (!inputFields) continue
-
-    // Signal-backed dynamic: the handler builds the whole Props slice after
-    // construction (the constructor never touches it).
-    const datum = `props.${capitalizeFieldName(datumField)}`
-    propsLines.push(`\tprops.${rowsField} = make([]${nested.name}Props, len(${datum}))`)
-    propsLines.push(`\tfor i, item := range ${datum} {`)
-    propsLines.push(`\t\tprops.${rowsField}[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
-    propsLines.push(`\t\tprops.${rowsField}[i].BfParent = props.ScopeID`)
-    propsLines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex }, scalarRowShape(goTypes, ir.metadata.componentName, datumField))?.go
-    if (keyField) {
-      propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = bf.String(${keyField})`)
-    }
-    propsLines.push(`\t}`)
+    const lines = signalLoopRowsSeeding(nested, row, {
+      rowsField, datumField, goTypes, signalGetters, componentName: ir.metadata.componentName,
+    })
+    if (lines) propsLines.push(...lines)
   }
   return { inputLines, propsLines }
+}
+
+/**
+ * The statements that build a signal-backed loop's rows after construction
+ * (the route handler's part), or null when a child prop cannot be built.
+ */
+function signalLoopRowsSeeding(
+  nested: NestedComponentInfo,
+  row: LoopRowBinding,
+  site: { rowsField: string; datumField: string; goTypes: string; signalGetters: ReadonlySet<string>; componentName: string },
+): string[] | null {
+  const { rowsField, datumField, goTypes, signalGetters, componentName } = site
+  const lines: string[] = []
+  const rowReads = trackRowReads(parsed => goItemExprForLoopProp(parsed, row), parsed => goOuterSignalExprForLoopProp(parsed, signalGetters))
+  const inputFields = loopRowChildInputFields(nested, rowReads.resolve, goTypes)
+  if (!inputFields) return null
+  const key = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex }, scalarRowShape(goTypes, componentName, datumField))
+
+  // Signal-backed dynamic: the handler builds the whole Props slice after
+  // construction (the constructor never touches it). The row value is
+  // bound only when a child prop or the key reads it (`key={i}` with
+  // constant props reads neither, and Go rejects an unused `item`).
+  const datum = `props.${capitalizeFieldName(datumField)}`
+  lines.push(`\tprops.${rowsField} = make([]${nested.name}Props, len(${datum}))`)
+  lines.push(`\tfor i, ${rowValueBinding(rowReads.read || !!key?.readsRow)} := range ${datum} {`)
+  lines.push(`\t\tprops.${rowsField}[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
+  lines.push(`\t\tprops.${rowsField}[i].BfParent = props.ScopeID`)
+  lines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
+  if (key) {
+    lines.push(`\t\tprops.${rowsField}[i].BfDataKey = bf.String(${key.go})`)
+  }
+  lines.push(`\t}`)
+  return lines
+}
+
+/** The row loop's value variable: `item` when something reads it, else `_` (Go rejects an unused one). */
+function rowValueBinding(read: boolean): string {
+  return read ? 'item' : '_'
+}
+
+/**
+ * A child-prop resolver that records whether any value it resolved reads the
+ * row variable `item`: `fromRow` reads it, `other` (an outer signal) does
+ * not. The row loop binds `item` only when one did.
+ */
+function trackRowReads(
+  fromRow: (parsed: ParsedExpr) => string | null,
+  other: (parsed: ParsedExpr) => string | null = () => null,
+): { resolve: (parsed: ParsedExpr) => string | null; readonly read: boolean } {
+  const state = {
+    read: false,
+    resolve: (parsed: ParsedExpr): string | null => {
+      const value = fromRow(parsed)
+      if (value !== null) {
+        state.read = true
+        return value
+      }
+      return other(parsed)
+    },
+  }
+  return state
 }
 
 /**
@@ -986,8 +1028,7 @@ function loopRowChildInputFields(
   for (const prop of nested.props) {
     if (prop.isEventHandler) continue
     if (prop.name === 'key' || prop.name.includes('-')) continue
-    const value = (prop.value.kind === 'expression' && prop.value.parsed ? resolve(prop.value.parsed) : null)
-      ?? constantPropGoValue(prop.value)
+    const { value, constant } = rowPropGoValue(prop.value, resolve)
     if (value === null) return null
     const field = capitalizeFieldName(prop.name)
     const fieldType = childInput?.get(field)
@@ -997,17 +1038,31 @@ function loopRowChildInputFields(
       if (restBagField) restBagEntries.push(`${JSON.stringify(prop.name)}: ${value}`)
       continue
     }
-    fields.push(`${field}: ${childRowFieldValue(nested.name, field, fieldType, value, goTypes)}`)
+    // A constant is an untyped Go value (`[]any`, `map[string]any`), which
+    // only `bf.Coerce` makes assignable to a required concrete field.
+    fields.push(`${field}: ${constant ? coercedChildField(nested.name, field, value) : childRowFieldValue(nested.name, field, fieldType, value, goTypes)}`)
   }
   if (restBagEntries.length > 0) fields.push(`${restBagField}: map[string]any{${restBagEntries.join(', ')}}`)
   return fields.length > 0 ? fields : null
+}
+
+/** A row's child prop value in Go: read through `resolve`, else a constant (`constant: true`). */
+function rowPropGoValue(
+  value: NestedComponentInfo['props'][number]['value'],
+  resolve: (parsed: ParsedExpr) => string | null,
+): { value: string | null; constant: boolean } {
+  const resolved = value.kind === 'expression' && value.parsed ? resolve(value.parsed) : null
+  if (resolved !== null) return { value: resolved, constant: false }
+  const constant = constantPropGoValue(value)
+  return { value: constant, constant: constant !== null }
 }
 
 /**
  * A loop-body child prop whose value is the same constant on every row
  * (`n={1}`, `on`, `label="x"`, `tags={['t']}`): the Go value a route handler
  * passes each row, or null for anything else. An array of constants goes as
- * `[]any`, which `bf.Coerce` reshapes into the child's slice type.
+ * `[]any` and an object as `map[string]any`, which `bf.Coerce` reshapes into
+ * the child's field type.
  */
 function constantPropGoValue(value: NestedComponentInfo['props'][number]['value']): string | null {
   switch (value.kind) {
@@ -1024,10 +1079,30 @@ function constantPropGoValue(value: NestedComponentInfo['props'][number]['value'
 }
 
 function constantParsedGoValue(parsed: ParsedExpr): string | null {
-  if (parsed.kind === 'literal') return parsed.literalType === 'null' ? null : goScalarLiteral(parsed.value)
-  if (parsed.kind !== 'array-literal') return null
-  const elements = parsed.elements.map(e => (e.kind === 'literal' && e.literalType !== 'null' ? goScalarLiteral(e.value) : null))
-  return elements.every(e => e !== null) ? `[]any{${elements.join(', ')}}` : null
+  switch (parsed.kind) {
+    case 'literal':
+      return parsed.literalType === 'null' ? null : goScalarLiteral(parsed.value)
+    case 'array-literal': {
+      const elements = parsed.elements.map(constantParsedGoValue)
+      return elements.every(e => e !== null) ? `[]any{${elements.join(', ')}}` : null
+    }
+    case 'object-literal': {
+      const entries: string[] = []
+      for (const p of parsed.properties) {
+        const value = p.kind === 'prop' && !p.shorthand ? constantParsedGoValue(p.value) : null
+        if (p.kind !== 'prop' || value === null) return null
+        entries.push(`${goStringLit(p.key)}: ${value}`)
+      }
+      return `map[string]any{${entries.join(', ')}}`
+    }
+    default:
+      return null
+  }
+}
+
+/** `value` as the child Input's `field`, through `bf.Coerce` as the generated constructors do. */
+function coercedChildField(childName: string, field: string, value: string): string {
+  return `bf.Coerce(${childName}Input{}.${field}, ${value})`
 }
 
 /**
@@ -1037,7 +1112,7 @@ function constantParsedGoValue(parsed: ParsedExpr): string | null {
  * child's own struct (`goValueAsStruct`).
  */
 function childRowFieldValue(childName: string, field: string, fieldType: string | undefined, value: string, goTypes?: string): string {
-  if (fieldType === undefined || optElemOf(fieldType) !== null) return `bf.Coerce(${childName}Input{}.${field}, ${value})`
+  if (fieldType === undefined || optElemOf(fieldType) !== null) return coercedChildField(childName, field, value)
   return goTypes ? goValueAsStruct(goTypes, fieldType, value) : value
 }
 

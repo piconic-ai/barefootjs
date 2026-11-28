@@ -105,7 +105,7 @@
     },
     "packages/adapter-go-template/src/test-render.ts": {
       "buildDynamicChildLoopSeeding": [
-        55
+        52
       ],
       "renderGoTemplateComponent": [
         58
