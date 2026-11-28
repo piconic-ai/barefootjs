@@ -12034,6 +12034,29 @@
         "text"
       ]
     },
+    "loop-row-constant-props": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-controlled-input": {
       "kinds": [
         "array-literal",
