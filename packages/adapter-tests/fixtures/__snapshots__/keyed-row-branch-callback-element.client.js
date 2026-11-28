@@ -137,7 +137,7 @@ export function initKeyedRowBranchCallbackElement(__scope, _p = {}) {
   initChild('CallbackRows__18f8ff83', __scope, { get renderItem() { return BFInlineJsxCallback1 } })
 }
 
-hydrate('KeyedRowBranchCallbackElement', { init: initKeyedRowBranchCallbackElement, template: (_p, __bfKey) => `${renderChild('CallbackRows__18f8ff83', {renderItem: BFInlineJsxCallback1}, undefined, 's0')}`, comment: true, keyRelay: true })
+hydrate('KeyedRowBranchCallbackElement', { init: initKeyedRowBranchCallbackElement, template: (_p, __bf_key) => `${renderChild('CallbackRows__18f8ff83', {renderItem: BFInlineJsxCallback1}, undefined, 's0')}`, comment: true, keyRelay: true })
 export function KeyedRowBranchCallbackElement(_p, __bfKey) { return createComponent('KeyedRowBranchCallbackElement', _p, __bfKey) }
 export function initBFInlineJsxCallback1(__scope, _p = {}) {
   if (!__scope) return
@@ -160,5 +160,5 @@ export function initBFInlineJsxCallback1(__scope, _p = {}) {
   initChild('Pill__18f8ff83', __scope, { get label() { return _p.label } })
 }
 
-hydrate('BFInlineJsxCallback1__18f8ff83', { init: initBFInlineJsxCallback1, template: (_p, __bfKey) => `${renderChild('Pill__18f8ff83', {label: _p.label}, undefined, 's0')}`, comment: true, keyRelay: true, name: 'BFInlineJsxCallback1' })
+hydrate('BFInlineJsxCallback1__18f8ff83', { init: initBFInlineJsxCallback1, template: (_p, __bf_key) => `${renderChild('Pill__18f8ff83', {label: _p.label}, undefined, 's0')}`, comment: true, keyRelay: true, name: 'BFInlineJsxCallback1' })
 export function BFInlineJsxCallback1(_p, __bfKey) { return createComponent('BFInlineJsxCallback1__18f8ff83', _p, __bfKey) }

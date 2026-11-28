@@ -30,5 +30,5 @@ export function initJsxPropTemplateDelimiters(__scope, _p = {}) {
   initChild('TemplateDelimiterBadge', _s0, { key: "` \\ ${notCode}", label: "` \\ ${notCode}" })
 }
 
-hydrate('JsxPropTemplateDelimiters', { init: initJsxPropTemplateDelimiters, template: (_p, __bfKey) => `${renderChild('TemplateDelimiterCard', {header: bfMarkup(`<span title="\` \\ \${notCode}" bf-s="__BF_PARENT_SCOPE__">\` \\ \${notCode}${renderChild('TemplateDelimiterBadge', {label: "` \\ ${notCode}"}, "` \\ ${notCode}", 's0')}</span>`), children: `<p title="\` \\ \${notCode}">\` \\ \${notCode}</p>`}, undefined, 's1')}`, comment: true, keyRelay: true })
+hydrate('JsxPropTemplateDelimiters', { init: initJsxPropTemplateDelimiters, template: (_p, __bf_key) => `${renderChild('TemplateDelimiterCard', {header: bfMarkup(`<span title="\` \\ \${notCode}" bf-s="__BF_PARENT_SCOPE__">\` \\ \${notCode}${renderChild('TemplateDelimiterBadge', {label: "` \\ ${notCode}"}, "` \\ ${notCode}", 's0')}</span>`), children: `<p title="\` \\ \${notCode}">\` \\ \${notCode}</p>`}, undefined, 's1')}`, comment: true, keyRelay: true })
 export function JsxPropTemplateDelimiters(_p, __bfKey) { return createComponent('JsxPropTemplateDelimiters', _p, __bfKey) }

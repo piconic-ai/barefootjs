@@ -675,6 +675,7 @@ import { fixture as childrenForwardedIntoChildPropPlain } from './children-forwa
 import { fixture as loopRowRootComponent } from './loop-row-root-component'
 import { fixture as loopRowRootComponentBranches } from './loop-row-root-component-branches'
 import { fixture as loopRowTransparentRoot } from './loop-row-transparent-root'
+import { fixture as loopRowRootEmptyLead } from './loop-row-root-empty-lead'
 import { fixture as childrenReadIntoStateForms } from './children-read-into-state-forms'
 import { fixture as childrenReadIntoStateDelivered } from './children-read-into-state-delivered'
 import { fixture as childrenReadIntoStateShadowTransform } from './children-read-into-state-shadow-transform'
@@ -2454,6 +2455,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowRootComponent,
   loopRowRootComponentBranches,
   loopRowTransparentRoot,
+  loopRowRootEmptyLead,
   childrenReadIntoStateForms,
   childrenReadIntoStateDelivered,
   childrenReadIntoStateShadowTransform,

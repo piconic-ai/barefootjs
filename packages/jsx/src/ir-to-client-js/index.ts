@@ -438,7 +438,7 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext, localI
   // stateful child still needs a scope for its init to bind against.
   const transparentFlag = isTransparentFragmentRoot(ir.root) ? ['transparent: true'] : []
   const scopeFlags = [...componentDefScopeFlags(ir.root), ...transparentFlag].map((f) => `, ${f}`).join('')
-  lines.push(`hydrate('${registryKey}', { init: ${initName}, template: (${templateParams(ir.root)}) => \`${templateHtml}\`${scopeFlags}${nameField} })`)
+  lines.push(`hydrate('${registryKey}', { init: ${initName}, template: (${templateParams(ir.root, ctx.generatedNameSpellings)}) => \`${templateHtml}\`${scopeFlags}${nameField} })`)
   // See `emitRegistrationAndHydration` (./emit-registration.ts) for the
   // rationale on why the component is also emitted as a callable
   // shim. The same applies for template-only components since they

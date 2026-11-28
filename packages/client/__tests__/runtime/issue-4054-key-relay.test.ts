@@ -50,7 +50,7 @@ function relinkRuntime(clientJs: string): string {
   return out
 }
 
-async function load(source: string, name: string): Promise<string> {
+async function load(source: string, name: string, siblings: Record<string, string> = {}): Promise<string> {
   const result = compileJSX(source, `${name}.tsx`, { adapter: new TestAdapter() })
   const errors = result.errors.filter(e => e.severity === 'error')
   if (errors.length > 0) {
@@ -59,6 +59,7 @@ async function load(source: string, name: string): Promise<string> {
   const clientJs = result.files.find(f => f.type === 'clientJs')?.content
   if (!clientJs) throw new Error('No client JS emitted')
   const dir = mkdtempSync(join(tmpdir(), 'bf-4054-'))
+  for (const [sibling, code] of Object.entries(siblings)) writeFileSync(join(dir, sibling), code)
   const file = join(dir, `${name}.mjs`)
   writeFileSync(file, relinkRuntime(clientJs))
   try {
@@ -93,6 +94,21 @@ export function Lead4054(props: { label?: string }) {
 export function Branch4054(props: { label?: string; kid?: boolean }) {
   if (props.kid) return <K4054 label={props.label} />
   return <i>{props.label}</i>
+}
+export function EmptyLead4054(props: { label?: string }) {
+  return <><></><K4054 label={props.label} /><i>{props.label}</i></>
+}
+export function NothingLead4054(props: { label?: string; on?: boolean }) {
+  return <>{props.on && <u>on</u>}<K4054 label={props.label} /><i>{props.label}</i></>
+}
+export function NestedEmptyLead4054(props: { label?: string }) {
+  return <><><></></><K4054 label={props.label} /><i>{props.label}</i></>
+}
+export function LoopLead4054(props: { label?: string; tags?: string[] }) {
+  return <>{(props.tags ?? []).map((t) => <u key={t}>{t}</u>)}<K4054 label={props.label} /><i>{props.label}</i></>
+}
+export function NullLead4054(props: { label?: string }) {
+  return <>{null}<K4054 label={props.label} /><i>{props.label}</i></>
 }
 export function Elem4054(props: { label?: string }) {
   return <i>{props.label}</i>
@@ -146,6 +162,26 @@ describe('#4054: the row key of a component whose first element is not its own',
     expect(parse(renderChild('Branch4054', { label: 'a' }, 'a', 's0', true)).querySelector('i')!.getAttribute('data-key')).toBe('a')
   })
 
+  test('a fragment whose leading child can render nothing keys its own element, not the component after it', async () => {
+    const { renderChild } = await import('../../src/runtime')
+    for (const name of ['EmptyLead4054', 'NestedEmptyLead4054', 'LoopLead4054', 'NullLead4054']) {
+      expect(clientJs).toMatch(new RegExp(`hydrate\\('${name}', \\{[^\\n]*keyRelay: true`))
+      const host = parse(renderChild(name, { label: 'a' }, 'a', 's0', true))
+      expect(host.querySelector('b')!.hasAttribute('data-key')).toBe(false)
+      expect(host.querySelector('i')!.getAttribute('data-key')).toBe('a')
+    }
+  })
+
+  test('a conditional that can render nothing before a component keys only its own branch, as SSR does', async () => {
+    const { renderChild } = await import('../../src/runtime')
+    expect(clientJs).toMatch(/hydrate\('NothingLead4054', \{[^\n]*keyRelay: true/)
+    const off = parse(renderChild('NothingLead4054', { label: 'a' }, 'a', 's0', true))
+    expect(off.querySelector('[data-key]')).toBeNull()
+    const on = parse(renderChild('NothingLead4054', { label: 'a', on: true }, 'a', 's0', true))
+    expect(on.querySelector('u')!.getAttribute('data-key')).toBe('a')
+    expect(on.querySelector('b')!.hasAttribute('data-key')).toBe(false)
+  })
+
   test('an element root still gets the key stamped', async () => {
     const { renderChild } = await import('../../src/runtime')
     expect(parse(renderChild('Elem4054', { label: 'a' }, 'a', 's0', true)).querySelector('i')!.getAttribute('data-key')).toBe('a')
@@ -163,5 +199,27 @@ describe('#4054: the row key of a component whose first element is not its own',
     expect(rows().map(b => b.getAttribute('data-key'))).toEqual(['c', 'b', 'a'])
     // Reordered, not re-created: the same nodes come back in reverse.
     expect(rows()).toEqual([...before].reverse())
+  })
+
+  test('a relay template still calls a same-named user binding (import or module function)', async () => {
+    const js = await load(`
+'use client'
+import { up as __bfKey } from './up4054.mjs'
+function __bf_key(s: string) { return s + '!' }
+export function Kid4054b(props: { label?: string }) {
+  return <b>{props.label}</b>
+}
+export function Shadow4054(props: { label?: string }) {
+  return <><Kid4054b label={__bfKey(props.label ?? '')} /><i>{__bf_key(props.label ?? '')}</i></>
+}
+`, 'Shadow4054', { 'up4054.mjs': 'export function up(s) { return String(s).toUpperCase() }' })
+    expect(js).toMatch(/hydrate\('Shadow4054', \{[^\n]*keyRelay: true/)
+    const { renderChild } = await import('../../src/runtime')
+    for (const key of ['a', undefined]) {
+      const host = parse(renderChild('Shadow4054', { label: 'a' }, key, 's0', true))
+      expect(host.querySelector('b')!.textContent).toBe('A')
+      expect(host.querySelector('i')!.textContent).toBe('a!')
+      expect(host.querySelector('i')!.getAttribute('data-key')).toBe(key ?? null)
+    }
   })
 })

@@ -201,7 +201,7 @@ export function emitRegistrationAndHydration(
     const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName, templateBindingPlan(ctx))
     if (templateHtml) {
-      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root)))
+      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root, ctx.generatedNameSpellings)))
     }
   } else {
     // CSR fallback: emit for all components that can't generate static templates.
@@ -217,7 +217,7 @@ export function emitRegistrationAndHydration(
       _ir.root, csrInlinableConstants, ctx, restSpreadNames, ctx.propsObjectName, unsafeLocalNames, ctx.deferredChildSlots
     )
     if (templateHtml) {
-      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root)))
+      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root, ctx.generatedNameSpellings)))
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)

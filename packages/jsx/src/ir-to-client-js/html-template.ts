@@ -4,7 +4,7 @@
 
 import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, IRText, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
-import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, KEY_RELAY_PARAM, keyRelayInTemplate, componentPlaceholderMarkup, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
+import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, keyRelayParam, componentPlaceholderMarkup, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
@@ -1968,11 +1968,11 @@ export interface TemplateOptions {
    */
   constantEnv?: CsrEnv | null
   /**
-   * The component renders the caller's row key itself (`keyRelayInTemplate`,
-   * utils.ts, #4054): each element carrying a valueless `keyAttr` emits it
-   * from the template's `KEY_RELAY_PARAM`.
+   * The template's row-key parameter when the component renders the caller's
+   * row key itself (`keyRelayParam`, utils.ts, #4054): each element carrying
+   * a valueless `keyAttr` emits the key from it.
    */
-  keyRelay?: boolean
+  keyRelayParam?: string | null
 }
 
 /**
@@ -1981,8 +1981,9 @@ export interface TemplateOptions {
  * none. Same condition as Hono's `__dataKey !== undefined` relay.
  */
 function keyRelayTemplateAttr(node: IRElement, opts: TemplateOptions): string | null {
-  if (!opts.keyRelay || !node.keyAttr || node.keyAttr.value !== undefined) return null
-  return `\${${KEY_RELAY_PARAM} !== undefined ? '${node.keyAttr.name}="' + ${escapeAttrValueExpr(KEY_RELAY_PARAM)} + '"' : ''}`
+  const param = opts.keyRelayParam
+  if (!param || !node.keyAttr || node.keyAttr.value !== undefined) return null
+  return `\${${param} !== undefined ? '${node.keyAttr.name}="' + ${escapeAttrValueExpr(param)} + '"' : ''}`
 }
 
 /**
@@ -2016,7 +2017,7 @@ export function irToComponentTemplate(
   restPropsName?: string | null,
   bindingPlan?: TemplateBindingPlan,
 ): string {
-  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName, keyRelay: keyRelayInTemplate(node) }
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName, keyRelayParam: keyRelayParam(node, bindingPlan?.reserved) }
   const constantEnv = inlinableConstantEnv(inlinableConstants)
   if (!constantEnv || !bindingPlan || bindingPlan.names.size === 0) {
     return irToComponentTemplateWithOpts(node, opts)
@@ -2464,7 +2465,7 @@ export function generateCsrTemplate(
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
   const markupSlotIds = markupSlotIdsOf(ctx)
-  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName, keyRelay: keyRelayInTemplate(node) }
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName, keyRelayParam: keyRelayParam(node, ctx.generatedNameSpellings) }
   const plan = templateBindingPlan(ctx)
   if (plan.names.size === 0) return generateCsrTemplateWithOpts(node, opts)
   // A read of a fresh-per-evaluation const sees the one value the template

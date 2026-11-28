@@ -154,13 +154,28 @@ export function componentDefScopeFlags(root: ComponentIR['root']): string[] {
 
 /**
  * The second parameter of a `keyRelay` template (`ComponentDef.keyRelay`):
- * the row key the caller passes to `renderChild` / `createComponent`.
+ * the row key the caller passes to `renderChild` / `createComponent`, or
+ * null when the component's template takes none. The ONE name both the
+ * parameter list (`templateParams`) and the relay attribute
+ * (`keyRelayTemplateAttr`, html-template.ts) use. It is a generated
+ * `__bf_` name that avoids every `__bf_` spelling of the source file
+ * (`IRMetadata.generatedNameSpellings`), so no source binding a template
+ * expression reads (an import, a module function) can be shadowed by it
+ * (#4054 review), the way `template-const-bindings.ts` names its
+ * parameters.
  */
-export const KEY_RELAY_PARAM = '__bfKey'
+export function keyRelayParam(root: ComponentIR['root'], reserved: ReadonlySet<string> | undefined): string | null {
+  if (!keyRelayInTemplate(root)) return null
+  const base = '__bf_key'
+  let param = base
+  for (let n = 1; reserved?.has(param); n++) param = `${base}_${n}`
+  return param
+}
 
 /** The `template:` lambda's parameter list for a component with this root. */
-export function templateParams(root: ComponentIR['root']): string {
-  return keyRelayInTemplate(root) ? `${PROPS_PARAM}, ${KEY_RELAY_PARAM}` : PROPS_PARAM
+export function templateParams(root: ComponentIR['root'], reserved: ReadonlySet<string> | undefined): string {
+  const keyParam = keyRelayParam(root, reserved)
+  return keyParam ? `${PROPS_PARAM}, ${keyParam}` : PROPS_PARAM
 }
 
 /**
@@ -187,26 +202,52 @@ export function templateParams(root: ComponentIR['root']): string {
  * `true`.
  */
 export function keyRelayInTemplate(root: ComponentIR['root']): boolean {
-  return !firstElementCarriesKeyRelay(root)
+  return firstElementOf(root) === 'other'
 }
 
-function firstElementCarriesKeyRelay(node: IRNode | null): boolean {
-  if (!node) return true
+/**
+ * What the first element a subtree renders is, on every render path:
+ * `'carrier'` — an element carrying the relay (valueless `keyAttr`);
+ * `'none'` — the subtree renders no element, so the first one comes from
+ * the next sibling (an empty fragment, whitespace, a `null` root branch);
+ * `'other'` — anything else, or not provably one of the two (a component, a
+ * loop that may be empty, an expression, a branch that renders nothing on
+ * one path and an element on the other). Only `'carrier'` and `'none'`
+ * keep the first-element stamp equivalent to the IR's answer (#4054 review:
+ * an empty leading fragment used to answer before its next sibling).
+ */
+type FirstElement = 'carrier' | 'none' | 'other'
+
+function firstElementOf(node: IRNode | null): FirstElement {
+  if (!node) return 'none'
   switch (node.type) {
     case 'element':
-      return !!node.keyAttr && node.keyAttr.value === undefined
+      return node.keyAttr && node.keyAttr.value === undefined ? 'carrier' : 'other'
+    case 'text':
+      return typeof node.value === 'string' && !node.value.trim() ? 'none' : 'other'
     case 'fragment':
-    case 'provider': {
-      const first = node.children.find((c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim()))
-      return first ? firstElementCarriesKeyRelay(first) : true
-    }
+    case 'provider':
+      return firstElementOfSiblings(node.children)
     case 'conditional':
-      return firstElementCarriesKeyRelay(node.whenTrue) && firstElementCarriesKeyRelay(node.whenFalse)
+      return sameOnBothPaths(firstElementOf(node.whenTrue), firstElementOf(node.whenFalse))
     case 'if-statement':
-      return firstElementCarriesKeyRelay(node.consequent) && firstElementCarriesKeyRelay(node.alternate)
+      return sameOnBothPaths(firstElementOf(node.consequent), firstElementOf(node.alternate))
     default:
-      return false
+      return 'other'
   }
+}
+
+function firstElementOfSiblings(children: readonly IRNode[]): FirstElement {
+  for (const child of children) {
+    const first = firstElementOf(child)
+    if (first !== 'none') return first
+  }
+  return 'none'
+}
+
+/** Two render paths agree only when they give the same answer. */
+function sameOnBothPaths(a: FirstElement, b: FirstElement): FirstElement {
+  return a === b ? a : 'other'
 }
 
 /**
