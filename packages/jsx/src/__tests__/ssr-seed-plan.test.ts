@@ -435,9 +435,9 @@ describe('computeSsrSeedPlan', () => {
       function C(props: { label: string }) {
         const [first] = createSignal([{ a: 'p' }].map((t) => t.a).join(','))
         const [tagged] = createSignal(PREFIX + '-x')
-        const [label] = createSignal(props.label + '!')
+        const [shout] = createSignal(props.label + '!')
         const both = createMemo(() => PREFIX + first())
-        return <p>{first()}{tagged()}{label()}{both()}</p>
+        return <p>{first()}{tagged()}{shout()}{both()}</p>
       }
     `)
     const constantOf = (name: string) => {
@@ -446,7 +446,7 @@ describe('computeSsrSeedPlan', () => {
     }
     expect(constantOf('first')).toBe(true)
     expect(constantOf('tagged')).toBe(true)
-    expect(constantOf('label')).toBe(false)
+    expect(constantOf('shout')).toBe(false)
     expect(constantOf('both')).toBe(false)
   })
 

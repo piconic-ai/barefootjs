@@ -197,6 +197,12 @@ import { fixture as memoTemplateLiteralNillablePropDestructured } from './memo-t
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
+import { fixture as signalSeedSameNamedTransform } from './signal-seed-same-named-transform'
+import { fixture as signalSeedSameNamedTransformKinds } from './signal-seed-same-named-transform-kinds'
+import { fixture as memoSameNamedTransform } from './memo-same-named-transform'
+import { fixture as signalSeedSameNamedTransformLoopRow } from './signal-seed-same-named-transform-loop-row'
+import { fixture as signalSeedSameNamedFalsyFallback } from './signal-seed-same-named-falsy-fallback'
+import { fixture as memoSameNamedPropFallback } from './memo-same-named-prop-fallback'
 import { fixture as signalDefaultFromJsx } from './signal-default-from-jsx'
 import { fixture as controlledSignal } from './controlled-signal'
 import { fixture as createMutationElidedValue } from './create-mutation-elided-value'
@@ -3508,4 +3514,10 @@ export const jsxFixtures: JSXFixture[] = [
   memoTypeofObjectMemberClient,
   constTypeofUnreadMember,
   memoTypeofBlockStatements,
+  signalSeedSameNamedTransform,
+  signalSeedSameNamedTransformKinds,
+  memoSameNamedTransform,
+  signalSeedSameNamedTransformLoopRow,
+  signalSeedSameNamedFalsyFallback,
+  memoSameNamedPropFallback,
 ]
