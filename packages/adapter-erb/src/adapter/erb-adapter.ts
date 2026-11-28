@@ -1077,13 +1077,16 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // '_erbout')`), then slice everything appended since the mark back out
     // into a local. No literal text (not even a newline) may sit between
     // the mark/slice tags and the children, or it would leak into (or out
-    // of) the capture. Unlike the reserved `children` value, which the
-    // child reads through a structural bypass (`IRExpression.childrenRead`), a
-    // named slot is read through the generic `bf.h(v[:name])` path, so its
-    // HTML is wrapped in `bf.backend.mark_raw(...)` (`BarefootJS::
-    // SafeString`), which `Context#h` passes through unescaped. A named
-    // slot's locals are counter-based: a prop name can contain characters
-    // (`data-slot`) that are no valid Ruby local name.
+    // of) the capture. Each capture is HTML, so it is wrapped in
+    // `bf.backend.mark_raw(...)` (`BarefootJS::SafeString`), which
+    // `Context#h` passes through unescaped: a named slot is read through the
+    // generic `bf.h(v[:name])` path, and so are the children once the child
+    // holds them in state (`createSignal(props.children)`, `{value()}`) or
+    // forwards them into a nested component's prop. A direct read of the
+    // children prop takes a structural bypass (`IRExpression.childrenRead`)
+    // and prints them as they are. A named slot's locals are counter-based:
+    // a prop name can contain characters (`data-slot`) that are no valid
+    // Ruby local name.
     const tplName = childTemplateName(comp.name, this.importAliases)
     const captures: string[] = []
     const plan = planComponentProps(comp, {
@@ -1113,7 +1116,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
             const childrenBody = this.renderChildren(entry.children)
             const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
             const capVar = `__bf_children_${suffix}`
-            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(__bf_len_${suffix}..) %>`)
+            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = bf.backend.mark_raw(_erbout.slice!(__bf_len_${suffix}..)) %>`)
             return `children: ${capVar}`
           }
         }
@@ -1227,7 +1230,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         boolStr: (expr, attr) => this.shouldWrapBoolStr(expr, attr),
       })
       const attr = (v: string, boolStr: boolean) =>
-        boolStr ? `${name}="<%= bf.h(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h(${v}) %>"`
+        boolStr ? `${name}="<%= bf.h_attr(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h_attr(${v}) %>"`
       // Each kind is documented on `AttrExpressionPlan`.
       switch (plan.kind) {
         case 'omit-nullable': {
@@ -1246,7 +1249,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
           const m = plan.ternary
           const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
-          return `<% if ${truthyTest(this.testPlan(m.testParsed), cond)} %>${name}="<%= bf.h(${val}) %>"<% end %>`
+          return `<% if ${truthyTest(this.testPlan(m.testParsed), cond)} %>${name}="<%= bf.h_attr(${val}) %>"<% end %>`
         }
         case 'omit-nil': {
           const v = this.convertExpressionToRuby(value.expr, value.parsed)
@@ -1259,7 +1262,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
-      `${name}="<%= bf.h(${this.convertTemplateLiteralPartsToRuby(value.parts)}) %>"`,
+      `${name}="<%= bf.h_attr(${this.convertTemplateLiteralPartsToRuby(value.parts)}) %>"`,
     // Spread attributes (`<div {...attrs()} />`) lower through the
     // `bf.spread_attrs` Ruby runtime helper, mirroring the Go adapter's
     // `bf_spread_attrs` and the JS `spreadAttrs` from
