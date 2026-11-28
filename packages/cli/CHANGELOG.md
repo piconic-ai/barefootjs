@@ -1,5 +1,14 @@
 # @barefootjs/cli
 
+## 0.41.5
+
+### Patch Changes
+
+- Updated dependencies [6b14307]
+- Updated dependencies [0263c60]
+  - @barefootjs/client@0.41.5
+  - @barefootjs/shared@0.41.5
+
 ## 0.41.4
 
 ### Patch Changes
