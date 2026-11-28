@@ -1,5 +1,12 @@
 # @barefootjs/hono
 
+## 0.41.5
+
+### Patch Changes
+
+- c3c9592: Every JS string literal the compiler writes into the client JS, and into the Hono adapter's marked template, is now spelled by one helper, `codeSafeStringLiteral`. It writes `<`, U+2028 and U+2029 as `\uXXXX` escapes, so a literal prop value, a quoted prop name, an attribute or key literal, a lookup table entry, a ternary branch, a controlled `<select>`'s option comparison, a loop row's quoted destructure key, a literal loop `key` or a closed rest key's literal fallback that holds `</script>` or a line separator no longer carries it raw into the emitted code. The literal still evaluates to the same string, and a literal without those characters prints exactly as before. `>` and `/` are not escaped: with `<` escaped no end tag or comment can begin, and paths, URLs and utility classes such as `[&>*]:w-full` keep their spelling (UnoCSS reads class names from the compiled output). `codeSafeStringLiteral` no longer escapes `>` or `/` itself, and `codeSafeStringArray` is exported beside it.
+- 0263c60: An attribute written after an open spread now overrides the spread's value for that attribute when the bag holds it under a React-style key: `<label {...rest} htmlFor="y">` with `rest.htmlFor` set renders one `for="y"` on Hono, where it rendered `for="f" for="y"` before. This also applies to the other keys Hono renames in a spread (`httpEquiv`, `crossOrigin`, `itemProp`, `fetchPriority`, `noModule`, `formAction`) to a key that spells the attribute in another letter case (`tabIndex` beside a later `tabIndex={3}`, `viewbox` beside a later SVG `viewBox`), and to a spread of a props object whose type admits undeclared keys (`props: Record<string, unknown>`). A spread written after the attribute still wins over it, on the server, at hydration and after a prop update. Hydration no longer re-applies the bag's value over the later attribute, and the client template renders the attribute once. A later expression that evaluates to `undefined` now removes the bag's value, as JSX does. The template adapters still render both values for an open bag; that case is tracked in the known-limitation registry.
+
 ## 0.41.4
 
 ### Patch Changes

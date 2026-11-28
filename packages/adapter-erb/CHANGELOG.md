@@ -1,5 +1,16 @@
 # @barefootjs/erb
 
+## 0.41.5
+
+### Patch Changes
+
+- 4375e9e: A component that reads its `children` through a body const holding a fallback (`const label = props.children ?? 'missing'`, `|| 'missing'`, `?? ''`, `?? false`, `?? 0`, over a destructured `children` too, and through a further `const d = label`) and renders it as text (`{label}`) now prints the children as markup on ERB and in the client template, as Hono does, where both printed the markup as escaped text (or, on ERB with a boolean fallback, nothing) before. The fallback is still escaped text. Phase 1 sets `IRExpression.childrenRead` on such a read. On ERB a `children ?? false` / `children || false` read, direct or through a const, now renders nothing for absent children instead of `false`.
+- 3b72ef2: On ERB, the JSX children a component is called with are now captured as markup (`BarefootJS::SafeString`), so a component that holds them in state and prints that state (`const [value] = createSignal(props.children)`, `createSignal(props.children ?? 'missing')` or `createMemo(() => props.children ?? 'missing')`, `{value()}`), or forwards them into a nested component's prop that does, renders the children as Hono does: an element child as that element, and text children that read the caller's data with the caller's text slot markers. Both printed the children's markup as escaped text before. A `children` attribute holding a string (`<Note children="a<b" />`) is still escaped text.
+  
+  A dynamic attribute value is now escaped through `bf.h_attr`, which escapes a `SafeString` too, so captured children or a JSX-valued prop bound into an attribute (`title={value()}`, `title={props.header}`) renders as escaped markup text, quotes included, as Hono renders it, instead of raw markup whose quotes ended the attribute value (a JSX-valued prop did that before this change as well).
+- Updated dependencies [0263c60]
+  - @barefootjs/shared@0.41.5
+
 ## 0.41.4
 
 ### Patch Changes
