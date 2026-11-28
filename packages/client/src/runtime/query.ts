@@ -478,7 +478,7 @@ export function findCondEnd(start: Comment, id: string): Comment | null {
   const startValue = `bf-cond-start:${id}`
   const endValue = `bf-cond-end:${id}`
   let depth = 0
-  for (let node = start.nextSibling; node; node = node.nextSibling) {
+  for (let node: Node | null = start.nextSibling; node; node = node.nextSibling) {
     if (node.nodeType !== Node.COMMENT_NODE) continue
     const rangeEnd = closedCommentScopeEnd(node, null)
     if (rangeEnd) {
