@@ -3979,6 +3979,30 @@ function literalEvalNode(value: string | number | boolean | null): Record<string
   return { kind: 'literal', value }
 }
 
+/** The evaluator node of a member read (`toEvalNode`). */
+function memberEvalNode(e: Extract<ParsedExpr, { kind: 'member' }>): Record<string, unknown> | null {
+  const object = toEvalNode(e.object)
+  if (!object) return null
+  // A computed member whose key is an array index (`A[1]`, `A['1']`) is
+  // an index read: the evaluators read a member's property by name, which
+  // finds no element of an array, while JS reads `A['1']` as `A[1]`. The
+  // key is a canonical integer, so on an object the index read reads the
+  // same key.
+  if (e.computed && ARRAY_INDEX_KEY.test(e.property)) {
+    return { kind: 'index-access', object, index: { kind: 'literal', value: Number(e.property) } }
+  }
+  // Carry `computed` only when set (absent reads as `false`): the evaluator
+  // reads it to reject a computed builtin (`Math['max']`), so preserving it
+  // keeps a computed member distinguishable from a plain `.prop` access. (A
+  // computed builtin *call* is already refused by `toEvalNode`'s callee gate.)
+  const node: Record<string, unknown> = { kind: 'member', object, property: e.property }
+  if (e.computed) node.computed = true
+  return node
+}
+
+/** A property key that names an array element: a canonical non-negative integer. */
+const ARRAY_INDEX_KEY = /^(?:0|[1-9][0-9]*)$/
+
 function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
   switch (e.kind) {
     case 'literal':
@@ -4010,17 +4034,8 @@ function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
         ? { kind: 'conditional', test, consequent, alternate }
         : null
     }
-    case 'member': {
-      const object = toEvalNode(e.object)
-      if (!object) return null
-      // Carry `computed` only when set (absent reads as `false`): the evaluator
-      // reads it to reject a computed builtin (`Math['max']`), so preserving it
-      // keeps a computed member distinguishable from a plain `.prop` access. (A
-      // computed builtin *call* is already refused by the callee gate above.)
-      const node: Record<string, unknown> = { kind: 'member', object, property: e.property }
-      if (e.computed) node.computed = true
-      return node
-    }
+    case 'member':
+      return memberEvalNode(e)
     case 'index-access': {
       const object = toEvalNode(e.object)
       const index = toEvalNode(e.index)

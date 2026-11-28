@@ -2204,6 +2204,13 @@ export interface MemoInfo {
    */
   bodyIsTemplateLiteral?: boolean
   /**
+   * Whether the memo's body is an object literal expression (`() => ({ … })`),
+   * read from the arrow AST. Set whether or not the parser represents the
+   * literal: one with a computed key (`{ [k]: v }`) has no `unparsedValue`
+   * tree, and a backend that cannot compute the object refuses it on this.
+   */
+  bodyIsObjectLiteral?: boolean
+  /**
    * A block-bodied memo's statements, parsed best-effort (tolerant: a statement
    * the parser can't represent is omitted). Lets the Go adapter pattern-match
    * block-body memo shapes — e.g. the `const k = getter(); if (!k) return CONST`

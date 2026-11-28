@@ -98,7 +98,7 @@ export interface ConditionExprHost {
   /** `len` for a known array, `bf_length` otherwise. */
   conditionLengthFn(expr: Extract<ParsedExpr, { kind: 'member' }>): 'len' | 'bf_length'
   /** Whether `node` reads a member chain of a source-keyed signal seed map. */
-  isMapSeededSignalChain(node: ParsedExpr): boolean
+  isMapSeededGetterChain(node: ParsedExpr): boolean
   /** Whether `path` names a registered template primitive. */
   isTemplatePrimitive(path: string): boolean
   /**
@@ -845,7 +845,7 @@ function renderConditionMember(
   // A member of a source-keyed signal seed map (#3353) uses the same
   // getter, as `member()` does in value position, and so does a member of
   // what an index read yields (`rows[1].n`, `readsThroughIndex`).
-  if (expr.optional || keyRead || readsThroughIndex(expr.object) || host.isMapSeededSignalChain(expr.object)) {
+  if (expr.optional || keyRead || readsThroughIndex(expr.object) || host.isMapSeededGetterChain(expr.object)) {
     return {
       preamble: obj.preamble,
       expr: host.renderOptionalMember(obj.expr, expr.property),

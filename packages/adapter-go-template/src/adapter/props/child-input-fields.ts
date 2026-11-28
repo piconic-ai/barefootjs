@@ -545,6 +545,16 @@ function lowerResolvedChildProp(
     site.emit(prop.name, evaluatedValue)
     return true
   }
+  // An object literal (`v={{ k: o.k }}`) into a field no typed conversion
+  // reaches (a struct, a map): the evaluated object, reshaped into the
+  // field's type by `bf.Coerce`.
+  const evaluatedObject = parsedValue?.kind === 'object-literal'
+    ? evaluateUntypedChildPropValue(host.ctx, parsedValue, ir, site.propFallbackVars)
+    : null
+  if (evaluatedObject !== null) {
+    site.emit(prop.name, evaluatedObject, true)
+    return true
+  }
   if (!prop.clientOnly && parsedValue && isUnbakedStaticLiteral(parsedValue)) {
     refuseUnbakedStaticLiteral(site, prop)
     return true

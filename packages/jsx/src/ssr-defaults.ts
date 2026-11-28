@@ -1104,6 +1104,62 @@ function evalPropertyAccess(node: ts.PropertyAccessExpression, ctx: EvalContext)
   return ownMember(baseResult, node.name.text)
 }
 
+/**
+ * An object literal whose every member resolves: a property (its key an
+ * identifier, a string or number literal, or a computed key that resolves to
+ * a string or number), a shorthand property, a method, and a spread of a
+ * resolved plain object (or of `null` / `undefined`, which JS skips). Later
+ * members win on a shared key, in source order, as in JS.
+ */
+function evalObjectLiteral(node: ts.ObjectLiteralExpression, ctx: EvalContext): EvalResult {
+  const obj: Record<string, unknown> = {}
+  for (const prop of node.properties) {
+    if (ts.isSpreadAssignment(prop)) {
+      if (!spreadInto(obj, evalNode(prop.expression, ctx))) return UNRESOLVED
+      continue
+    }
+    if (ts.isShorthandPropertyAssignment(prop)) {
+      if (prop.objectAssignmentInitializer) return UNRESOLVED
+      const v = evalNode(prop.name, ctx)
+      if (v === UNRESOLVED) return UNRESOLVED
+      obj[prop.name.text] = v
+      continue
+    }
+    if (!ts.isPropertyAssignment(prop) && !ts.isMethodDeclaration(prop)) return UNRESOLVED
+    const key = objectLiteralKey(prop.name, ctx)
+    if (key === null) return UNRESOLVED
+    const v = isFunctionMember(prop) ? FUNCTION_MEMBER : evalNode((prop as ts.PropertyAssignment).initializer, ctx)
+    if (v === UNRESOLVED) return UNRESOLVED
+    // An `undefined` member is a present key holding `undefined`; the
+    // manifest carries it as `{"$undef": true}` (`encodeUndefinedMembers`).
+    obj[key] = v
+  }
+  return obj
+}
+
+/** Copy a spread's members into `obj`; false when the spread is not a resolved plain object, `null` or `undefined`. */
+function spreadInto(obj: Record<string, unknown>, spread: EvalResult): boolean {
+  if (spread === undefined || spread === null) return true
+  if (spread === UNRESOLVED || typeof spread !== 'object' || !isPlainObject(spread)) return false
+  Object.assign(obj, spread)
+  return true
+}
+
+/** The key an object-literal member names, or `null` when it does not resolve to a string or number. */
+function objectLiteralKey(name: ts.PropertyName, ctx: EvalContext): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) return name.text
+  if (!ts.isComputedPropertyName(name)) return null
+  const key = evalNode(name.expression, ctx)
+  return typeof key === 'string' || typeof key === 'number' ? String(key) : null
+}
+
+/** Whether `value` is a plain object, whose own members are all a spread of it copies. */
+function isPlainObject(value: object): boolean {
+  if (Array.isArray(value)) return false
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || proto === null
+}
+
 function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   // Strip parentheses / `as` / `satisfies` — they don't affect the value.
   if (ts.isParenthesizedExpression(node)) return evalNode(node.expression, ctx)
@@ -1155,26 +1211,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     return UNRESOLVED
   }
 
-  if (ts.isObjectLiteralExpression(node)) {
-    const obj: Record<string, unknown> = {}
-    for (const prop of node.properties) {
-      if (!ts.isPropertyAssignment(prop) && !ts.isMethodDeclaration(prop)) return UNRESOLVED
-      let key: string
-      if (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name)) {
-        key = prop.name.text
-      } else if (ts.isNumericLiteral(prop.name)) {
-        key = prop.name.text
-      } else {
-        return UNRESOLVED
-      }
-      const v = isFunctionMember(prop) ? FUNCTION_MEMBER : evalNode((prop as ts.PropertyAssignment).initializer, ctx)
-      if (v === UNRESOLVED) return UNRESOLVED
-      // An `undefined` member is a present key holding `undefined`; the
-      // manifest carries it as `{"$undef": true}` (`encodeUndefinedMembers`).
-      obj[key] = v
-    }
-    return obj
-  }
+  if (ts.isObjectLiteralExpression(node)) return evalObjectLiteral(node, ctx)
 
   if (ts.isArrayLiteralExpression(node)) {
     const arr: unknown[] = []

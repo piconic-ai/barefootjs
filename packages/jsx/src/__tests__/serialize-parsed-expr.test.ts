@@ -259,6 +259,25 @@ describe('serializeParsedExpr', () => {
       property: 'price',
     })
   })
+
+  test('a computed member keyed by an array index is an index read', () => {
+    // The evaluators read a member's property by name, which finds no array
+    // element; `A[1]` and `A['1']` read the element in JS.
+    const indexRead = {
+      kind: 'index-access',
+      object: { kind: 'identifier', name: 'A' },
+      index: { kind: 'literal', value: 1 },
+    }
+    expect(evalJSON('A[1]')).toEqual(indexRead)
+    expect(evalJSON("A['1']")).toEqual(indexRead)
+    // A non-canonical numeric key is a property name in JS.
+    expect(evalJSON("A['01']")).toEqual({
+      kind: 'member',
+      object: { kind: 'identifier', name: 'A' },
+      property: '01',
+      computed: true,
+    })
+  })
 })
 
 describe('freeVarsInBody', () => {

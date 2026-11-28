@@ -147,6 +147,9 @@ export const renderDivergences: RenderDivergences = {
   // #3988: a const read in a loop row whose parameter shadows a name the
   // initializer reads renders an empty row (as on main).
   'children-fallback-const-row-shadow': { limitation: 'children-fallback-const-shadowed-read' },
+  // A memo mapping an array to object literals, read in a loop: the
+  // constructor has no row value for the memo, so no row renders.
+  'memo-object-rows-read-module-const-member': { limitation: 'memo-object-literal-rows' },
   // A signal seeded from a member of a module object literal const
   // (`createSignal(CFG.n)`): the constructor has no value for the seed.
   'module-const-object-member-signal-seed': { limitation: 'module-const-object-member-signal-seed' },

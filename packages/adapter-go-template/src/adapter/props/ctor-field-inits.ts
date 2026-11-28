@@ -26,7 +26,7 @@ import { applyGoFallback } from '../lib/go-emit.ts'
 import { GO_KEYWORDS, capitalizeFieldName } from '../lib/go-naming.ts'
 import { propsFieldName } from '../lib/props-field-names.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
-import { computeMemoInitialValue, filterArmEarlierSiblingRefs, memoPropFallback } from '../memo/memo-compute.ts'
+import { computeMemoInitialValue, computeMemoInitialValueOrNull, filterArmEarlierSiblingRefs, memoPropFallback } from '../memo/memo-compute.ts'
 import { inferMemoType, sharedFieldFallbackVar, signalSeedGo } from '../type/state-fields.ts'
 import { jsLiteralToGo } from '../value/value-lowering.ts'
 import { defaultedBindingGo, resolvePropGoType, seedPassthroughPropName } from './prop-types.ts'
@@ -284,18 +284,41 @@ export function emitMemoFieldInits(
     const goType = inferMemoType(ctx, memo, ir.metadata.signals, memoPropsParamMap)
     const memoValue = computeMemoInitialValue(ctx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
     lines.push(`\t\t${fieldName}: ${memoValue},`)
-    // No #2700 refusal check here (unlike `emitSignalFieldInits`): the
-    // analyzer deliberately never sets `MemoInfo.parsed` to an
-    // `object-literal` for an object-returning memo body (`() => ({…})`,
-    // `analyzer.ts`'s own docstring — "isn't lowered from the parsed tree
-    // yet") — a pre-existing, unrelated exclusion this fix doesn't touch.
-    // Detecting the shape without `parsed` would mean re-parsing
-    // `memo.computation` as text, which the repo's own convention (see
-    // CLAUDE.md, "Never parse imports... with regex or string matching")
-    // rules out. #2700's own reproduction and fixture are signal-only;
-    // a memo-side refusal is left for whoever lands the "Roadmap A" memo
-    // object-literal `parsed` support this comment references.
+    refuseUnseededObjectMemo(ctx, memo, ir, propFallbackVars)
   }
+}
+
+/**
+ * A memo whose body is an object literal (`() => ({ k: o.k })`) the
+ * constructor cannot build: the evaluator has no value for a member (a
+ * computed key the parser does not represent, a call it does not run). Its
+ * field holds `nil`, and a template read of a member fails the render
+ * (`nil pointer evaluating interface {}.K`) or renders empty, so a memo the
+ * template reads is refused instead. One the template never reads keeps the
+ * `nil`.
+ */
+function refuseUnseededObjectMemo(
+  ctx: GoEmitContext,
+  memo: ComponentIR['metadata']['memos'][number],
+  ir: ComponentIR,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): void {
+  if (!memo.bodyIsObjectLiteral || memo.parsed) return
+  if (!ctx.state.templateReadRootFields.has(memo.name)) return
+  const seed = computeMemoInitialValueOrNull(ctx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, new Set([memo.name]))
+  if (seed !== null) return
+  const message = `Memo '${memo.name}' returns an object literal the Go template adapter cannot compute in New${ctx.state.componentName}Props (a member the constructor's evaluator has no value for, or a computed key), so the SSR template's read of it would see nil instead of the object.`
+  if (ctx.state.errors.some(e => e.code === 'BF101' && e.message === message)) return
+  ctx.state.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message,
+    loc: memo.loc,
+    suggestion: {
+      message: `Pre-compute the value in the backend and pass it as a prop, or defer the reads of '${memo.name}' to the client with /* @client */.`,
+      escape: [{ kind: 'client-directive' }],
+    },
+  })
 }
 
 /**

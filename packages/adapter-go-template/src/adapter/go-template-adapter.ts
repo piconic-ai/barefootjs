@@ -203,6 +203,7 @@ import { CHILDREN_FIELD, propsFieldName, propsFieldNames } from './lib/props-fie
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
+import { isObjectLiteralMemo } from "./memo/memo-type.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren, survivingPropWriters } from "./props/props-spread.ts"
@@ -337,10 +338,15 @@ function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) =
   const memoConsts = computedConstContext(ir.metadata, () => false, name => moduleConsts.has(name) || isAdapterBound(name), {
     inlineLiteralArrays: true,
   })
-  const memos = (ir.metadata.memos ?? []).map(m =>
-    m.parsed ? { ...m, parsed: inlineComputedConsts(m.parsed, memoConsts) } : m,
-  )
-  if (!memos.some((m, i) => m.parsed !== ir.metadata.memos[i].parsed)) return ir
+  // An object-literal body (`() => ({ k: o.k })`) has no `parsed` tree; its
+  // `unparsedValue` is the tree the constructor evaluates, so its const
+  // reads are inlined the same way.
+  const memos = (ir.metadata.memos ?? []).map(m => {
+    if (m.parsed) return { ...m, parsed: inlineComputedConsts(m.parsed, memoConsts) }
+    if (isObjectLiteralMemo(m)) return { ...m, unparsedValue: inlineComputedConsts(m.unparsedValue, memoConsts) }
+    return m
+  })
+  if (!memos.some((m, i) => m.parsed !== ir.metadata.memos[i].parsed || m.unparsedValue !== ir.metadata.memos[i].unparsedValue)) return ir
   return { ...ir, metadata: { ...ir.metadata, memos } }
 }
 
@@ -852,16 +858,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .map(p => p.name),
     )
     // Object-literal signal seeds in an `interface{}` / map field bake as a
-    // source-keyed map (#3353); `member()` reads them through `bf_get`.
-    this.state.mapSeededSignalGetters = new Set(
-      (ir.metadata.signals ?? [])
+    // source-keyed map (#3353), and an object-literal memo body evaluates
+    // into one; `member()` reads them through `bf_get`.
+    this.state.mapSeededGetters = new Set([
+      ...(ir.metadata.signals ?? [])
         .filter(s => {
           if (s.parsed?.kind !== 'object-literal') return false
           const goType = typeInfoToGo(this.emitCtx, s.type)
           return goType === 'interface{}' || goType === 'map[string]interface{}'
         })
         .map(s => s.getter),
-    )
+      ...(ir.metadata.memos ?? []).filter(m => isObjectLiteralMemo(m)).map(m => m.name),
+    ])
     this.state.moduleStringConsts = this.collectModuleStringConsts(ir.metadata.localConstants)
     this.state.localConstants = ir.metadata.localConstants ?? []
     const bakesField = this.derivedConstFieldBaker(ir)
@@ -1721,18 +1729,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   /**
    * True when `node` is a non-computed member chain rooted in a call of a
-   * `mapSeededSignalGetters` getter (`data().meta`, #3353). The getter's
+   * `mapSeededGetters` getter (`data().meta`, #3353). The getter's
    * field holds a map keyed by the source property names, so each hop reads
    * through `bf_get` like `isMapRootedPropChain`. A bracket hop
    * (`data()['meta']`, `data()[k]`) also reads through `bf_get` and yields a
    * value of the same map, so the chain continues through it.
    */
-  private isMapSeededSignalChain(node: ParsedExpr): boolean {
+  private isMapSeededGetterChain(node: ParsedExpr): boolean {
     if (node.kind === 'call') {
       return node.callee.kind === 'identifier' && node.args.length === 0 &&
-        this.state.mapSeededSignalGetters.has(node.callee.name)
+        this.state.mapSeededGetters.has(node.callee.name)
     }
-    if (node.kind === 'member' || node.kind === 'index-access') return this.isMapSeededSignalChain(node.object)
+    if (node.kind === 'member' || node.kind === 'index-access') return this.isMapSeededGetterChain(node.object)
     return false
   }
 
@@ -7884,7 +7892,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isOuterLoopParam: (name) => this.isOuterLoopParam(name),
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
     conditionLengthFn: (expr) => this.conditionLengthFn(expr),
-    isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
+    isMapSeededGetterChain: (node) => this.isMapSeededGetterChain(node),
     isTemplatePrimitive: (path) => Boolean(this.templatePrimitives[path]),
   }
 
@@ -7904,7 +7912,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     rootFieldRef: (name) => this.rootFieldRef(name),
     isMapRootedContextChain: (node) => this.isMapRootedContextChain(node),
     isMapRootedPropChain: (node) => this.isMapRootedPropChain(node),
-    isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
+    isMapSeededGetterChain: (node) => this.isMapSeededGetterChain(node),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
     staticConstMember: (object, key) => this.staticConstMember(object, key),
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),

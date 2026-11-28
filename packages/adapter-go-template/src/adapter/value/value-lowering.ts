@@ -8,6 +8,7 @@
 import type { ParsedExpr, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 import {
   asCallbackMethodCall,
+  inlineComputedConsts,
   freeVarsInBody,
   isNullishLiteral,
   materializeGetterCalls,
@@ -359,12 +360,22 @@ export function convertInitialValue(
   if (preParsed?.kind === 'object-literal') {
     const fieldGo = typeInfoToGo(ctx, typeInfo)
     if (fieldGo === 'interface{}' || fieldGo === 'map[string]interface{}') {
-      const map = bakeSourceKeyedObjectAsGoMap(ctx, preParsed)
+      const map = bakeObjectSeed(ctx, preParsed)
       if (map !== null) return map
     }
   }
 
   return 'nil'
+}
+
+/**
+ * An object-literal seed as a source-keyed map; a member read of a literal
+ * const (`{ k: o.k }`) bakes as the value it reads, which the const inlining
+ * projects. Null when a member is not a literal.
+ */
+function bakeObjectSeed(ctx: GoEmitContext, seed: ParsedExpr): string | null {
+  return bakeSourceKeyedObjectAsGoMap(ctx, seed) ??
+    bakeSourceKeyedObjectAsGoMap(ctx, inlineComputedConsts(seed, ctx.state.computedConsts))
 }
 
 /** A seed that reads a prop whole (`props.x`, `x ?? 'd'`): that prop's field, else null. */

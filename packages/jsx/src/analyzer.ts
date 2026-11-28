@@ -2057,6 +2057,22 @@ function memoBodyIsTemplateLiteral(memoArrow: ts.Expression | undefined): boolea
   return ts.isTemplateExpression(body) || ts.isNoSubstitutionTemplateLiteral(body)
 }
 
+/** `MemoInfo.bodyIsTemplateLiteral`, and `bodyIsObjectLiteral` when it holds. */
+function memoBodyShape(memoArrow: ts.Expression | undefined): Pick<MemoInfo, 'bodyIsTemplateLiteral' | 'bodyIsObjectLiteral'> {
+  const bodyIsTemplateLiteral = memoBodyIsTemplateLiteral(memoArrow)
+  return memoBodyIsObjectLiteral(memoArrow) ? { bodyIsTemplateLiteral, bodyIsObjectLiteral: true } : { bodyIsTemplateLiteral }
+}
+
+/** Whether a memo callback's expression body is an object literal (`MemoInfo.bodyIsObjectLiteral`). */
+function memoBodyIsObjectLiteral(memoArrow: ts.Expression | undefined): boolean {
+  let node: ts.Node | undefined = memoArrow
+  while (node && ts.isParenthesizedExpression(node)) node = node.expression
+  if (!node || (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node))) return false
+  let body: ts.Node = node.body
+  while (ts.isParenthesizedExpression(body)) body = body.expression
+  return ts.isObjectLiteralExpression(body)
+}
+
 /**
  * Whether a callback's body means the same outside the callback. An arrow
  * binds nothing of its own. A `function` expression binds its name (when it
@@ -2300,7 +2316,7 @@ function collectMemo(node: ts.VariableDeclaration, ctx: AnalyzerContext): void {
     typedComputation: typedComputation !== computation ? typedComputation : undefined,
     parsed,
     ...readFacts,
-    bodyIsTemplateLiteral: memoBodyIsTemplateLiteral(callExpr.arguments[0]),
+    ...memoBodyShape(callExpr.arguments[0]),
     type,
     deps,
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),

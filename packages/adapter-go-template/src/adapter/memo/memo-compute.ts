@@ -21,6 +21,7 @@ import {
   serializeParsedExpr,
   type CallbackCapture,
   propsObjectIdentifier,
+  resolveStaticConstBinding,
   unboundCallbackParamRead,
 } from '@barefootjs/jsx'
 
@@ -55,6 +56,7 @@ import {
   propsMemberName,
 } from './memo-seed-shape.ts'
 import { resolveBlockBodyMemoModuleConst, computeObjectMemoInitialValue } from './memo-value.ts'
+import { isObjectLiteralMemo } from './memo-type.ts'
 
 // The boxed-arithmetic decision lives with the seed classification; re-exported
 // for the adapter's existing import.
@@ -203,7 +205,7 @@ export function filterArmEarlierSiblingRefs(
  */
 export function computeMemoInitialValue(
   ctx: GoEmitContext,
-  memo: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr },
+  memo: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; unparsedValue?: ParsedExpr },
   signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
@@ -682,8 +684,24 @@ function evalEnvValueGo(
     // The rest props (`rest.tone ?? 'x'`) as the rest bag, which holds
     // exactly the keys the caller passed (#3851).
     goExpr = `in.${ctx.state.restBagField ?? capitalizeFieldName(name)}`
+  } else {
+    // A const read whole (`{ ...o }`, which the const inlining leaves as a
+    // name, since only a member read projects) is its literal value.
+    goExpr = literalConstEvalGo(ctx, name)
   }
   return goExpr
+}
+
+/**
+ * The value of the const `name` the component reads (a component const, else
+ * the module const it does not shadow) when its initializer is a literal:
+ * the evaluator's JS value ({@link seedLiteralToEvalGo}). Null for any other
+ * binding.
+ */
+function literalConstEvalGo(ctx: GoEmitContext, name: string): string | null {
+  const constant = resolveStaticConstBinding(name, ctx.state.localConstants, () => false)
+  if (!constant?.parsed || constant.systemConstructKind) return null
+  return seedLiteralToEvalGo(ctx, constant.parsed)
 }
 
 /**
@@ -1454,7 +1472,7 @@ function resolveStringConcatChainGo(
  */
 export function computeMemoInitialValueOrNull(
   ctx: GoEmitContext,
-  memo: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean },
+  memo: { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean; unparsedValue?: ParsedExpr },
   signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
   propFallbackVars: ReadonlyMap<string, PropFallbackVar> = EMPTY_PROP_FALLBACK_VARS,
@@ -1514,6 +1532,14 @@ export function computeMemoInitialValueOrNull(
   // nil map; null for any unsupported shape (→ nil fallback).
   const objMemo = computeObjectMemoInitialValue(ctx, memo)
   if (objMemo !== null) return objMemo
+
+  // An object-literal expression body (`() => ({ k: o.k })`): the evaluator
+  // builds the object, keyed by the source property names, from the SSR
+  // values of what it reads. Null when a value is outside its surface; the
+  // memo field is then refused (`refuseUnseededObjectMemos`).
+  if (isObjectLiteralMemo(memo)) {
+    return evalExprGo(ctx, memo.unparsedValue, signals, propsParams, propFallbackVars, resolving)
+  }
 
   return null
 }
