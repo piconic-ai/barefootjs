@@ -207,6 +207,10 @@ export const renderDivergences: RenderDivergences = {
   'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
   // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
   'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
+  // Markup the component receives (children, a JSX-valued prop) bound into
+  // an attribute renders unescaped there, so its quotes end the value; a
+  // template literal over it renders `[object Object]`.
+  'received-markup-in-attribute': { limitation: 'received-markup-in-attribute' },
 }
 
 /**

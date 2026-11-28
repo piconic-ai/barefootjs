@@ -10397,6 +10397,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10596,36 +10602,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
               ]
             },
             {
@@ -11491,6 +11467,12 @@
               ]
             },
             {
+              "fixture": "children-text-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -12310,6 +12292,12 @@
               "fixture": "raw-text-style-escape-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -13151,6 +13139,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13980,6 +13974,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -14803,6 +14803,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15629,6 +15635,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16440,6 +16452,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -17266,6 +17284,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -17560,6 +17584,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -17796,6 +17826,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -17907,6 +17943,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -18020,6 +18062,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -18131,6 +18179,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -18244,6 +18298,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -18356,6 +18416,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -18467,6 +18533,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -19477,6 +19549,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -19859,39 +19937,9 @@
               ]
             },
             {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
               ]
             },
             {
@@ -21034,6 +21082,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -22128,6 +22182,12 @@
               "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -23293,6 +23353,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -24425,6 +24491,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -25551,6 +25623,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -26671,6 +26749,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -27770,6 +27854,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -28896,6 +28986,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -30688,30 +30784,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -31617,6 +31689,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -38141,30 +38219,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -38380,6 +38434,12 @@
             },
             {
               "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -40495,6 +40555,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -40733,33 +40799,9 @@
               ]
             },
             {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
               ]
             },
             {
@@ -41631,6 +41673,12 @@
               ]
             },
             {
+              "fixture": "children-text-read-into-state",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -42480,6 +42528,12 @@
               "fixture": "raw-text-host-style-script",
               "limitations": [
                 "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -43363,6 +43417,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -44225,6 +44285,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -45078,6 +45144,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -45937,6 +46009,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -46784,6 +46862,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -47640,6 +47724,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -52525,6 +52615,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -52641,6 +52737,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -52705,6 +52807,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -52760,6 +52868,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -52821,6 +52935,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -52879,6 +52999,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -52928,6 +53054,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -52986,6 +53118,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -64811,30 +64949,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -65602,6 +65716,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -71338,30 +71458,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -71565,6 +71661,12 @@
             },
             {
               "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]

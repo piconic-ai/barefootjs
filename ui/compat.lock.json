@@ -3862,14 +3862,6 @@
           }
         }
       },
-      "children-element-read-into-state": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "children-element-read-into-state"
-          ]
-        }
-      },
       "children-fallback-const-row-shadow": {
         "blade": {
           "kind": "render",
@@ -4013,12 +4005,6 @@
         }
       },
       "children-markup-nullish-memo": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "children-element-read-into-state"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -4026,29 +4012,7 @@
           ]
         }
       },
-      "children-markup-nullish-seed": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "children-element-read-into-state"
-          ]
-        }
-      },
-      "children-markup-nullish-seed-bindings": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "children-element-read-into-state"
-          ]
-        }
-      },
       "children-param-default-nullish-seed": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "children-element-read-into-state"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -4071,6 +4035,20 @@
         }
       },
       "children-read-into-state-shadow-transform": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "template-time-children-read-into-state"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "children-text-read-into-state": {
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -18376,6 +18354,56 @@
           }
         }
       },
+      "received-markup-in-attribute": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        }
+      },
       "record-const-index-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -22950,10 +22978,6 @@
         "description": "Dynamic JSX children a component seeds a signal from reach that signal",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-dynamic-read-into-state.ts"
       },
-      "children-element-read-into-state": {
-        "description": "An element child a component reads into state renders as that element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-element-read-into-state.ts"
-      },
       "children-fallback-const-row-shadow": {
         "description": "A children fallback const read in a row whose parameter shadows a name its initializer reads",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-fallback-const-row-shadow.ts"
@@ -22978,14 +23002,6 @@
         "description": "Markup children read through a ?? memo render as markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-memo.ts"
       },
-      "children-markup-nullish-seed": {
-        "description": "Markup children seeding a signal through ?? render as markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-seed.ts"
-      },
-      "children-markup-nullish-seed-bindings": {
-        "description": "Markup children seeding a signal through ?? render as markup, whatever binding reads them",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-markup-nullish-seed-bindings.ts"
-      },
       "children-param-default-nullish-seed": {
         "description": "A defaulted children parameter seeding a signal through ?? renders the default or the markup",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-param-default-nullish-seed.ts"
@@ -22997,6 +23013,10 @@
       "children-read-into-state-shadow-transform": {
         "description": "A same-named signal or memo that transforms dynamic JSX children holds the transformed value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-read-into-state-shadow-transform.ts"
+      },
+      "children-text-read-into-state": {
+        "description": "Dynamic text children a component prints from state render as the children node",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-text-read-into-state.ts"
       },
       "component-const-iife-block-body": {
         "description": "a component const initialized by an immediately invoked arrow with a block body renders what the…",
@@ -23741,6 +23761,10 @@
       "raw-text-style-script-escape": {
         "description": "Dynamic <style> / <script> text prints unescaped, with each markup-opening < rewritten",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-script-escape.ts"
+      },
+      "received-markup-in-attribute": {
+        "description": "Markup a component receives renders as escaped text in an attribute and as markup in content",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/received-markup-in-attribute.ts"
       },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
@@ -24828,11 +24852,11 @@
       ]
     },
     "children-element-read-into-state": {
-      "title": "An element child read into state by the component",
+      "title": "Markup children read into state by the component",
       "kind": "silent",
-      "given": "a component that reads `props.children` (or a destructured `children` binding) into a signal, bare or with a `??` fallback, or into a `??` memo, and renders it (`const [value] = createSignal(props.children)`, `createSignal(props.children ?? 'missing')` or `createMemo(() => props.children ?? 'missing')`, `{value()}`), called with an element as its JSX children (`<Note><i>a</i></Note>`)",
-      "expected": "the element renders inside the component (`<b><i>a</i></b>`)",
-      "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
+      "given": "a component that reads `props.children` (or a destructured `children` binding) into a signal, bare or with a `??` fallback, or into a `??` memo, and renders it (`const [value] = createSignal(props.children)`, `createSignal(props.children ?? 'missing')` or `createMemo(() => props.children ?? 'missing')`, `{value()}`), called with an element as its JSX children (`<Note><i>a</i></Note>`) or with text children that read the caller's data (`<Note>{props.label}</Note>`)",
+      "expected": "the children render inside the component (`<b><i>a</i></b>`, and the text with the caller's text slot markers for text children)",
+      "actual": "renders the children's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
       "fixtures": [
         "children-element-read-into-state",
         "children-markup-nullish-memo",
@@ -26260,6 +26284,28 @@
         "go-template"
       ]
     },
+    "received-markup-in-attribute": {
+      "title": "Markup a component receives bound into an attribute",
+      "kind": "silent",
+      "given": "a component that binds markup it receives into an element attribute: its JSX children, read directly or held in state (`title={props.children}`, `const [value] = createSignal(props.children)` with `title={value()}`, in a template literal or a conditional attribute), or a JSX-valued prop (`title={props.header}`), called with an element whose own attributes are quoted (`<i className=\"label\">hello</i>`)",
+      "expected": "the attribute holds the markup as escaped text, quotes included (`title=\"&lt;i class=&quot;label&quot;&gt;hello&lt;/i&gt;\"`), and element content renders it as markup",
+      "actual": "renders the markup unescaped inside the attribute, so its quotes end the value (`title=\"<i class=\"label\">hello</i>\"`), or renders its text only or `[object Object]`, or throws",
+      "fixtures": [
+        "received-markup-in-attribute"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "record-const-index-unknown-keys": {
       "title": "Const record indexed by a value of unknown keys",
       "kind": "refusal",
@@ -26650,6 +26696,7 @@
         "children-forwarded-into-child-prop-seed-forms",
         "children-read-into-state-forms",
         "children-read-into-state-shadow-transform",
+        "children-text-read-into-state",
         "open-rest-spread-child-children"
       ],
       "adapters": [
