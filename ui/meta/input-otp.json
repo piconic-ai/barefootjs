@@ -149,7 +149,7 @@
   ],
   "memos": [
     {
-      "name": "pattern",
+      "name": "bfMemo_pattern",
       "deps": []
     }
   ]
