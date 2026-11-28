@@ -69,6 +69,25 @@ export const conformancePins: ConformancePins = {
   'destructure-default-spread-const-child-prop': [
     { code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread', unescapable: true },
   ],
+  // #3981: an operator no template lowers (`typeof`, `**`, `~`) in a value the
+  // server render computes off the emitter: refused at the declaration it reads.
+  'memo-typeof-prop': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'signal-seed-typeof-prop': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-typeof-through-memo': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-typeof-filter-callback': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-typeof-block-return': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-typeof-object-member': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-object-body-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-block-return-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'signal-seed-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-block-called-function-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-block-shadowing-local-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-block-local-chain-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'memo-exponent-operator': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  'const-typeof-prop': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  // A component renders on the server whatever directive its prop carries: no escape.
+  'memo-typeof-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator', unescapable: true }],
+  'child-prop-typeof': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator', unescapable: true }],
   'static-array-from-props': [
     {
       code: 'BF101',

@@ -142,6 +142,7 @@ export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } fr
 export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
 export { refuseInheritedConstServerReads } from './adapters/inherited-const-server-read.ts'
+export { refuseUnloweredOperators } from './adapters/unlowered-operator.ts'
 export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
 export { refuseUnloweredArrayElements } from './adapters/unlowered-array-element.ts'
 export { refuseUnloweredIifeConsts } from './adapters/unlowered-iife-const.ts'

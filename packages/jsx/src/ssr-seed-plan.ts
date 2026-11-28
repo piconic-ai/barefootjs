@@ -288,7 +288,7 @@ export function hasComputedDefault(p: ParamInfo): boolean {
  * substitution, or an array / object literal of literal data: a value that
  * reads and calls nothing.
  */
-function isLiteralData(e: ParsedExpr): boolean {
+export function isLiteralData(e: ParsedExpr): boolean {
   switch (e.kind) {
     case 'literal':
       return true

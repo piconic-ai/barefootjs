@@ -106,6 +106,46 @@ test('a binding derived from its own prop is separated when the raw prop is read
   expect(ctx.sourceFile.text).toContain('<p title={props.label}>{bfSignal_label()}{bfMemo_note()}{other()}{shout()}</p>')
 })
 
+test('a binding whose seed is not its own prop or a `??` fallback to literal data is separated', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function App(props: {
+      cat?: string; tpl?: string; tern?: string; num?: number; up?: string; oc?: string
+      fb?: string; nn?: string; bare?: string; wrap?: string; memo?: string; keep?: string; block?: string
+      other?: string; alt?: string; neg?: number; rows?: string[]; mor?: string; mof?: string
+    }) {
+      const [cat] = createSignal(String(props.cat ?? 'none') + '!')
+      const [tpl] = createSignal(\`\${props.tpl ?? 'none'}!\`)
+      const [tern] = createSignal(props.tern ? 'yes' : 'no')
+      const [num] = createSignal((props.num ?? 1) * 2)
+      const [up] = createSignal((props.up ?? 'none').toUpperCase())
+      const [oc] = createSignal((props.oc || 'x') + '?')
+      const [fb] = createSignal(props.fb || 'fallback')
+      const [nn] = createSignal((props.nn as string) ?? 'n')
+      const [bare] = createSignal(props.bare)
+      const [wrap] = createSignal(props.wrap! ?? 'w')
+      const [other] = createSignal(props.other ?? props.alt)
+      const [neg] = createSignal(props.neg ?? -1)
+      const [rows] = createSignal(props.rows ?? [])
+      const memo = createMemo(() => \`\${props.memo}!\`)
+      const keep = createMemo(() => props.keep ?? 'k')
+      const block = createMemo(() => { return props.block ?? 'b' })
+      const mor = createMemo(() => props.mor || 'm')
+      const mof = createMemo(() => props.mof ?? props.alt)
+      return <p>{cat()}{tpl()}{tern()}{num()}{up()}{oc()}{fb()}{nn()}{bare()}{wrap()}{other()}{neg()}{rows()}{memo()}{keep()}{block()}{mor()}{mof()}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual([
+    'bfSignal_cat', 'bfSignal_tpl', 'bfSignal_tern', 'bfSignal_num', 'bfSignal_up', 'bfSignal_oc',
+    // `||` also replaces a supplied falsy prop; `?? props.alt` is no constant.
+    'bfSignal_fb', 'nn', 'bare', 'wrap', 'bfSignal_other', 'neg', 'rows',
+  ])
+  // A block body is not parsed yet when bindings separate, so it is no
+  // passthrough: separating is the general path every shape renders through.
+  expect(ctx.memos.map(m => m.name)).toEqual(['bfMemo_memo', 'keep', 'bfMemo_block', 'bfMemo_mor', 'bfMemo_mof'])
+})
+
 test('an untyped props object names its props by the reads off it', () => {
   const ctx = analyzeComponent(`
     'use client'

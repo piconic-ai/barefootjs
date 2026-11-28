@@ -705,7 +705,9 @@ export function localConstValuesByName(metadata: Pick<IRMetadata, 'localConstant
  * Also the analyzer's test for which same-named signal/memo keeps sharing
  * the prop's template variable (`separateSignalPropBindings`): a binding
  * this answers `false` for is renamed before IR is built, and so is one it
- * answers `true` for when the component also reads the raw prop elsewhere.
+ * answers `true` for when its seed is anything but the prop or its `??`
+ * fallback to literal data, or the component also reads the raw prop
+ * elsewhere.
  * A renamed binding no longer matches here, so the two callers cannot
  * disagree about which collisions stay collapsed.
  */
@@ -920,7 +922,8 @@ function seedExpandedArray(c: ConstantInfo, bindings: Record<string, EvalResult>
 /**
  * Evaluate a block-body's statements for its returned value. Handles
  * `const` declarations (bound into `ctx.bindings`, which mutate in
- * place so later statements and nested branches see them), `return`
+ * place so later statements and nested branches see them; an unresolved
+ * or destructured one is bound to UNRESOLVED, so it shadows), `return`
  * statements, and `if (cond) …` guards whose condition is statically
  * resolvable — the early-return-on-default-state shape of
  * an `@client`-annotated memo (`const key = sortKey(); if (!key)
@@ -932,16 +935,13 @@ function seedExpandedArray(c: ConstantInfo, bindings: Record<string, EvalResult>
 function evalStatementsForReturn(
   statements: readonly ts.Statement[],
   ctx: EvalContext,
+  enclosing: ReadonlyArray<Record<string, EvalResult>> = [],
 ): EvalResult | typeof NO_RETURN {
+  shadowBlockScoped(statements, ctx.bindings)
+  const scopes = [...enclosing, ctx.bindings]
   for (const stmt of statements) {
     if (ts.isVariableStatement(stmt)) {
-      for (const d of stmt.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name) || !d.initializer) continue
-        const v = evalNode(d.initializer, ctx)
-        // Leave unresolved locals unbound; only a `return` / guard
-        // referencing one would then surface UNRESOLVED.
-        if (v !== UNRESOLVED) ctx.bindings[d.name.text] = v
-      }
+      bindLocals(stmt, ctx, scopes)
     } else if (ts.isReturnStatement(stmt)) {
       return stmt.expression ? evalNode(stmt.expression, ctx) : UNRESOLVED
     } else if (ts.isIfStatement(stmt)) {
@@ -949,10 +949,9 @@ function evalStatementsForReturn(
       if (cond === UNRESOLVED) return UNRESOLVED
       const branch = cond ? stmt.thenStatement : stmt.elseStatement
       if (branch) {
-        const taken = evalStatementsForReturn(
-          ts.isBlock(branch) ? branch.statements : [branch],
-          ctx,
-        )
+        // The branch is a block of its own: what it declares ends with it.
+        const inner: EvalContext = { ...ctx, bindings: { ...ctx.bindings } }
+        const taken = evalStatementsForReturn(ts.isBlock(branch) ? branch.statements : [branch], inner, scopes)
         if (taken !== NO_RETURN) return taken
       }
       // Guard not taken (or its branch fell through) — continue.
@@ -962,6 +961,79 @@ function evalStatementsForReturn(
     }
   }
   return NO_RETURN
+}
+
+/**
+ * Bind each name `stmt` declares to its initializer's value. A local
+ * shadows the name it declares, resolved or not: bound to UNRESOLVED (a
+ * destructured one always is), a `return` / guard reading it surfaces
+ * UNRESOLVED instead of an outer binding of that name (`const label =
+ * o.kind; return label` beside a module `label`). A `let` / `const` lives in
+ * the block `ctx` evaluates; a `var` in the function, so it is bound in
+ * every enclosing block of it too (`scopes`, outermost first).
+ */
+function bindLocals(stmt: ts.VariableStatement, ctx: EvalContext, scopes: ReadonlyArray<Record<string, EvalResult>>): void {
+  const isVar = (stmt.declarationList.flags & ts.NodeFlags.BlockScoped) === 0
+  for (const d of stmt.declarationList.declarations) {
+    // `var v` alone assigns nothing: `v` keeps its hoisted `undefined`, or
+    // the value an earlier `var v = …` gave it.
+    if (isVar && !d.initializer) continue
+    const v = ts.isIdentifier(d.name) && d.initializer ? evalNode(d.initializer, ctx) : UNRESOLVED
+    for (const name of bindingNames(d.name)) {
+      ctx.bindings[name] = v
+      if (isVar) for (const scope of scopes) scope[name] = v
+    }
+  }
+}
+
+/**
+ * Bind the names the `let` / `const` statements directly in `statements`
+ * declare to UNRESOLVED: such a name is in scope for its whole block, before
+ * its declaration too (where reading it throws), so no outer name of it
+ * shows through.
+ */
+function shadowBlockScoped(statements: readonly ts.Statement[], bindings: Record<string, EvalResult>): void {
+  for (const stmt of statements) {
+    if (!ts.isVariableStatement(stmt) || !(stmt.declarationList.flags & ts.NodeFlags.BlockScoped)) continue
+    for (const d of stmt.declarationList.declarations) for (const name of bindingNames(d.name)) bindings[name] = UNRESOLVED
+  }
+}
+
+/**
+ * The bindings a function body starts with: `outer`'s, and each name its
+ * `var` statements declare, hoisted to `undefined` (`hoistedVarNames`).
+ */
+function functionBodyBindings(outer: Record<string, EvalResult>, statements: readonly ts.Statement[]): Record<string, EvalResult> {
+  const bindings: Record<string, EvalResult> = { ...outer }
+  for (const name of hoistedVarNames(statements)) bindings[name] = undefined
+  return bindings
+}
+
+/**
+ * The names the `var` declarations of a function body declare, in any
+ * statement (`if` branches, loops and their heads, `switch`, `try` /
+ * `catch`, bare blocks), but not inside a nested function or class, whose
+ * `var`s are its own.
+ */
+function hoistedVarNames(statements: readonly ts.Statement[]): string[] {
+  const names: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node) || ts.isClassLike(node)) return
+    if (ts.isVariableDeclarationList(node) && (node.flags & ts.NodeFlags.BlockScoped) === 0) {
+      for (const d of node.declarations) names.push(...bindingNames(d.name))
+    }
+    ts.forEachChild(node, visit)
+  }
+  statements.forEach(visit)
+  return names
+}
+
+/** The names a declaration binds, through destructuring patterns. */
+function bindingNames(name: ts.BindingName): string[] {
+  if (ts.isIdentifier(name)) return [name.text]
+  const names: string[] = []
+  for (const element of name.elements) if (!ts.isOmittedExpression(element)) names.push(...bindingNames(element.name))
+  return names
 }
 
 function parseExpression(expr: string): ts.Expression | null {
@@ -1051,8 +1123,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   if (ts.isArrowFunction(node)) {
     if (node.parameters.length !== 0) return UNRESOLVED
     if (!ts.isBlock(node.body)) return evalNode(node.body as ts.Expression, ctx)
-    const localBindings: Record<string, EvalResult> = { ...ctx.bindings }
-    const localCtx: EvalContext = { ...ctx, bindings: localBindings }
+    const localCtx: EvalContext = { ...ctx, bindings: functionBodyBindings(ctx.bindings, node.body.statements) }
     const result = evalStatementsForReturn(node.body.statements, localCtx)
     return result === NO_RETURN ? UNRESOLVED : result
   }
