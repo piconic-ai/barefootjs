@@ -9,7 +9,7 @@ import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
 import { buildSignalMemoEnv, csrSubstitute, extractFreeIdentifiersFromText, type CsrEnv, type CsrSubstitution } from './csr-substitute.ts'
-import { bindTemplateConsts, noteBindingReads, templateBindingPlan, wrapTemplateConstBindings, type TemplateBindingPlan, type TemplateConstBindings } from './template-const-bindings.ts'
+import { bindTemplateConsts, noteBindingReads, templateBindingPlan, wrapTemplateConstBindings, wrapTemplatePropBindings, type TemplateBindingPlan, type TemplateConstBindings } from './template-const-bindings.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
 import type { ClientJsContext } from './types.ts'
 import { BF_KEY, BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeHtml, isRawTextTag } from '@barefootjs/shared'
@@ -1990,14 +1990,14 @@ export function irToComponentTemplate(
   const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName }
   const constantEnv = inlinableConstantEnv(inlinableConstants)
   if (!constantEnv || !bindingPlan || bindingPlan.names.size === 0) {
-    return irToComponentTemplateWithOpts(node, opts)
+    return wrapTemplatePropBindings(irToComponentTemplateWithOpts(node, opts), bindingPlan)
   }
   // A read of a fresh-per-evaluation const sees the one value the template
   // evaluation binds (#4021); the value is what a top-level read splices.
   const { env, bindings } = bindTemplateConsts(constantEnv, bindingPlan, (name) =>
     staticTemplateExpr(name, constantEnv, opts).text)
   const html = irToComponentTemplateWithOpts(node, { ...opts, constantEnv: env, constBindings: bindings })
-  return wrapTemplateConstBindings(html, bindings)
+  return wrapTemplatePropBindings(wrapTemplateConstBindings(html, bindings), bindingPlan)
 }
 
 /**
@@ -2438,13 +2438,13 @@ export function generateCsrTemplate(
   const markupSlotIds = markupSlotIdsOf(ctx)
   const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName }
   const plan = templateBindingPlan(ctx)
-  if (plan.names.size === 0) return generateCsrTemplateWithOpts(node, opts)
+  if (plan.names.size === 0) return wrapTemplatePropBindings(generateCsrTemplateWithOpts(node, opts), plan)
   // A read of a fresh-per-evaluation const sees the one value the template
   // evaluation binds (#4021); the value is what a top-level read splices,
   // and a const the template cannot evaluate keeps its splice.
   const { env, bindings } = bindTemplateConsts(csrEnv, plan, (name) => csrTemplateExpr(name, csrEnv, opts)?.text ?? null)
   const html = generateCsrTemplateWithOpts(node, { ...opts, csrEnv: env, constBindings: bindings })
-  return wrapTemplateConstBindings(html, bindings)
+  return wrapTemplatePropBindings(wrapTemplateConstBindings(html, bindings), plan)
 }
 
 /**

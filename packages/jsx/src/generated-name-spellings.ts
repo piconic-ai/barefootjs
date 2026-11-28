@@ -16,6 +16,19 @@ const GENERATED_PREFIX = '__bf_'
 
 /** Every identifier spelling in `sourceFile` that starts with `__bf_`, sorted. */
 export function generatedPrefixSpellings(sourceFile: ts.SourceFile): string[] {
+  return [...generatedPrefixSpellingSet(sourceFile)].sort()
+}
+
+const spellingsByFile = new WeakMap<ts.SourceFile, ReadonlySet<string>>()
+
+/**
+ * The same spellings as a set, walked once per source file: Phase 1 reads
+ * it per constant (`templatePropReads`), so the template's prop parameters
+ * it spells are the ones Phase 2 binds.
+ */
+export function generatedPrefixSpellingSet(sourceFile: ts.SourceFile): ReadonlySet<string> {
+  const cached = spellingsByFile.get(sourceFile)
+  if (cached) return cached
   const found = new Set<string>()
   const visit = (node: ts.Node): void => {
     if ((ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) && node.text.startsWith(GENERATED_PREFIX)) {
@@ -24,5 +37,6 @@ export function generatedPrefixSpellings(sourceFile: ts.SourceFile): string[] {
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
-  return [...found].sort()
+  spellingsByFile.set(sourceFile, found)
+  return found
 }

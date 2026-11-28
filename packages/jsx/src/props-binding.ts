@@ -174,7 +174,7 @@ export interface TemplatePropReadBindings {
   propsParams: readonly ParamInfo[]
   signals: readonly Pick<SignalInfo, 'getter' | 'setter'>[]
   memos: readonly Pick<MemoInfo, 'name'>[]
-  localFunctions: readonly Pick<FunctionInfo, 'name'>[]
+  localFunctions: readonly Pick<FunctionInfo, 'name' | 'isModule'>[]
   localConstants: readonly ConstantInfo[]
 }
 
@@ -207,24 +207,133 @@ export function templatePropReadParams(b: TemplatePropReadBindings): ParamInfo[]
 }
 
 /**
- * Each props binding a client `template:` reads live
- * ({@link templatePropReadParams}) whose destructure default is copy-safe
- * ({@link hasCopySafeDefault}) → that read (`livePropReadExpr`, default
- * included). The spelling an inlined constant's template text and its
- * relocation into template scope share (#3980). A binding left out reads as
- * `_p.<key>`: its default is source text that would be re-evaluated at every
- * read (a fresh `[]` each time) and resolved against the template's scope
- * instead of the parameter list's. A rest binding is left out: it is no
- * single prop.
+ * A parameter prop the client `template:` binds once per evaluation
+ * ({@link templatePropBindings}): `param` holds `value`, the prop with its
+ * destructure default applied.
  */
-export function templatePropReads(b: TemplatePropReadBindings): Map<string, string> {
+export interface TemplatePropBinding {
+  readonly name: string
+  readonly param: string
+  readonly value: string
+}
+
+/**
+ * Each props binding a client `template:` reads live
+ * ({@link templatePropReadParams}) → the read an inlined constant's template
+ * text and its relocation into template scope spell for it (#3980), so a
+ * const applies the destructure default exactly as a direct read does:
+ *
+ *   - a copy-safe default ({@link hasCopySafeDefault}) is copied into the
+ *     read (`livePropReadExpr`, default included);
+ *   - any other default of a destructured parameter reads the parameter the
+ *     template binds it to ({@link templatePropBindings}), so the default is
+ *     evaluated once per template evaluation, in the template's top scope
+ *     (module scope, as the parameter list sees it), never per read and
+ *     never against a body binding the template substitutes.
+ *
+ * A binding left out reads as `_p.<key>`: a `(props)`-arg component's body
+ * binding with such a default, and a rest binding, which is no single prop.
+ * `reserved` is the source file's `__bf_` spellings
+ * (`IRMetadata.generatedNameSpellings`), which a parameter avoids.
+ */
+export function templatePropReads(b: TemplatePropReadBindings, reserved: ReadonlySet<string>): Map<string, string> {
+  return templatePropReadPlan(b, reserved).reads
+}
+
+/**
+ * The parameters a client `template:` binds for the props
+ * {@link templatePropReads} spells as one, in parameter order, limited to
+ * the props an inlined constant can read: a prop some component-scope const
+ * names, and an earlier prop a bound prop's default reads. A bound prop's
+ * value reads an earlier bound prop through its parameter, so `{ a = [], c =
+ * a }` binds one array, as JS does.
+ */
+export function templatePropBindings(b: TemplatePropReadBindings, reserved: ReadonlySet<string>): TemplatePropBinding[] {
+  const { reads, bound } = templatePropReadPlan(b, reserved)
+  const needed = constReadProps(b.localConstants, bound)
+  for (const p of [...bound].reverse()) {
+    if (!needed.has(p.name)) continue
+    for (const part of p.defaultParts ?? []) {
+      if (part.kind === 'param') needed.add(part.param.name)
+    }
+  }
+  return bound.filter(p => needed.has(p.name)).map(p => ({
+    name: p.name,
+    param: reads.get(p.name)!,
+    value: composePropRead(propReadBase(p), defaultFallback(p, propDefaultTextWith(p, earlier => reads.get(earlier.name) ?? livePropReadExpr(earlier, undefined, false)))),
+  }))
+}
+
+function templatePropReadPlan(b: TemplatePropReadBindings, reserved: ReadonlySet<string>): { reads: Map<string, string>; bound: ParamInfo[] } {
   const params = templatePropReadParams(b)
   const byName = new Map(params.map(p => [p.name, p]))
   const reads = new Map<string, string>()
+  const bound: ParamInfo[] = []
+  const bodyNames = b.propsObjectName === null ? componentScopeNames(b) : EMPTY_SET
   for (const p of params) {
-    if (!p.isRest && hasCopySafeDefault(p, byName)) reads.set(p.name, livePropReadExpr(p, undefined, false))
+    if (p.isRest) continue
+    if (hasCopySafeDefault(p, byName)) {
+      reads.set(p.name, livePropReadExpr(p, undefined, false))
+    } else if (b.propsObjectName === null && defaultEvaluatesInTemplateScope(p, reads, bodyNames)) {
+      reads.set(p.name, templatePropParamName(p.name, reserved, reads))
+      bound.push(p)
+    }
   }
-  return reads
+  return { reads, bound }
+}
+
+/** The names the component body binds: its own consts, functions, signals and memos. */
+function componentScopeNames(b: TemplatePropReadBindings): Set<string> {
+  const names = new Set<string>()
+  for (const s of b.signals) {
+    names.add(s.getter)
+    if (s.setter) names.add(s.setter)
+  }
+  for (const m of b.memos) names.add(m.name)
+  for (const f of b.localFunctions) if (!f.isModule) names.add(f.name)
+  for (const c of b.localConstants) if (!c.isModule) names.add(c.name)
+  return names
+}
+
+/**
+ * Whether `p`'s default means in the template's top scope what it means in
+ * the parameter list: every earlier binding it reads has a template read
+ * (`reads`), and no other name it reads is one the body binds, since the
+ * parameter list resolves that name outside the body while the client
+ * bundle may carry only the body's binding of it.
+ */
+function defaultEvaluatesInTemplateScope(p: ParamInfo, reads: ReadonlyMap<string, string>, bodyNames: ReadonlySet<string>): boolean {
+  if (p.defaultParts?.some(part => part.kind === 'param' && !reads.has(part.param.name))) return false
+  const earlier = new Set(p.defaultParts?.flatMap(part => part.kind === 'param' ? [part.param.name] : []))
+  return !(p.defaultFreeIdentifiers ?? []).some(name => !earlier.has(name) && bodyNames.has(name))
+}
+
+/**
+ * The props of `bound` a component-scope const's initializer names. A const
+ * whose free identifiers were not recorded counts as reading every one.
+ */
+function constReadProps(localConstants: readonly ConstantInfo[], bound: readonly ParamInfo[]): Set<string> {
+  const read = new Set<string>()
+  for (const c of localConstants) {
+    if (c.isModule) continue
+    for (const p of bound) {
+      if (!c.freeIdentifiers || c.freeIdentifiers.has(p.name)) read.add(p.name)
+    }
+  }
+  return read
+}
+
+/**
+ * `__bf_prop_<name>`, suffixed until it is no `__bf_` spelling of the source
+ * file and no parameter already chosen. Every other name the compiler
+ * generates into a template has a different prefix.
+ */
+function templatePropParamName(name: string, reserved: ReadonlySet<string>, reads: ReadonlyMap<string, string>): string {
+  const chosen = new Set(reads.values())
+  const base = `__bf_prop_${name}`
+  let param = base
+  for (let n = 1; reserved.has(param) || chosen.has(param); n++) param = `${base}_${n}`
+  return param
 }
 
 /**
@@ -566,7 +675,7 @@ export function propReadFallback(
   retained?: ReadonlySet<string>,
 ): PropReadFallback | null {
   const defaultText = propDefaultText(p, retained)
-  if (defaultText) return { kind: p.coalescesNull ? 'guard' : 'default', text: coalesceDefaultText(defaultText, p.defaultContainsArrow) }
+  if (defaultText) return defaultFallback(p, defaultText)
   if (usage?.usedAsLoopArray) return { kind: 'guard', text: '[]' }
   if (propHasPropertyAccess(usage) && !usedAsCondition) return { kind: 'guard', text: '{}' }
   return null
@@ -597,13 +706,19 @@ export function composePropRead(base: string, fallback: PropReadFallback | null)
  * when the prop has no default.
  */
 export function propDefaultText(p: LivePropReadInfo, retained: ReadonlySet<string> = EMPTY_SET): string | undefined {
+  return propDefaultTextWith(p, earlier => retained.has(earlier.name) ? earlier.name : livePropReadExpr(earlier, undefined, false, retained))
+}
+
+/** A prop's destructure default with each read of an earlier binding spelled by `readEarlier`. */
+function propDefaultTextWith(p: LivePropReadInfo, readEarlier: (earlier: LivePropReadInfo) => string): string | undefined {
   if (!p.defaultParts) return p.defaultValue
-  return p.defaultParts
-    .map(part => {
-      if (part.kind === 'text') return part.text
-      return retained.has(part.param.name) ? part.param.name : livePropReadExpr(part.param, undefined, false, retained)
-    })
-    .join('')
+  return p.defaultParts.map(part => part.kind === 'text' ? part.text : readEarlier(part.param)).join('')
+}
+
+/** The fallback a destructure default (`defaultText`, as client JS) gives a read of `p`. */
+function defaultFallback(p: LivePropReadInfo, defaultText: string | undefined): PropReadFallback | null {
+  if (!defaultText) return null
+  return { kind: p.coalescesNull ? 'guard' : 'default', text: coalesceDefaultText(defaultText, p.defaultContainsArrow) }
 }
 
 /**

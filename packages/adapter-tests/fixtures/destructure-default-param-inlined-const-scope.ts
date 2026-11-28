@@ -5,7 +5,7 @@ import { createFixture } from '../src/types'
  * body const of the same name (`const fallback = 'local'`): JS resolves the
  * default in parameter scope, so an omitted `b` reads `module`, never the
  * body's `local`. The client template reads the omitted prop without its
- * default (limitation `csr-template-inlined-const-param-default`).
+ * default (limitation `param-default-shadowed-by-body-binding`).
  */
 export const fixture = createFixture({
   id: 'destructure-default-param-inlined-const-scope',

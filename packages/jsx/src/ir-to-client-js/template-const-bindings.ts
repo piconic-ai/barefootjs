@@ -22,9 +22,10 @@
  * const is left to the splice (`freshValueCarriers`).
  */
 
-import type { ConstantInfo, MemoInfo, SignalInfo } from '../types.ts'
+import type { ConstantInfo, FunctionInfo, MemoInfo, ParamInfo, SignalInfo } from '../types.ts'
 import type { CsrEnv, CsrSubstitution } from './csr-substitute.ts'
 import { interp, templateLiteralMarkup, withOuterBindings } from './safe-html.ts'
+import { templatePropBindings, type TemplatePropBinding } from '../props-binding.ts'
 
 /** The parts of a component's context the binding decision reads. */
 export interface TemplateBindingSources {
@@ -32,6 +33,10 @@ export interface TemplateBindingSources {
   readonly signals: readonly SignalInfo[]
   readonly memos: readonly MemoInfo[]
   readonly generatedNameSpellings?: ReadonlySet<string>
+  /** Absent in a hand-built context: no prop is bound. */
+  readonly propsParams?: readonly ParamInfo[]
+  readonly propsObjectName?: string | null
+  readonly localFunctions?: readonly FunctionInfo[]
 }
 
 /**
@@ -98,14 +103,29 @@ function readsAny(names: ReadonlySet<string> | undefined, of: ReadonlySet<string
   return false
 }
 
-/** Which consts a template binds, and the spellings their parameters avoid. */
+/**
+ * Which consts a template binds, the spellings their parameters avoid, and
+ * the parameter props it binds outside them (`templatePropBindings`, #3980).
+ */
 export interface TemplateBindingPlan {
   readonly names: ReadonlySet<string>
   readonly reserved: ReadonlySet<string>
+  readonly props: readonly TemplatePropBinding[]
 }
 
 export function templateBindingPlan(sources: TemplateBindingSources): TemplateBindingPlan {
-  return { names: templateBoundConstNames(sources), reserved: sources.generatedNameSpellings ?? new Set() }
+  const reserved = sources.generatedNameSpellings ?? new Set<string>()
+  const props = sources.propsParams
+    ? templatePropBindings({
+      propsObjectName: sources.propsObjectName ?? null,
+      propsParams: sources.propsParams,
+      signals: sources.signals,
+      memos: sources.memos,
+      localFunctions: sources.localFunctions ?? [],
+      localConstants: sources.localConstants,
+    }, reserved)
+    : []
+  return { names: templateBoundConstNames(sources), reserved, props }
 }
 
 /** The bindings one template evaluation declares, and which of them it reads. */
@@ -171,4 +191,19 @@ export function wrapTemplateConstBindings(templateHtml: string, bindings: Templa
   if (params.length === 0) return templateHtml
   const values = params.map(param => bindings.values.get(param)!)
   return interp(withOuterBindings(params, values, templateLiteralMarkup(templateHtml)))
+}
+
+/**
+ * Wrap a template body in its parameter props' bindings, outermost, so a
+ * bound const's value (evaluated just inside) reads them too. Each value is
+ * evaluated in the template's top scope, in parameter order, and a later
+ * one reads an earlier one through its parameter: a nested binding per
+ * prop. Returned unchanged when the plan binds no prop.
+ */
+export function wrapTemplatePropBindings(templateHtml: string, plan: TemplateBindingPlan | undefined): string {
+  if (!plan || plan.props.length === 0) return templateHtml
+  return plan.props.reduceRight(
+    (body, { param, value }) => interp(withOuterBindings([param], [value], templateLiteralMarkup(body))),
+    templateHtml,
+  )
 }

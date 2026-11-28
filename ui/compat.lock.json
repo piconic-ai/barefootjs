@@ -25216,29 +25216,6 @@
         "BF101"
       ]
     },
-    "csr-template-inlined-const-param-default": {
-      "title": "A component-scope const reading a parameter prop whose default is not a primitive literal, in the client template",
-      "kind": "silent",
-      "given": "a component-scope const read in markup that reads a parameter-destructured prop whose default allocates or names a binding (`{ b = ['y'] }`, `{ b = fallback }` beside a body `const fallback`), client-mounted with the prop omitted",
-      "expected": "the read renders the default JS binds once in parameter scope (`y`, or the module binding `fallback` names)",
-      "actual": "renders empty: the client template reads the omitted prop without its default",
-      "fixtures": [
-        "destructure-default-param-inlined-array-const",
-        "destructure-default-param-inlined-const-scope"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "csr-template-object-const-function-property": {
       "title": "CSR template reading an object const that holds a function",
       "kind": "silent",
@@ -26222,6 +26199,28 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "param-default-shadowed-by-body-binding": {
+      "title": "A parameter default naming a module binding that a body binding shadows, in the client template",
+      "kind": "silent",
+      "given": "a component-scope const read in markup that reads a parameter-destructured prop whose default names a module binding (`{ b = fallback }`) the body binds again (`const fallback = 'local'`), client-mounted with the prop omitted",
+      "expected": "the read renders the module binding the default names, as JS resolves the default in parameter scope (`module`)",
+      "actual": "renders empty: the client template reads the omitted prop without its default",
+      "fixtures": [
+        "destructure-default-param-inlined-const-scope"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "plus-beyond-safe-integer": {
