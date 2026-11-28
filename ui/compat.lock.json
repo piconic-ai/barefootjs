@@ -16618,6 +16618,56 @@
           }
         }
       },
+      "received-markup-in-attribute": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "received-markup-in-attribute"
+          ]
+        }
+      },
       "record-const-index-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -21666,6 +21716,10 @@
         "description": "Dynamic <style> / <script> text prints unescaped, with each markup-opening < rewritten",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-script-escape.ts"
       },
+      "received-markup-in-attribute": {
+        "description": "Markup a component receives renders as escaped text in an attribute and as markup in content",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/received-markup-in-attribute.ts"
+      },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key.ts"
@@ -24070,6 +24124,28 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "received-markup-in-attribute": {
+      "title": "Markup a component receives bound into an attribute",
+      "kind": "silent",
+      "given": "a component that binds markup it receives into an element attribute: its JSX children, read directly or held in state (`title={props.children}`, `const [value] = createSignal(props.children)` with `title={value()}`, in a template literal or a conditional attribute), or a JSX-valued prop (`title={props.header}`), called with an element whose own attributes are quoted (`<i className=\"label\">hello</i>`)",
+      "expected": "the attribute holds the markup as escaped text, quotes included (`title=\"&lt;i class=&quot;label&quot;&gt;hello&lt;/i&gt;\"`), and element content renders it as markup",
+      "actual": "renders the markup unescaped inside the attribute, so its quotes end the value (`title=\"<i class=\"label\">hello</i>\"`), or renders its text only or `[object Object]`, or throws",
+      "fixtures": [
+        "received-markup-in-attribute"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "record-const-index-unknown-keys": {

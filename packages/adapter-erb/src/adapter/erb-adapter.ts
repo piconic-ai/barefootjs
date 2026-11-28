@@ -1230,7 +1230,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         boolStr: (expr, attr) => this.shouldWrapBoolStr(expr, attr),
       })
       const attr = (v: string, boolStr: boolean) =>
-        boolStr ? `${name}="<%= bf.h(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h(${v}) %>"`
+        boolStr ? `${name}="<%= bf.h_attr(bf.bool_str(${v})) %>"` : `${name}="<%= bf.h_attr(${v}) %>"`
       // Each kind is documented on `AttrExpressionPlan`.
       switch (plan.kind) {
         case 'omit-nullable': {
@@ -1249,7 +1249,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
           const m = plan.ternary
           const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
-          return `<% if ${truthyTest(this.testPlan(m.testParsed), cond)} %>${name}="<%= bf.h(${val}) %>"<% end %>`
+          return `<% if ${truthyTest(this.testPlan(m.testParsed), cond)} %>${name}="<%= bf.h_attr(${val}) %>"<% end %>`
         }
         case 'omit-nil': {
           const v = this.convertExpressionToRuby(value.expr, value.parsed)
@@ -1262,7 +1262,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     },
     emitBooleanAttr: (_value, name) => name,
     emitTemplate: (value, name) =>
-      `${name}="<%= bf.h(${this.convertTemplateLiteralPartsToRuby(value.parts)}) %>"`,
+      `${name}="<%= bf.h_attr(${this.convertTemplateLiteralPartsToRuby(value.parts)}) %>"`,
     // Spread attributes (`<div {...attrs()} />`) lower through the
     // `bf.spread_attrs` Ruby runtime helper, mirroring the Go adapter's
     // `bf_spread_attrs` and the JS `spreadAttrs` from

@@ -633,6 +633,16 @@ module BarefootJS
       html_escape(string(value))
     end
 
+    # HTML-escaping helper for a dynamic attribute value
+    # (`title="<%= bf.h_attr(expr) %>"`). Unlike `h`, a `SafeString` is
+    # escaped too: captured children or a named-slot capture is markup in
+    # element content, but bound into an attribute it is that markup's text,
+    # and its own quotes would otherwise end the attribute value. Hono
+    # renders a JSX node in an attribute as its escaped HTML the same way.
+    def h_attr(value)
+      html_escape(string(value))
+    end
+
     # A `<` the HTML tokenizer could take as the start of markup (one
     # followed by an ASCII letter, `/`, `!` or `?`), or an `&` it could take
     # as the start of a character reference (one followed by an ASCII letter

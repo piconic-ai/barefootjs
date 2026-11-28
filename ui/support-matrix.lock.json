@@ -9989,6 +9989,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -11671,6 +11677,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12413,6 +12425,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13146,6 +13164,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -13873,6 +13897,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -14603,6 +14633,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15318,6 +15354,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -16048,6 +16090,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -16330,6 +16378,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -16560,6 +16614,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -16671,6 +16731,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -16784,6 +16850,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -16895,6 +16967,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -17008,6 +17086,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -17120,6 +17204,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
             }
           ]
         },
@@ -17231,6 +17321,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             }
           ]
@@ -18148,6 +18244,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -20559,6 +20661,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -21619,6 +21727,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -22649,6 +22763,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -23673,6 +23793,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -24691,6 +24817,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -25688,6 +25820,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -26712,6 +26850,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -37849,6 +37993,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -39681,6 +39831,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -40495,6 +40651,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -41291,6 +41453,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -42078,6 +42246,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -42871,6 +43045,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -43652,6 +43832,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -44442,6 +44628,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -48943,6 +49135,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -49059,6 +49257,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -49123,6 +49327,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -49178,6 +49388,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -49239,6 +49455,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -49297,6 +49519,12 @@
               ]
             },
             {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -49346,6 +49574,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {
@@ -49404,6 +49638,12 @@
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "received-markup-in-attribute",
+              "limitations": [
+                "received-markup-in-attribute"
               ]
             },
             {

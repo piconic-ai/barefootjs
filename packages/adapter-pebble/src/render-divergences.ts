@@ -154,6 +154,9 @@ export const renderDivergences: RenderDivergences = {
   'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
   // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
   'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
+  // Markup the component receives bound into an attribute through a
+  // template literal throws at render (`to_string`).
+  'received-markup-in-attribute': { limitation: 'received-markup-in-attribute' },
 }
 
 /**

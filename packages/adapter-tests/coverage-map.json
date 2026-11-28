@@ -19447,6 +19447,20 @@
         "text"
       ]
     },
+    "received-markup-in-attribute": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "member",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "record-const-index-early-return": {
       "kinds": [
         "identifier",

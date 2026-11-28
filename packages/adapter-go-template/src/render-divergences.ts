@@ -407,6 +407,9 @@ export const renderDivergences: RenderDivergences = {
   'spread-closed-rest-svg-case-keys': { limitation: 'closed-rest-svg-camel-key-name' },
   // A closed rest key `HIDDEN` holding a string renders as a bare boolean.
   'spread-closed-rest-boolean-case-keys': { limitation: 'rest-key-boolean-name-case' },
+  // Markup the component receives (children, a JSX-valued prop) bound into
+  // an attribute renders as its text only (`title="hello"`).
+  'received-markup-in-attribute': { limitation: 'received-markup-in-attribute' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

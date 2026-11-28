@@ -447,4 +447,6 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // A children fallback read with a reactive fallback: its text slot
   // escapes present children markup.
   'children-fallback-reactive-read': { limitation: 'children-fallback-reactive-slot' },
+  // A JSX-valued prop bound into an attribute renders `[object Object]`.
+  'received-markup-in-attribute': { limitation: 'received-markup-in-attribute' },
 }
