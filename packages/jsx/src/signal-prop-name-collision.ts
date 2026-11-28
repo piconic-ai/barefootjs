@@ -1,7 +1,9 @@
 import ts from 'typescript'
 import path from 'node:path'
 import type { AnalyzerContext } from './analyzer-context.ts'
-import type { SourceLocation } from './types.ts'
+import type { ParsedExpr } from './expression-parser.ts'
+import { signalPropSeed } from './props-binding.ts'
+import type { SignalPropSeed, SourceLocation } from './types.ts'
 import { localConstValuesByName, referencesOwnProp } from './ssr-defaults.ts'
 
 // TypeScript exposes these resolution-cache readers on Program at runtime
@@ -73,6 +75,8 @@ interface SeparatedBinding {
   prefix: 'bfSignal' | 'bfMemo'
   /** Its own initializer derives from the same-named prop. */
   selfDerived: boolean
+  /** Its initializer is that prop's value wherever the prop is present (`isPropPassthrough`). */
+  passthrough: boolean
 }
 
 /**
@@ -86,7 +90,8 @@ interface SeparatedBinding {
  * (`createSignal(props.label ?? 'x')`) is marked `selfDerived`: the
  * template-stash backends keep it on the prop's variable, seeded from the
  * raw prop (`extractSsrDefaults` decides that case with the same
- * `referencesOwnProp` test), unless the component also reads the raw prop
+ * `referencesOwnProp` test), unless its seed transforms the prop (not
+ * `passthrough`) or the component also reads the raw prop
  * (`separateSignalPropBindings`).
  */
 function collidingBindings(ctx: AnalyzerContext, propsObjectName: string, propNames: ReadonlySet<string>): SeparatedBinding[] {
@@ -96,11 +101,36 @@ function collidingBindings(ctx: AnalyzerContext, propsObjectName: string, propNa
     referencesOwnProp(derivation, propsObjectName, name, localConsts)
   const signals: SeparatedBinding[] = ctx.signals
     .filter(s => !s.isModule && !s.getterElided && !s.envReader && collides(s.getter))
-    .map(s => ({ name: s.getter, loc: s.loc, prefix: 'bfSignal', selfDerived: selfDerived(s.getter, s.initialValue) }))
+    .map(s => ({
+      name: s.getter, loc: s.loc, prefix: 'bfSignal',
+      selfDerived: selfDerived(s.getter, s.initialValue), passthrough: isPropPassthrough(s.propSeed, s.getter),
+    }))
   const memos: SeparatedBinding[] = ctx.memos
     .filter(m => !m.isModule && collides(m.name))
-    .map(m => ({ name: m.name, loc: m.loc, prefix: 'bfMemo', selfDerived: selfDerived(m.name, m.computation) }))
+    .map(m => ({
+      name: m.name, loc: m.loc, prefix: 'bfMemo',
+      selfDerived: selfDerived(m.name, m.computation), passthrough: isMemoPropPassthrough(ctx, m.parsed, m.name),
+    }))
   return [...signals, ...memos]
+}
+
+/**
+ * Whether a seed (`SignalInfo.propSeed`, the analyzer's one reading of how
+ * an initializer reads a prop) is the same-named prop's value wherever the
+ * prop is present: the bare read (`props.label`) or its `??` / `||`
+ * fallback (`props.label ?? 'x'`). Only such a binding can share the prop's
+ * template variable. Any other derivation (`String(props.label) + '!'`, a
+ * ternary, a template literal, arithmetic, a method call, `props.label.x`)
+ * is a different value under the same name, so the binding is separated and
+ * every backend seeds it from its own initializer.
+ */
+function isPropPassthrough(seed: SignalPropSeed | null | undefined, name: string): boolean {
+  return seed != null && seed.via === 'member' && !seed.nested && seed.propName.toLowerCase() === name.toLowerCase()
+}
+
+/** {@link isPropPassthrough} for a memo's parsed body; an unparsed body is no passthrough. */
+function isMemoPropPassthrough(ctx: AnalyzerContext, parsed: ParsedExpr | undefined, name: string): boolean {
+  return isPropPassthrough(signalPropSeed(parsed, ctx.propsParams, ctx.propsObjectName), name)
 }
 
 /**
@@ -167,12 +197,13 @@ function readNames(reads: readonly PropsRead[]): string[] {
 /**
  * Whether `binding`, declared by `declaration`, must leave the prop's
  * name. A self-derived binding shares the prop's template variable only
- * while nothing else reads the raw prop: a `props.<name>` read outside its
- * own initializer would otherwise see the derived value. A computed-key
- * read (`props[k]`) may read that prop, so it counts too.
+ * when it passes the prop through and nothing else reads the raw prop: a
+ * `props.<name>` read outside its own initializer would otherwise see the
+ * derived value. A computed-key read (`props[k]`) may read that prop, so it
+ * counts too.
  */
 function needsSeparation(binding: SeparatedBinding, declaration: ts.VariableDeclaration, reads: readonly PropsRead[]): boolean {
-  if (!binding.selfDerived) return true
+  if (!binding.selfDerived || !binding.passthrough) return true
   const init = declaration.initializer
   const name = binding.name.toLowerCase()
   return reads.some(r => (r.name === null || r.name === name) && (!init || r.pos < init.getStart() || r.pos >= init.getEnd()))

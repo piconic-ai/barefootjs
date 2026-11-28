@@ -237,11 +237,11 @@ export function C(props: { x?: number }) {
 'use client'
 import { createSignal } from '@barefootjs/client'
 export function C(props: { items: string[]; x?: string }) {
-  const [x, setX] = createSignal(props.items.filter(i => i.startsWith(props.x ?? '')).length)
+  const [x, setX] = createSignal(props.x ?? props.items.filter(i => i.startsWith(props.x ?? '')).length)
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($bf.keep_nonnil($x) || [''])[0])) }));")
+    expect(template).toContain(": my $__bf_seed_x = ($bf.keep_nonnil($x) || [$bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($bf.keep_nonnil($x) || [''])[0])) }))])[0];")
     expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 

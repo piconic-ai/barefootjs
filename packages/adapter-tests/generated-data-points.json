@@ -12196,6 +12196,80 @@
       }
     }
   ],
+  "memo-same-named-transform": [
+    {
+      "name": "gen:seed:empty",
+      "props": {
+        "seed": ""
+      }
+    },
+    {
+      "name": "gen:seed:markup",
+      "props": {
+        "seed": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:seed:multibyte",
+      "props": {
+        "seed": "日本語"
+      }
+    },
+    {
+      "name": "gen:tpl:empty",
+      "props": {
+        "tpl": ""
+      }
+    },
+    {
+      "name": "gen:tpl:markup",
+      "props": {
+        "tpl": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tpl:multibyte",
+      "props": {
+        "tpl": "日本語"
+      }
+    },
+    {
+      "name": "gen:up:empty",
+      "props": {
+        "up": ""
+      }
+    },
+    {
+      "name": "gen:up:markup",
+      "props": {
+        "up": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:up:multibyte",
+      "props": {
+        "up": "日本語"
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    }
+  ],
   "memo-string-concat-signal": [
     {
       "name": "gen:name:empty",
@@ -21041,6 +21115,142 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "signal-seed-same-named-transform-kinds": [
+    {
+      "name": "gen:tpl:empty",
+      "props": {
+        "tpl": ""
+      }
+    },
+    {
+      "name": "gen:tpl:markup",
+      "props": {
+        "tpl": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tpl:multibyte",
+      "props": {
+        "tpl": "日本語"
+      }
+    },
+    {
+      "name": "gen:tern:empty",
+      "props": {
+        "tern": ""
+      }
+    },
+    {
+      "name": "gen:tern:markup",
+      "props": {
+        "tern": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tern:multibyte",
+      "props": {
+        "tern": "日本語"
+      }
+    },
+    {
+      "name": "gen:num:zero",
+      "props": {
+        "num": 0
+      }
+    },
+    {
+      "name": "gen:num:negative",
+      "props": {
+        "num": -7
+      }
+    },
+    {
+      "name": "gen:num:large",
+      "props": {
+        "num": 1234567890
+      }
+    },
+    {
+      "name": "gen:up:empty",
+      "props": {
+        "up": ""
+      }
+    },
+    {
+      "name": "gen:up:markup",
+      "props": {
+        "up": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:up:multibyte",
+      "props": {
+        "up": "日本語"
+      }
+    },
+    {
+      "name": "gen:oc:empty",
+      "props": {
+        "oc": ""
+      }
+    },
+    {
+      "name": "gen:oc:markup",
+      "props": {
+        "oc": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:oc:multibyte",
+      "props": {
+        "oc": "日本語"
+      }
+    },
+    {
+      "name": "gen:fb:empty",
+      "props": {
+        "fb": ""
+      }
+    },
+    {
+      "name": "gen:fb:markup",
+      "props": {
+        "fb": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:fb:multibyte",
+      "props": {
+        "fb": "日本語"
+      }
+    },
+    {
+      "name": "gen:src:empty",
+      "props": {
+        "src": ""
+      }
+    },
+    {
+      "name": "gen:src:markup",
+      "props": {
+        "src": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:src:multibyte",
+      "props": {
+        "src": "日本語"
+      }
+    }
+  ],
+  "signal-seed-same-named-transform-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],
