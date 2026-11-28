@@ -455,8 +455,40 @@ export function findCondStart(scope: Element, id: string): Comment | null {
   if (info?.commentNode.nodeValue?.startsWith(`${BF_LOOP_ITEM}:`)) return null
   const prune = !id.startsWith(BF_PARENT_OWNED_PREFIX)
   for (const el of relocatedDescendants(scope)) {
+    // A relocated element carrying `bf-s` is a component's own root (a
+    // self-owner portaled child, `bf-po` = its own id): a nested scope like
+    // any other, so only a parent-owned id is looked for inside it. An
+    // explicit portal wrapper (`bf-pi`, no `bf-s`) holds `scope`'s own content.
+    if (prune && el.hasAttribute(BF_SCOPE)) continue
     const inPortal = findOwnedCondNode(el.firstChild, null, el, prune, isMarker)
     if (inPortal) return inPortal as Comment
+  }
+  return null
+}
+
+/**
+ * The `<!--bf-cond-end:id-->` that closes `start`, among `start`'s later
+ * siblings. A same-id pair between them belongs to someone else and is
+ * stepped over: a fragment-root child's closed `<!--bf-scope-->` range is
+ * skipped whole (the rule in `findOwnedCondNode`), and same-id start/end
+ * markers are counted so an inner pair, e.g. in legacy markup whose child
+ * range has no end marker, is not taken for this one's end (#4058).
+ */
+export function findCondEnd(start: Comment, id: string): Comment | null {
+  const startValue = `bf-cond-start:${id}`
+  const endValue = `bf-cond-end:${id}`
+  let depth = 0
+  for (let node = start.nextSibling; node; node = node.nextSibling) {
+    if (node.nodeType !== Node.COMMENT_NODE) continue
+    const rangeEnd = closedCommentScopeEnd(node, null)
+    if (rangeEnd) {
+      node = rangeEnd
+    } else if (node.nodeValue === startValue) {
+      depth++
+    } else if (node.nodeValue === endValue) {
+      if (depth === 0) return node as Comment
+      depth--
+    }
   }
   return null
 }
@@ -483,11 +515,15 @@ function findCondNode(scope: Element, id: string, match: (node: Node) => boolean
  * without this, its marker or element was taken for `scope`'s.
  *
  * A nested scope is an element carrying `bf-s` other than `root`, or a
- * fragment-root child's `<!--bf-scope:…-->` … `<!--bf-/scope:…-->` range
- * among siblings (an unclosed range runs to the end of its parent, as in
- * `isTopLevelCommentScopeNode`). A `bf-s` element is still a candidate
- * itself, since a branch's content can be a child component's root; only
- * its subtree is skipped. With `prune` false nothing is skipped.
+ * fragment-root child's `<!--bf-scope:X-->` … `<!--bf-/scope:X-->` range
+ * among siblings. A `bf-s` element is still a candidate itself, since a
+ * branch's content can be a child component's root; only its subtree is
+ * skipped. With `prune` false nothing is skipped.
+ *
+ * A `<!--bf-scope:X-->` with no matching end marker (older SSR output) does
+ * not say where the child's range ends, so it is not skipped: its siblings
+ * are searched as before #4058, rather than hiding every later conditional
+ * of `scope`'s behind it.
  */
 function findOwnedCondNode(
   first: Node | null,
@@ -496,38 +532,40 @@ function findOwnedCondNode(
   prune: boolean,
   match: (node: Node) => boolean,
 ): Node | null {
-  // Open `<!--bf-scope-->` ranges, one counter per level of the walk.
-  const depths: number[] = [0]
+  const walk = { level: 0 }
   let node: Node | null = first === boundary ? null : first
   while (node) {
-    const level = depths.length - 1
-    if (node.nodeType === Node.COMMENT_NODE && prune && trackCommentScopeDepth(node, depths, level)) {
-      // A nested scope's own begin/end marker: nothing to match.
-    } else if (depths[level] === 0 && match(node)) {
+    const rangeEnd = prune ? closedCommentScopeEnd(node, walk.level === 0 ? boundary : null) : null
+    if (rangeEnd) {
+      node = rangeEnd
+    } else if (match(node)) {
       return node
-    } else if (depths[level] === 0 && node.firstChild && enterSubtree(node, root, prune)) {
-      depths.push(0)
+    } else if (node.firstChild && enterSubtree(node, root, prune)) {
+      walk.level++
       node = node.firstChild
       continue
     }
-    node = nextInWalk(node, depths, boundary)
+    node = nextInWalk(node, walk, boundary)
   }
   return null
 }
 
-/** Count a `<!--bf-scope:-->` / `<!--bf-/scope:-->` marker into `depths[level]`;
- *  true when `node` is one. */
-function trackCommentScopeDepth(node: Node, depths: number[], level: number): boolean {
+/**
+ * For a `<!--bf-scope:X|…-->` comment, its matching `<!--bf-/scope:X-->`
+ * among later siblings (before `boundary`); `null` for any other node, or
+ * when the range is unclosed.
+ */
+function closedCommentScopeEnd(node: Node, boundary: Node | null): Node | null {
+  if (node.nodeType !== Node.COMMENT_NODE) return null
   const value = node.nodeValue ?? ''
-  if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
-    depths[level]++
-    return true
+  if (!value.startsWith(BF_SCOPE_COMMENT_PREFIX)) return null
+  const rest = value.slice(BF_SCOPE_COMMENT_PREFIX.length)
+  const pipeIdx = rest.indexOf('|')
+  const endValue = BF_SCOPE_COMMENT_END_PREFIX + (pipeIdx >= 0 ? rest.slice(0, pipeIdx) : rest)
+  for (let sib = node.nextSibling; sib && sib !== boundary; sib = sib.nextSibling) {
+    if (sib.nodeType === Node.COMMENT_NODE && sib.nodeValue === endValue) return sib
   }
-  if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX)) {
-    if (depths[level] > 0) depths[level]--
-    return true
-  }
-  return false
+  return null
 }
 
 function enterSubtree(node: Node, root: Element, prune: boolean): boolean {
@@ -536,12 +574,12 @@ function enterSubtree(node: Node, root: Element, prune: boolean): boolean {
 }
 
 /** The node after `node` in the walk: its next sibling, else its parent's
- *  (popping a level), stopping at `boundary` on the top level. */
-function nextInWalk(node: Node, depths: number[], boundary: Node | null): Node | null {
+ *  (going up a level), stopping at `boundary` on the top level. */
+function nextInWalk(node: Node, walk: { level: number }, boundary: Node | null): Node | null {
   let current: Node = node
-  while (depths.length > 1) {
+  while (walk.level > 0) {
     if (current.nextSibling) return current.nextSibling
-    depths.pop()
+    walk.level--
     current = current.parentNode!
   }
   const next = current.nextSibling

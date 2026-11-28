@@ -7,7 +7,7 @@
  */
 
 import { createEffect, createRoot } from '@barefootjs/client/reactive'
-import { find, findCondTarget, findCondStart } from './query.ts'
+import { find, findCondTarget, findCondStart, findCondEnd } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
 import { commentScopeRegistry } from './scope.ts'
 import { evalTemplateFn } from './template.ts'
@@ -451,14 +451,14 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
   const endMarker = `bf-cond-end:${id}`
 
   if (startComment) {
-    // Remove nodes between start and end markers
+    // Remove nodes between start and end markers. The end is paired with
+    // the start (`findCondEnd`), not taken by value: a fragment-root child
+    // inside this branch can hold a conditional with the same id (#4058).
+    const endComment = findCondEnd(startComment, id)
     const nodesToRemove: Node[] = []
-    let node = startComment.nextSibling
-    while (node && !(node.nodeType === 8 && node.nodeValue === endMarker)) {
+    for (let node = startComment.nextSibling; node && node !== endComment; node = node.nextSibling) {
       nodesToRemove.push(node)
-      node = node.nextSibling
     }
-    const endComment = node
     nodesToRemove.forEach(n => n.parentNode?.removeChild(n))
 
     // Insert new content. Pass the actual insertion parent so SVG-context

@@ -21,7 +21,7 @@ beforeAll(() => {
 })
 
 const noop = () => {}
-const img = '<img bf-c="s5" data-cover src="a.png" alt="">'
+const img = '<img bf-c="s5" data-cover="" src="a.png" alt="">'
 const markers = '<!--bf-cond-start:s5--><!--bf-cond-end:s5-->'
 
 const branch = (html: string) => ({ template: () => html, bindEvents: noop })
@@ -158,5 +158,77 @@ describe('insert(): loop row conditional vs. nested child conditional with the s
 
     expect(row.querySelector('p')!.innerHTML).toBe(`author${markers}`)
     expect(row.querySelector('.cover > img[bf-c="s5"]')).not.toBeNull()
+  })
+
+  // --- PR review follow-ups ---
+
+  test('legacy markup: an unclosed fragment child range does not hide the parent\'s later conditional', () => {
+    // Older SSR output has no `<!--bf-/scope:…-->` end marker, so where the
+    // child's range ends is ambiguous; the parent's markers must still be found.
+    document.body.innerHTML =
+      `<div bf-s="Parent_1"><!--bf-scope:Child_1--><p>child</p>${markers}</div>`
+    const scope = document.querySelector('[bf-s="Parent_1"]')!
+    const [on, setOn] = createSignal(false)
+
+    insert(scope, 's5', () => on(), branch(`<!--bf-cond-start:s5-->${img}<!--bf-cond-end:s5-->`), branch(markers))
+    setOn(true)
+
+    expect(scope.innerHTML).toBe(`<!--bf-scope:Child_1--><p>child</p><!--bf-cond-start:s5-->${img}<!--bf-cond-end:s5-->`)
+  })
+
+  test('a self-owner portaled child is not searched as the parent\'s relocated content', () => {
+    document.body.innerHTML =
+      '<div bf-s="Parent_1"><b bf-c="s5">on</b></div>' +
+      `<div bf-s="Child_1" bf-h="Parent_1" bf-po="Child_1">${markers}</div>`
+    const scope = document.querySelector('[bf-s="Parent_1"]')!
+    const child = document.querySelector('[bf-s="Child_1"]')!
+    const [on, setOn] = createSignal(true)
+
+    insert(scope, 's5', () => on(), branch('<!--bf-cond-start:s5--><b bf-c="s5">on</b><!--bf-cond-end:s5-->'), branch(markers))
+    setOn(false)
+
+    expect(child.innerHTML).toBe(markers)
+    expect(scope.innerHTML).toBe(markers)
+  })
+
+  test('an explicit portal wrapper (no bf-s) owned by the scope is still searched', () => {
+    document.body.innerHTML =
+      '<div bf-s="Parent_1"></div>' +
+      `<div bf-pi="bf-portal-1" bf-po="Parent_1">${markers}</div>`
+    const scope = document.querySelector('[bf-s="Parent_1"]')!
+    const portal = document.querySelector('[bf-pi]')!
+    const [on, setOn] = createSignal(false)
+
+    insert(scope, 's5', () => on(), branch(`<!--bf-cond-start:s5-->${img}<!--bf-cond-end:s5-->`), branch(markers))
+    setOn(true)
+
+    expect(portal.innerHTML).toBe(`<!--bf-cond-start:s5-->${img}<!--bf-cond-end:s5-->`)
+  })
+
+  test('a forwarded (^) conditional inside a self-owner portaled child is still found', () => {
+    document.body.innerHTML =
+      '<div bf-s="Parent_1"></div>' +
+      '<div bf-s="Child_1" bf-h="Parent_1" bf-po="Child_1"><!--bf-cond-start:^s5--><!--bf-cond-end:^s5--></div>'
+    const scope = document.querySelector('[bf-s="Parent_1"]')!
+    const child = document.querySelector('[bf-s="Child_1"]')!
+    const [on, setOn] = createSignal(false)
+
+    insert(scope, '^s5', () => on(), branch('<!--bf-cond-start:^s5--><em>x</em><!--bf-cond-end:^s5-->'), branch('<!--bf-cond-start:^s5--><!--bf-cond-end:^s5-->'))
+    setOn(true)
+
+    expect(child.innerHTML).toBe('<!--bf-cond-start:^s5--><em>x</em><!--bf-cond-end:^s5-->')
+  })
+
+  test('the end marker is paired with the start, skipping a nested fragment child\'s same-id range', () => {
+    const inner = '<!--bf-scope:Child_1--><!--bf-cond-start:s5--><i>child</i><!--bf-cond-end:s5--><!--bf-/scope:Child_1-->'
+    document.body.innerHTML =
+      `<div bf-s="Parent_1"><!--bf-cond-start:s5-->${inner}<span>suffix</span><!--bf-cond-end:s5--></div>`
+    const scope = document.querySelector('[bf-s="Parent_1"]')!
+    const [on, setOn] = createSignal(true)
+
+    insert(scope, 's5', () => on(), branch(`<!--bf-cond-start:s5-->${inner}<span>suffix</span><!--bf-cond-end:s5-->`), branch(markers))
+    setOn(false)
+
+    expect(scope.innerHTML).toBe(markers)
   })
 })
