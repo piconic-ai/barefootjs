@@ -148,9 +148,9 @@ export function ownScopeId(element: Element): string | null {
 /**
  * True if `element` sits within a comment-based scope's sibling range — the
  * comment node itself to the next `bf-scope:`/end-marker comment (or the
- * end of the parent's children). Exported for `query.ts`'s `find()`/
- * `findCondTarget()`/`commentBelongsToScope()`, which need this same check
- * against a comment they already hold, not a registered scope element —
+ * end of the parent's children). Exported for `query.ts`'s
+ * `belongsToCommentScope()` (behind `find()`), which needs this same check
+ * against a comment it already holds, not a registered scope element —
  * `isWithinScope` below is the scope-element-keyed sibling.
  */
 export function isInCommentScopeRange(element: Node, commentNode: Comment): boolean {

@@ -7,9 +7,9 @@
  */
 
 import { createEffect, createRoot } from '@barefootjs/client/reactive'
-import { find, findCondTarget, commentsInScope } from './query.ts'
+import { find, findCondTarget, findCondStart } from './query.ts'
 import { setParentScopeId, parseHTML } from './component.ts'
-import { commentScopeRegistry, getCommentScopeBoundary } from './scope.ts'
+import { commentScopeRegistry } from './scope.ts'
 import { evalTemplateFn } from './template.ts'
 import { BF_COND, BF_SCOPE, BF_LOOP_ITEM } from '@barefootjs/shared'
 
@@ -58,44 +58,6 @@ function makeRegion(scope: Element | Comment): CondRegion {
   return { anchor: null, bindScope: el, parentScopeId }
 }
 
-/** Find the `[bf-c="id"]` element within a loop item's sibling range. */
-function findCondElInRange(anchor: Comment, id: string): Element | null {
-  const sel = `[${BF_COND}="${id}"]`
-  const boundary = getCommentScopeBoundary(anchor)
-  let node: Node | null = anchor.nextSibling
-  while (node && node !== boundary) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as Element
-      if (el.matches?.(sel)) return el
-      const inner = el.querySelector(sel)
-      if (inner) return inner
-    }
-    node = node.nextSibling
-  }
-  return null
-}
-
-/** Find the `bf-cond-start:id` comment within a loop item's sibling range
- *  (checking range siblings and their descendants). */
-function findCondStartInRange(anchor: Comment, id: string): Comment | null {
-  const want = `bf-cond-start:${id}`
-  const boundary = getCommentScopeBoundary(anchor)
-  let node: Node | null = anchor.nextSibling
-  while (node && node !== boundary) {
-    if (node.nodeType === Node.COMMENT_NODE && (node as Comment).nodeValue === want) {
-      return node as Comment
-    }
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const w = document.createTreeWalker(node as Element, NodeFilter.SHOW_COMMENT)
-      while (w.nextNode()) {
-        if ((w.currentNode as Comment).nodeValue === want) return w.currentNode as Comment
-      }
-    }
-    node = node.nextSibling
-  }
-  return null
-}
-
 /**
  * Resolve the DOM element that actually hosts an element-scoped loop-row
  * conditional's branch content (#2705). A nested `mapArray` inside the
@@ -117,13 +79,7 @@ function findCondStartInRange(anchor: Comment, id: string): Comment | null {
  * the right container in that shape too) — never throws.
  */
 export function findCondContainer(scope: Element, id: string): Element {
-  const want = `bf-cond-start:${id}`
-  for (const comment of commentsInScope(scope)) {
-    if (comment.nodeValue === want) {
-      return (comment.parentElement as Element | null) ?? scope
-    }
-  }
-  return scope
+  return findCondStart(scope, id)?.parentElement ?? scope
 }
 
 /**
@@ -340,7 +296,7 @@ export function insert(
       let result: BranchTemplateResult
       try { result = evalBranchTemplate(branch) } finally { setParentScopeId(null) }
       const existingEl = region.anchor
-        ? findCondElInRange(region.anchor, id)
+        ? findCondTarget(region.bindScope, id)
         : find(region.bindScope, `[${BF_COND}="${id}"]`)
       if (existingEl) {
         // Compare full opening tag signatures to detect branch mismatch.
@@ -427,9 +383,7 @@ function autoFocusConditionalElement(region: CondRegion, id: string): void {
   // This is necessary because createComponent() may call insert() before
   // the element is added to the document by mapArray()/mapArrayAnchored().
   requestAnimationFrame(() => {
-    const condEl = region.anchor
-      ? findCondElInRange(region.anchor, id)
-      : findCondTarget(region.bindScope, `[${BF_COND}="${id}"]`)
+    const condEl = findCondTarget(region.bindScope, id)
     if (condEl) {
       const autofocusEl = condEl.matches('[autofocus]')
         ? condEl
@@ -485,31 +439,14 @@ function spliceSlots(fragment: DocumentFragment, slots: Node[]): DocumentFragmen
 function updateFragmentConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
   const { html, slots } = result
   const scope = region.bindScope
-  // Find start comment marker. For a loop-item region the marker lives
-  // among the anchor's range siblings (no descendant relationship to a
-  // scope element), so locate it within the item range (#1665).
+  // Both anchors are looked up under one ownership rule (`query.ts`'s
+  // `findOwnedCondNode`): within the scope's own range — a loop item's
+  // sibling range (#1665), a fragment-root's comment-scope range, or the
+  // element's subtree — and never inside a nested component's scope, whose
+  // conditional may share this slot id (#4058).
   const startMarker = `bf-cond-start:${id}`
-  let startComment: Comment | null = null
-  if (region.anchor) {
-    startComment = findCondStartInRange(region.anchor, id)
-  } else {
-    // commentsInScope is comment-scope-aware: for a fragment-root
-    // component's scope (a comment-scope proxy element), it walks the
-    // proxy's *sibling* range rather than only `scope`'s own descendants —
-    // required when this conditional's markers are themselves a top-level
-    // sibling of the proxy, not nested inside it (a bare TreeWalker(scope)
-    // never finds them, silently freezing the branch after first render).
-    for (const comment of commentsInScope(scope)) {
-      if (comment.nodeValue === startMarker) {
-        startComment = comment
-        break
-      }
-    }
-  }
-
-  const condEl = region.anchor
-    ? findCondElInRange(region.anchor, id)
-    : findCondTarget(scope, `[${BF_COND}="${id}"]`)
+  const startComment = findCondStart(scope, id)
+  const condEl = findCondTarget(scope, id)
 
   const endMarker = `bf-cond-end:${id}`
 
@@ -600,15 +537,10 @@ function updateFragmentConditional(region: CondRegion, id: string, result: Branc
  * Update element conditional (single element with bf-c)
  */
 function updateElementConditional(region: CondRegion, id: string, result: BranchTemplateResult): void {
-  // findCondTarget, not find(): for a comment-scope proxy it resolves a
-  // top-level sibling conditional the same way first hydration does, but
-  // for a regular scope it's a plain scope.querySelector(...) — not
-  // find()'s belongsToScope-gated search, which requires scope itself to
-  // carry bf-s (a mapArray loop item's cloned root usually doesn't; see
-  // findCondTarget's doc comment in query.ts).
-  const condEl = region.anchor
-    ? findCondElInRange(region.anchor, id)
-    : findCondTarget(region.bindScope, `[${BF_COND}="${id}"]`)
+  // findCondTarget, not find(): find()'s belongsToScope-gated search
+  // requires scope itself to carry bf-s, which a mapArray loop item's cloned
+  // root usually doesn't (see findCondTarget's doc comment in query.ts).
+  const condEl = findCondTarget(region.bindScope, id)
   if (!condEl) return
 
   const { html, slots } = result

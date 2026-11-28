@@ -8,7 +8,7 @@
 
 import { commentScopeRegistry, getCommentScopeBoundary, relocatedDescendants, isInCommentScopeRange, isOwnedByScope, type CommentScopeInfo } from './scope.ts'
 import { hydratedScopes } from './hydration-state.ts'
-import { BF_SCOPE, BF_SLOT, BF_HOST, BF_AT, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
+import { BF_SCOPE, BF_SLOT, BF_HOST, BF_AT, BF_COND, BF_LOOP_ITEM, BF_PARENT_OWNED_PREFIX, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 
 /** CSS attribute-value escape with a fallback for environments lacking CSS.escape. */
 export const cssEscape: (s: string) => string =
@@ -325,11 +325,11 @@ function isTopLevelCommentScopeNode(node: Node): boolean {
  * range via `candidatesInScope`) genuinely belongs to `scope` itself, as
  * opposed to some OTHER, nested child component's own scope range.
  *
- * Shared by `find()` and `findCondTarget()` — both need the identical
- * comment-scope ownership rule; see CLAUDE.md's "one decision, two
- * implementations" note (a prior version of this repo had this exact
- * three-line check duplicated between the two, and only one of the two
- * copies got the `nearestScope === scope` fix below).
+ Used by `find()`. (`findCondTarget()` shared it until #4058 moved a
+ * conditional's anchors onto `findOwnedCondNode`, which also covers
+ * comments and loop-item ranges.) A prior version of this repo had this
+ * exact three-line check duplicated, and only one of the two copies got the
+ * `nearestScope === scope` fix below.
  *
  * Rules, in order:
  *  1. A top-level sibling of the comment (same parent as the comment
@@ -412,40 +412,140 @@ export function find(
   return findInPortals(scope, selector, ignoreScope)
 }
 
+// --- conditional anchors (insert.ts) ---
+
 /**
- * Find a conditional's own target (a `bf-c="id"` element, for `insert.ts`)
- * within `scope`'s content range.
+ * Find a conditional's own target, the `bf-c="id"` element, within
+ * `scope`'s content range (for `insert.ts`).
  *
- * Deliberately narrower than `find()`: for a regular (non-comment) scope,
- * this is a **plain, unfiltered** `scope.querySelector(selector)` — not
- * `find()`'s `belongsToScope`-gated search. `belongsToScope` accepts a
- * candidate only if `candidate.closest('[bf-s]')` is *exactly* `scope` —
- * which can never hold when `scope` itself carries no `bf-s`. That's the
- * common case for `insert()`'s `region.bindScope`: a `mapArray` loop item's
- * cloned template root (e.g. a `.comment-item` `<div>`) is keyed by
- * `data-key` for reconciliation, not given its own `bf-s`, so any `bf-c`
- * conditional inside that item would be rejected outright by
- * `belongsToScope` — not because of any nested-child-scope subtlety, just
- * because `scope` itself isn't `bf-s`-addressable. Using `find()` here
- * previously broke exactly that shape (piconic-ai/barefootjs#2313's first
- * attempt, caught by the `site/ui` e2e suite's `SocialThreadDemo`
- * comment-editing test — a per-comment `editing` conditional inside a
- * `sortedComments().map(...)` loop item with no `bf-s` of its own).
- *
- * A comment-scope proxy (fragment-root component) still gets the
- * comment-range-bounded, nested-fragment-excluding search — the same rule
- * `find()`'s comment branch uses — since that IS what's needed to walk past
- * a fragment-root's own top-level siblings correctly (#2312).
+ * `scope` is `insert()`'s `region.bindScope`: a component scope, a
+ * comment-scope proxy (fragment-root component, #2312), the detached proxy
+ * of a `<!--bf-loop-i:key-->` loop item (#1665), or a `mapArray` row's
+ * cloned root, which is keyed by `data-key` and carries no `bf-s` of its own.
+ * `find()`'s `belongsToScope` requires the candidate's nearest `[bf-s]` to be
+ * exactly `scope`, which can never hold for that last shape (#2313's first
+ * attempt, caught by `SocialThreadDemo`'s per-comment `editing` conditional),
+ * so this uses the walk in `findOwnedCondNode` instead: ownership is decided
+ * by what lies between the candidate and `scope`, not by `scope`'s own
+ * attributes.
  */
-export function findCondTarget(scope: Element, selector: string): Element | null {
-  const commentInfo = commentScopeRegistry.get(scope)
-  if (!commentInfo) {
-    return scope.querySelector(selector)
-  }
-  for (const candidate of candidatesInScope(scope, selector)) {
-    if (belongsToCommentScope(candidate, scope, commentInfo)) return candidate
+export function findCondTarget(scope: Element, id: string): Element | null {
+  return findCondNode(scope, id, node =>
+    node.nodeType === Node.ELEMENT_NODE && (node as Element).getAttribute(BF_COND) === id,
+  ) as Element | null
+}
+
+/**
+ * Find a fragment conditional's `<!--bf-cond-start:id-->` marker within
+ * `scope`'s content range, under the same ownership rule as
+ * `findCondTarget`. For a fragment-root component's scope the range is the
+ * proxy's comment-scope sibling range, so a conditional whose markers are a
+ * top-level sibling of the proxy is found (piconic-ai/sora's
+ * `ListSidebar`). Content relocated out of the scope (SSR-portal outlet
+ * placement or a hydrate-time `createPortal`, #3059) is searched last; a
+ * loop item's detached proxy has no relocated content of its own (its
+ * registered scope id is the enclosing component's), so it is skipped there.
+ */
+export function findCondStart(scope: Element, id: string): Comment | null {
+  const want = `bf-cond-start:${id}`
+  const isMarker = (node: Node) => node.nodeType === Node.COMMENT_NODE && node.nodeValue === want
+  const found = findCondNode(scope, id, isMarker)
+  if (found) return found as Comment
+  const info = commentScopeRegistry.get(scope)
+  if (info?.commentNode.nodeValue?.startsWith(`${BF_LOOP_ITEM}:`)) return null
+  const prune = !id.startsWith(BF_PARENT_OWNED_PREFIX)
+  for (const el of relocatedDescendants(scope)) {
+    const inPortal = findOwnedCondNode(el.firstChild, null, el, prune, isMarker)
+    if (inPortal) return inPortal as Comment
   }
   return null
+}
+
+function findCondNode(scope: Element, id: string, match: (node: Node) => boolean): Node | null {
+  // A parent-owned (`^`-prefixed) id is JSX children `scope`'s component
+  // authored that physically lands inside the descendant components it was
+  // forwarded to, so their scope boundaries say nothing about ownership —
+  // the same carve-out as `find()`'s `ignoreScope`, `$t` and `claim-slots.ts`.
+  const prune = !id.startsWith(BF_PARENT_OWNED_PREFIX)
+  const info = commentScopeRegistry.get(scope)
+  return info
+    ? findOwnedCondNode(info.commentNode.nextSibling, getCommentScopeBoundary(info.commentNode), scope, prune, match)
+    : findOwnedCondNode(scope.firstChild, null, scope, prune, match)
+}
+
+/**
+ * The one ownership rule for a conditional's DOM anchors (#4058): walk the
+ * sibling run `first` … `boundary` (exclusive; `null` = to the end of the
+ * parent) and its subtrees in document order, and return the first node
+ * `match` accepts, never entering a nested component's scope. Slot ids are
+ * counted per component file, so a child rendered inside `scope` (a loop row
+ * especially) can hold a conditional with the same id as `scope`'s own;
+ * without this, its marker or element was taken for `scope`'s.
+ *
+ * A nested scope is an element carrying `bf-s` other than `root`, or a
+ * fragment-root child's `<!--bf-scope:…-->` … `<!--bf-/scope:…-->` range
+ * among siblings (an unclosed range runs to the end of its parent, as in
+ * `isTopLevelCommentScopeNode`). A `bf-s` element is still a candidate
+ * itself, since a branch's content can be a child component's root; only
+ * its subtree is skipped. With `prune` false nothing is skipped.
+ */
+function findOwnedCondNode(
+  first: Node | null,
+  boundary: Node | null,
+  root: Element,
+  prune: boolean,
+  match: (node: Node) => boolean,
+): Node | null {
+  // Open `<!--bf-scope-->` ranges, one counter per level of the walk.
+  const depths: number[] = [0]
+  let node: Node | null = first === boundary ? null : first
+  while (node) {
+    const level = depths.length - 1
+    if (node.nodeType === Node.COMMENT_NODE && prune && trackCommentScopeDepth(node, depths, level)) {
+      // A nested scope's own begin/end marker: nothing to match.
+    } else if (depths[level] === 0 && match(node)) {
+      return node
+    } else if (depths[level] === 0 && node.firstChild && enterSubtree(node, root, prune)) {
+      depths.push(0)
+      node = node.firstChild
+      continue
+    }
+    node = nextInWalk(node, depths, boundary)
+  }
+  return null
+}
+
+/** Count a `<!--bf-scope:-->` / `<!--bf-/scope:-->` marker into `depths[level]`;
+ *  true when `node` is one. */
+function trackCommentScopeDepth(node: Node, depths: number[], level: number): boolean {
+  const value = node.nodeValue ?? ''
+  if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
+    depths[level]++
+    return true
+  }
+  if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX)) {
+    if (depths[level] > 0) depths[level]--
+    return true
+  }
+  return false
+}
+
+function enterSubtree(node: Node, root: Element, prune: boolean): boolean {
+  if (node.nodeType !== Node.ELEMENT_NODE) return false
+  return !prune || node === root || !(node as Element).hasAttribute(BF_SCOPE)
+}
+
+/** The node after `node` in the walk: its next sibling, else its parent's
+ *  (popping a level), stopping at `boundary` on the top level. */
+function nextInWalk(node: Node, depths: number[], boundary: Node | null): Node | null {
+  let current: Node = node
+  while (depths.length > 1) {
+    if (current.nextSibling) return current.nextSibling
+    depths.pop()
+    current = current.parentNode!
+  }
+  const next = current.nextSibling
+  return next === boundary ? null : next
 }
 
 /**
@@ -1036,14 +1136,11 @@ export function findCommentChildScope(
  * otherwise. Mirrors candidatesInScope's notion of "where the scope's
  * content lives", but yields comments instead of elements.
  *
- * Exported for `insert.ts`'s branch-swap path (`updateFragmentConditional`),
- * which otherwise walked `scope`'s own descendants with a bare
- * `document.createTreeWalker` — never finding a conditional's
- * `bf-cond-start:`/`bf-cond-end:` markers when they sit as a *sibling* of
- * the scope's comment-scope proxy rather than nested inside it (true for
- * any fragment-root component's own top-level conditional, since the proxy
- * is one specific top-level element and the conditional's markers may be
- * others). See piconic-ai/sora's `ListSidebar` for the real-world repro.
+ * Yields every comment, including those inside nested component scopes:
+ * callers apply their own ownership rule (`claim-slots.ts`'s
+ * `isOwnedByScope`; `findCommentChildScope` matches on the full scope id).
+ * A conditional's markers are not searched here but with `findCondStart`,
+ * which never enters a nested scope (#4058).
  */
 export function* commentsInScope(scope: Element): Generator<Comment> {
   const commentInfo = commentScopeRegistry.get(scope)
