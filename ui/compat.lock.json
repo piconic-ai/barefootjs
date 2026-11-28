@@ -10095,6 +10095,14 @@
           }
         }
       },
+      "memo-block-var-redeclare": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "block-memo-static-value-unseeded"
+          ]
+        }
+      },
       "memo-exponent-operator": {
         "blade": {
           "kind": "refusal",
@@ -23322,6 +23330,10 @@
         "description": "A block memo whose shadowing local reads a typeof const member renders the type name (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-shadowing-local-reads-typeof-const.ts"
       },
+      "memo-block-var-redeclare": {
+        "description": "A block memo keeps a var value past a bare redeclaration of it (#3981)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-block-var-redeclare.ts"
+      },
       "memo-exponent-operator": {
         "description": "A memo applying ** and ~ to a prop renders the computed numbers (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-exponent-operator.ts"
@@ -24539,7 +24551,8 @@
       "expected": "the read renders the computed value (the module const the branch-local does not shadow)",
       "actual": "renders the slot empty",
       "fixtures": [
-        "memo-block-branch-local-scope"
+        "memo-block-branch-local-scope",
+        "memo-block-var-redeclare"
       ],
       "adapters": [
         "go-template"

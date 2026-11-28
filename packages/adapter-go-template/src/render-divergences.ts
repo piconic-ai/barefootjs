@@ -120,6 +120,7 @@ export const renderDivergences: RenderDivergences = {
   // A block memo no template lowers whose value only the static evaluator
   // computes: the constructor leaves it unseeded, so the slot renders empty.
   'memo-block-branch-local-scope': { limitation: 'block-memo-static-value-unseeded' },
+  'memo-block-var-redeclare': { limitation: 'block-memo-static-value-unseeded' },
   // A block memo computing `typeof` in a local before its `return`: the
   // memo is left uncomputed, so the slot renders empty.
   'memo-typeof-block-statements': { limitation: 'memo-block-unlowered-operator' },

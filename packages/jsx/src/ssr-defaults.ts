@@ -973,6 +973,9 @@ function evalStatementsForReturn(
 function bindLocals(stmt: ts.VariableStatement, ctx: EvalContext, scopes: ReadonlyArray<Record<string, EvalResult>>): void {
   const isVar = (stmt.declarationList.flags & ts.NodeFlags.BlockScoped) === 0
   for (const d of stmt.declarationList.declarations) {
+    // `var v` alone assigns nothing: `v` keeps its hoisted `undefined`, or
+    // the value an earlier `var v = …` gave it.
+    if (isVar && !d.initializer) continue
     const v = ts.isIdentifier(d.name) && d.initializer ? evalNode(d.initializer, ctx) : UNRESOLVED
     for (const name of bindingNames(d.name)) {
       ctx.bindings[name] = v
@@ -1005,21 +1008,19 @@ function functionBodyBindings(outer: Record<string, EvalResult>, statements: rea
 }
 
 /**
- * The names the `var` statements of a function body declare, through the
- * `if` branches the evaluator enters (not into nested functions).
+ * The names the `var` declarations of a function body declare, in any
+ * statement (`if` branches, loops and their heads, `switch`, `try` /
+ * `catch`, bare blocks), but not inside a nested function or class, whose
+ * `var`s are its own.
  */
 function hoistedVarNames(statements: readonly ts.Statement[]): string[] {
   const names: string[] = []
-  const visit = (stmt: ts.Statement): void => {
-    if (ts.isVariableStatement(stmt)) {
-      if ((stmt.declarationList.flags & ts.NodeFlags.BlockScoped) === 0) {
-        for (const d of stmt.declarationList.declarations) names.push(...bindingNames(d.name))
-      }
-    } else if (ts.isIfStatement(stmt)) {
-      for (const branch of [stmt.thenStatement, stmt.elseStatement]) {
-        if (branch) (ts.isBlock(branch) ? branch.statements : [branch]).forEach(visit)
-      }
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node) || ts.isClassLike(node)) return
+    if (ts.isVariableDeclarationList(node) && (node.flags & ts.NodeFlags.BlockScoped) === 0) {
+      for (const d of node.declarations) names.push(...bindingNames(d.name))
     }
+    ts.forEachChild(node, visit)
   }
   statements.forEach(visit)
   return names

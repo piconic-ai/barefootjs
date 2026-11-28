@@ -550,6 +550,54 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.i).toEqual({ value: null })
   })
 
+  test('a `var` without an initializer keeps the value its name holds (#3981)', () => {
+    // The review's repro: `flag` is the hoisted `var`, so the guard is taken,
+    // and the bare `var value` in it must not clear `'ready'`.
+    const metadata = metadataFor(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      import { lookup } from './lookup'
+      const flag = true
+      const label = 'fallback'
+      const v = 'outer'
+      function Foo() {
+        const m = createMemo(() => {
+          var value = 'ready'
+          if (flag === undefined) { var value }
+          if (false) { var flag = false }
+          return value ?? 'fallback'
+        })
+        const a = createMemo(() => { var v = 'a'; var v; return v })
+        const b = createMemo(() => { var v = 'a'; var v = 'b'; return v })
+        const c = createMemo(() => { var v; return v ?? 'none' })
+        const d = createMemo(() => { let x; return x })
+        const e = createMemo(() => { if (true) { var { q } = lookup() } return q })
+        const f = createMemo(() => { if (true) return v ?? 'none'; for (const i of [1]) { var v = 'a' } })
+        const g = createMemo(() => { if (true) return v ?? 'none'; for (var v = 'a'; ;) break })
+        const h = createMemo(() => { if (true) return v ?? 'none'; switch (lookup()) { case 1: var v = 'a' } })
+        const i = createMemo(() => { if (true) return v ?? 'none'; try { lookup() } catch (err) { var v = 'a' } })
+        const j = createMemo(() => { const k = () => { var label = 'inner'; return label }; return label })
+        return <p>{m()}{a()}{b()}{c()}{d()}{e()}{f()}{g()}{h()}{i()}{j()}</p>
+      }
+    `)
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.m).toEqual({ value: 'ready' })
+    expect(defaults?.a).toEqual({ value: 'a' })
+    expect(defaults?.b).toEqual({ value: 'b' })
+    expect(defaults?.c).toEqual({ value: 'none' })
+    // A `let` without an initializer stays unresolved, as before.
+    expect(defaults?.d).toEqual({ value: null })
+    // A destructuring `var` is unresolved, so it shadows.
+    expect(defaults?.e).toEqual({ value: null })
+    // A `var` in a loop, `switch` or `catch` is hoisted too; one in a
+    // nested function is that function's own.
+    expect(defaults?.f).toEqual({ value: 'none' })
+    expect(defaults?.g).toEqual({ value: 'none' })
+    expect(defaults?.h).toEqual({ value: 'none' })
+    expect(defaults?.i).toEqual({ value: 'none' })
+    expect(defaults?.j).toEqual({ value: 'fallback' })
+  })
+
   test('non-evaluable initials yield null (caller falls back at render time)', () => {
     const metadata = metadataFor(`
       'use client'

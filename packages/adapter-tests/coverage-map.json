@@ -12821,6 +12821,22 @@
         "text"
       ]
     },
+    "memo-block-var-redeclare": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-chain": {
       "kinds": [
         "binary",

@@ -11809,6 +11809,12 @@
               ]
             },
             {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -21522,6 +21528,12 @@
               "fixture": "memo-block-shadowing-local-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
@@ -31946,6 +31958,12 @@
               ]
             },
             {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "memo-exponent-operator",
               "limitations": [
                 "server-read-unlowered-operator"
@@ -38496,6 +38514,12 @@
               "fixture": "jsx-prop-loop-row-element-dynamic",
               "limitations": [
                 "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
@@ -60742,6 +60766,12 @@
               ]
             },
             {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
+              ]
+            },
+            {
               "fixture": "module-const-iife-nested-call",
               "limitations": [
                 "const-iife-unlowered"
@@ -65844,6 +65874,12 @@
               "fixture": "memo-block-shadowing-local-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
@@ -71651,6 +71687,12 @@
               "fixture": "jsx-prop-loop-row-element-dynamic",
               "limitations": [
                 "loop-row-dynamic-jsx-prop"
+              ]
+            },
+            {
+              "fixture": "memo-block-var-redeclare",
+              "limitations": [
+                "block-memo-static-value-unseeded"
               ]
             },
             {
