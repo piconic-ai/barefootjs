@@ -674,6 +674,11 @@ import { fixture as childrenForwardedIntoChildPropSeed } from './children-forwar
 import { fixture as childrenForwardedIntoChildPropSeedForms } from './children-forwarded-into-child-prop-seed-forms'
 import { fixture as childrenForwardedIntoChildPropDelivered } from './children-forwarded-into-child-prop-delivered'
 import { fixture as childrenForwardedIntoChildPropPlain } from './children-forwarded-into-child-prop-plain'
+import { fixture as loopRowRootComponent } from './loop-row-root-component'
+import { fixture as loopRowRootComponentBranches } from './loop-row-root-component-branches'
+import { fixture as loopRowTransparentRoot } from './loop-row-transparent-root'
+import { fixture as loopRowRootEmptyLead } from './loop-row-root-empty-lead'
+import { fixture as loopRowConstantProps } from './loop-row-constant-props'
 import { fixture as childrenReadIntoStateForms } from './children-read-into-state-forms'
 import { fixture as childrenReadIntoStateDelivered } from './children-read-into-state-delivered'
 import { fixture as childrenReadIntoStateShadowTransform } from './children-read-into-state-shadow-transform'
@@ -2452,6 +2457,11 @@ export const jsxFixtures: JSXFixture[] = [
   childrenForwardedIntoChildPropSeedForms,
   childrenForwardedIntoChildPropDelivered,
   childrenForwardedIntoChildPropPlain,
+  loopRowRootComponent,
+  loopRowRootComponentBranches,
+  loopRowTransparentRoot,
+  loopRowRootEmptyLead,
+  loopRowConstantProps,
   childrenReadIntoStateForms,
   childrenReadIntoStateDelivered,
   childrenReadIntoStateShadowTransform,

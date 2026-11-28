@@ -20,8 +20,11 @@ export interface ComponentDef {
   name?: string
   /** Init function that hydrates a scope element */
   init: InitFn
-  /** Template function for client-side component creation */
-  template?: (props: Record<string, unknown>) => string
+  /**
+   * Template function for client-side component creation. A `keyRelay`
+   * template also takes the caller's row key and renders it itself.
+   */
+  template?: (props: Record<string, unknown>, key?: string | number) => string
   /**
    * When true, this component's scope has no `bf-s`-carrying element of
    * its own — a proxy element stands in for it. Set for TWO distinct
@@ -50,4 +53,15 @@ export interface ComponentDef {
    * `bf-s` / `bf-h` / `bf-m` onto the caller's content (#3355).
    */
   transparent?: boolean
+  /**
+   * True when the template renders the caller's row key (`data-key`) itself,
+   * on the elements SSR renders it on, and so takes the key as its second
+   * argument (#4054). Without it the runtime stamps the key onto the first
+   * element of the rendered markup, which is where SSR renders it for every
+   * other shape. A component whose first element comes from a child
+   * component (`return <Kid />`) or from the caller's children
+   * (`<>{props.children}</>`) is one of these: SSR renders no key on that
+   * element.
+   */
+  keyRelay?: boolean
 }

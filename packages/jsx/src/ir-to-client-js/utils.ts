@@ -148,7 +148,106 @@ export function componentDefScopeFlags(root: ComponentIR['root']): string[] {
   const flags: string[] = []
   if (isCommentScopedRoot(root)) flags.push('comment: true')
   if (isScopeCommentFragmentRoot(root)) flags.push('fragmentRoot: true')
+  if (keyRelayInTemplate(root)) flags.push('keyRelay: true')
   return flags
+}
+
+/**
+ * The second parameter of a `keyRelay` template (`ComponentDef.keyRelay`):
+ * the row key the caller passes to `renderChild` / `createComponent`, or
+ * null when the component's template takes none. The ONE name both the
+ * parameter list (`templateParams`) and the relay attribute
+ * (`keyRelayTemplateAttr`, html-template.ts) use. It is a generated
+ * `__bf_` name that avoids every `__bf_` spelling of the source file
+ * (`IRMetadata.generatedNameSpellings`), so no source binding a template
+ * expression reads (an import, a module function) can be shadowed by it
+ * (#4054 review), the way `template-const-bindings.ts` names its
+ * parameters.
+ */
+export function keyRelayParam(root: ComponentIR['root'], reserved: ReadonlySet<string> | undefined): string | null {
+  if (!keyRelayInTemplate(root)) return null
+  const base = '__bf_key'
+  let param = base
+  for (let n = 1; reserved?.has(param); n++) param = `${base}_${n}`
+  return param
+}
+
+/** The `template:` lambda's parameter list for a component with this root. */
+export function templateParams(root: ComponentIR['root'], reserved: ReadonlySet<string> | undefined): string {
+  const keyParam = keyRelayParam(root, reserved)
+  return keyParam ? `${PROPS_PARAM}, ${keyParam}` : PROPS_PARAM
+}
+
+/**
+ * True when the component's CSR template must render the caller's row key
+ * itself (`keyRelay: true` on the def, #4054) instead of letting the runtime
+ * stamp it onto the first element of the rendered markup.
+ *
+ * Where the key goes is decided once, in Phase 1: the elements carrying a
+ * valueless `IRElement.keyAttr` (`resolveRootKeyAttr` /
+ * `markDataKeyCarrier`, jsx-to-ir.ts). Every SSR adapter renders exactly
+ * those. The runtime's first-element stamp (`renderChild`, component.ts) is
+ * only a shorter encoding of the same answer, valid when the first element
+ * the component renders is such a carrier on every render path. That fails
+ * when the first element comes from somewhere else: a child component the
+ * root renders (`return <Kid />`, a fragment or branch that starts with
+ * one), or the caller's children (`<>{props.children}</>`). There SSR
+ * renders no key, or renders it on a later element, while the stamp put it
+ * on the child's root. Such a component gets the key as a template
+ * parameter and renders it on its carriers (`keyRelayTemplateAttr`,
+ * html-template.ts), so the CSR template places it where SSR does.
+ *
+ * Answering `true` for a shape the stamp would also get right only costs
+ * the longer encoding, so every shape not known to be equivalent answers
+ * `true`.
+ */
+export function keyRelayInTemplate(root: ComponentIR['root']): boolean {
+  return firstElementOf(root) === 'other'
+}
+
+/**
+ * What the first element a subtree renders is, on every render path:
+ * `'carrier'` — an element carrying the relay (valueless `keyAttr`);
+ * `'none'` — the subtree renders no element, so the first one comes from
+ * the next sibling (an empty fragment, whitespace, a `null` root branch);
+ * `'other'` — anything else, or not provably one of the two (a component, a
+ * loop that may be empty, an expression, a branch that renders nothing on
+ * one path and an element on the other). Only `'carrier'` and `'none'`
+ * keep the first-element stamp equivalent to the IR's answer (#4054 review:
+ * an empty leading fragment used to answer before its next sibling).
+ */
+type FirstElement = 'carrier' | 'none' | 'other'
+
+function firstElementOf(node: IRNode | null): FirstElement {
+  if (!node) return 'none'
+  switch (node.type) {
+    case 'element':
+      return node.keyAttr && node.keyAttr.value === undefined ? 'carrier' : 'other'
+    case 'text':
+      return typeof node.value === 'string' && !node.value.trim() ? 'none' : 'other'
+    case 'fragment':
+    case 'provider':
+      return firstElementOfSiblings(node.children)
+    case 'conditional':
+      return sameOnBothPaths(firstElementOf(node.whenTrue), firstElementOf(node.whenFalse))
+    case 'if-statement':
+      return sameOnBothPaths(firstElementOf(node.consequent), firstElementOf(node.alternate))
+    default:
+      return 'other'
+  }
+}
+
+function firstElementOfSiblings(children: readonly IRNode[]): FirstElement {
+  for (const child of children) {
+    const first = firstElementOf(child)
+    if (first !== 'none') return first
+  }
+  return 'none'
+}
+
+/** Two render paths agree only when they give the same answer. */
+function sameOnBothPaths(a: FirstElement, b: FirstElement): FirstElement {
+  return a === b ? a : 'other'
 }
 
 /**

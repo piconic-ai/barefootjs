@@ -582,10 +582,11 @@ describe('emitter structure pins (#2795 §4.3)', () => {
 
   test('html-template.ts writes no child-position hole by hand — only the attribute-side ones remain', () => {
     // 4 in `templateAttrExpr` (boolean / style / data-key / general attr)
-    // + 4 `${spreadAttrs(...)}` sites. Every other hole goes through
+    // + 4 `${spreadAttrs(...)}` sites + the row-key relay
+    // (`keyRelayTemplateAttr`, #4054). Every other hole goes through
     // `interp(...)` in `safe-html.ts`. Exact, not "at most": a lower count
     // is progress and the pin should follow it down.
-    expect(count('html-template.ts', '${')).toBe(8)
+    expect(count('html-template.ts', '${')).toBe(9)
     // `itemAnchorTemplate` builds its `${escapeCommentText(KEY)}` by
     // concatenation — the one hole the substring above cannot see. Escaped
     // (#2795 follow-up) — see `escapeCommentText`'s docstring.

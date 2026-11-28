@@ -418,7 +418,10 @@ function materializeComponent(
   }
   let html: string
   try {
-    html = evalTemplateFn(() => templateFn(unwrappedProps))
+    // A `keyRelay` template renders the key on the elements SSR renders it
+    // on (#4054); the stamp in step 7 still keys `element`, the row's
+    // primary element, as `mapArray` does for an SSR row.
+    html = evalTemplateFn(() => templateFn(unwrappedProps, def?.keyRelay ? key : undefined))
   } finally {
     _parentScopeId = prevParentScopeId
   }
@@ -705,6 +708,25 @@ function spliceAttrsAfterFirstTag(html: string, attrs: string): string {
   return html.slice(0, insertPos) + html.slice(insertPos).replace(TAG_HEAD_PATTERN, `$1${attrs}`)
 }
 
+/** ` data-key="…"` for a row key, or `''` when there is none. */
+function rowKeyAttr(key: string | number | undefined): string {
+  return key !== undefined ? ` ${BF_KEY}="${key}"` : ''
+}
+
+/**
+ * Where `renderChild` puts a row key: a `keyRelay` template renders it
+ * itself, on the elements SSR renders it on (#4054), so it gets the key and
+ * nothing is stamped; any other template gets the key stamped onto its first
+ * element.
+ */
+function rowKeyPlacement(
+  def: ComponentDef | undefined,
+  key: string | number | undefined,
+): { templateKey: string | number | undefined; stampedKeyAttr: string } {
+  if (def?.keyRelay === true) return { templateKey: key, stampedKeyAttr: '' }
+  return { templateKey: undefined, stampedKeyAttr: rowKeyAttr(key) }
+}
+
 /**
  * Render a child component's template to an HTML string.
  * Used by compiler-generated template functions when a stateless component
@@ -764,12 +786,18 @@ export function renderChild(
   // children resolve their placeholder against the CALLER's scope, since
   // this child adds no scope level of its own. `data-key` still lands on the
   // first element — it is `mapArray`'s reconciliation contract.
+  //
+  // A `keyRelay` template renders the key itself, on the elements SSR
+  // renders it on (#4054), so the first-element stamp below is skipped for
+  // it: its first element can be a child component's root or the caller's
+  // content, which SSR leaves unkeyed.
+  const { templateKey, stampedKeyAttr } = rowKeyPlacement(def, key)
   if (def?.transparent && templateFn) {
-    const html = templateFn(props).trim().replace(
+    const html = templateFn(props, templateKey).trim().replace(
       PLACEHOLDER_ATTR_PATTERN,
       _parentScopeId ? ` bf-s="${_parentScopeId}"` : '',
     )
-    return key !== undefined ? spliceAttrsAfterFirstTag(html, ` ${BF_KEY}="${key}"`) : html
+    return spliceAttrsAfterFirstTag(html, stampedKeyAttr)
   }
   // Slot identity (bf-h/bf-m) and scope id (bf-s) are separate questions
   // (#2833): a loop item root has slot identity — `hasSlot` — but, unlike an
@@ -783,7 +811,9 @@ export function renderChild(
     ? _parentScopeId
     : `${displayName}_${generateId()}`
   const scopeId = `${scopePrefix}${suffix}`
-  const keyAttr = key !== undefined ? ` ${BF_KEY}="${key}"` : ''
+  // The no-template fallback below has no template to render the key, so
+  // it stamps it whatever the def says.
+  const keyAttr = rowKeyAttr(key)
   // Slot-relationship markers — only emitted when both host and slot are
   // known; top-level renders without parent context omit them. Stamped
   // regardless of `loopItemRoot`: a loop item root keeps slot identity even
@@ -818,7 +848,7 @@ export function renderChild(
   _parentScopeId = `${scopePrefix}${suffix}`
   let raw: string
   try {
-    raw = templateFn(props)
+    raw = templateFn(props, templateKey)
   } finally {
     _parentScopeId = prevParentScopeId
   }
@@ -847,7 +877,7 @@ export function renderChild(
     // working unchanged for markup this function pre-builds (the pure-CSR
     // `materializeComponent` template-string path, used when there is no
     // SSR content to hydrate against).
-    const keyedHtml = keyAttr ? spliceAttrsAfterFirstTag(html, keyAttr) : html
+    const keyedHtml = stampedKeyAttr ? spliceAttrsAfterFirstTag(html, stampedKeyAttr) : html
     return `<!--${BF_SCOPE_COMMENT_PREFIX}${scopeId}${hostSuffix}-->${keyedHtml}<!--${BF_SCOPE_COMMENT_END_PREFIX}${scopeId}-->`
   }
 
@@ -862,7 +892,7 @@ export function renderChild(
   // contract `mapArray` reads, and `bf-h` / `bf-m` mark child
   // membership in the parent scope. (#1320)
   const afterInsert = html.slice(insertPos)
-  const extraAttrs = `${slotAttrs}${keyAttr}`
+  const extraAttrs = `${slotAttrs}${stampedKeyAttr}`
   if (ROOT_HAS_BFS_PATTERN.test(afterInsert)) {
     if (!extraAttrs) return html
     return html.slice(0, insertPos) +
@@ -1344,7 +1374,7 @@ function createComponentFromDef(
 
   // Generate HTML from template
   const unwrappedProps = unwrapPropsForTemplate(props)
-  const html = evalTemplateFn(() => template(unwrappedProps))
+  const html = evalTemplateFn(() => template(unwrappedProps, def.keyRelay ? key : undefined))
 
   // Create DOM element
   const element = parseHTML(html.trim(), mountNamespaceParent(mountAt, rowMount)).firstChild as HTMLElement

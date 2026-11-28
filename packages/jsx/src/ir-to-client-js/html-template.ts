@@ -4,7 +4,7 @@
 
 import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, IRText, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
-import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, componentPlaceholderMarkup, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
+import { codeSafeStringLiteral, toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, keyRelayParam, componentPlaceholderMarkup, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
 import { nameForRegistryRef } from './component-scope.ts'
 import { assertNever } from './walker.ts'
@@ -1967,6 +1967,36 @@ export interface TemplateOptions {
    * Absent: built from `inlinableConstants`.
    */
   constantEnv?: CsrEnv | null
+  /**
+   * The template's row-key parameter when the component renders the caller's
+   * row key itself (`keyRelayParam`, utils.ts, #4054): each element carrying
+   * a valueless `keyAttr` emits the key from it.
+   */
+  keyRelayParam?: string | null
+}
+
+/**
+ * The row-key relay a `keyRelay` template renders on an element carrying a
+ * valueless `IRElement.keyAttr` (#4054), or null when this element renders
+ * none. Same condition as Hono's `__dataKey !== undefined` relay.
+ */
+function keyRelayTemplateAttr(node: IRElement, opts: TemplateOptions): string | null {
+  const param = opts.keyRelayParam
+  if (!param || !node.keyAttr || node.keyAttr.value !== undefined) return null
+  return `\${${param} !== undefined ? '${node.keyAttr.name}="' + ${escapeAttrValueExpr(param)} + '"' : ''}`
+}
+
+/**
+ * The component-template attributes an element gets after its own: the
+ * hoisted-children scope placeholder (#1320) and the row-key relay (#4054).
+ */
+function scopeAndKeyRelayAttrs(node: IRElement, opts: TemplateOptions): string[] {
+  const parts: string[] = []
+  const hoistedScopeAttr = maybeHoistedScopeAttr(!!opts.inHoistedChildren, node)
+  if (hoistedScopeAttr) parts.push(hoistedScopeAttr)
+  const keyRelayAttr = keyRelayTemplateAttr(node, opts)
+  if (keyRelayAttr) parts.push(keyRelayAttr)
+  return parts
 }
 
 /**
@@ -1987,7 +2017,7 @@ export function irToComponentTemplate(
   restPropsName?: string | null,
   bindingPlan?: TemplateBindingPlan,
 ): string {
-  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName }
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, loopDepth: -1, markupSlotIds, restPropsName, keyRelayParam: keyRelayParam(node, bindingPlan?.reserved) }
   const constantEnv = inlinableConstantEnv(inlinableConstants)
   if (!constantEnv || !bindingPlan || bindingPlan.names.size === 0) {
     return irToComponentTemplateWithOpts(node, opts)
@@ -2165,8 +2195,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         })
         .filter(Boolean)
 
-      const hoistedScopeAttr = maybeHoistedScopeAttr(!!opts.inHoistedChildren, node)
-      if (hoistedScopeAttr) attrParts.push(hoistedScopeAttr)
+      attrParts.push(...scopeAndKeyRelayAttrs(node, opts))
 
       if (node.slotId) {
         attrParts.push(`bf="${node.slotId}"`)
@@ -2436,7 +2465,7 @@ export function generateCsrTemplate(
   }
   const effectiveUnsafeLocalNames = mergeCsrNullUnsafe(ctx, unsafeLocalNames)
   const markupSlotIds = markupSlotIdsOf(ctx)
-  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName }
+  const opts: TemplateOptions = { inlinableConstants, restSpreadNames, propsObjectName, csrEnv, unsafeLocalNames: effectiveUnsafeLocalNames, deferredChildSlots, loopDepth: -1, markupSlotIds, restPropsName: ctx.restPropsName, keyRelayParam: keyRelayParam(node, ctx.generatedNameSpellings) }
   const plan = templateBindingPlan(ctx)
   if (plan.names.size === 0) return generateCsrTemplateWithOpts(node, opts)
   // A read of a fresh-per-evaluation const sees the one value the template
@@ -2847,8 +2876,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         })
         .filter(Boolean)
 
-      const hoistedScopeAttr = maybeHoistedScopeAttr(!!opts.inHoistedChildren, node)
-      if (hoistedScopeAttr) attrParts.push(hoistedScopeAttr)
+      attrParts.push(...scopeAndKeyRelayAttrs(node, opts))
 
       if (node.slotId) {
         attrParts.push(`bf="${node.slotId}"`)

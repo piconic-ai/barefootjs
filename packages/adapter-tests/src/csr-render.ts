@@ -269,6 +269,9 @@ const __fragmentRoots = new Map()
 // transparent-fragment child (\`<>{children}</>\`) owns no scope, so
 // \`renderChild\` emits its markup as-is.
 const __transparent = new Map()
+// Mirrors production's \`ComponentDef.keyRelay\` (#4054): the template takes
+// the row key and renders it itself, so \`renderChild\` does not stamp it.
+const __keyRelay = new Map()
 let __lastComponent = null
 
 function hydrate(name, def) {
@@ -277,6 +280,7 @@ function hydrate(name, def) {
   __comments.set(name, !!def.comment)
   __fragmentRoots.set(name, !!def.fragmentRoot)
   __transparent.set(name, !!def.transparent)
+  __keyRelay.set(name, !!def.keyRelay)
   __lastComponent = name
 }
 
@@ -310,19 +314,21 @@ function renderChild(name, props, key, suffix, loopItemRoot) {
   const scopeId = derivesFromParent
     ? __parentScope + '_' + suffix
     : '~' + name + '_' + Math.random().toString(36).slice(2, 8)
-  const keyAttr = key !== undefined ? ' data-key="' + key + '"' : ''
+  const relaysKey = !!__keyRelay.get(name)
+  const templateKey = relaysKey ? key : undefined
+  const stampedKeyAttr = key !== undefined && !relaysKey ? ' data-key="' + key + '"' : ''
   const isFragmentRoot = !!__fragmentRoots.get(name)
   // A stateless transparent-root child adds no scope (#3355): render its
   // markup as-is, resolve the hoisted-children placeholder against the
   // caller's scope, and keep only \`data-key\` on the first element —
   // mirrors production's renderChild.
   if (template && __transparent.get(name)) {
-    const html = template(props).trim()
+    const html = template(props, templateKey).trim()
       .replace(/\\s+bf-s="__BF_PARENT_SCOPE__"/g, ' bf-s="' + __parentScope + '"')
-    if (!keyAttr) return html
+    if (!stampedKeyAttr) return html
     const m = html.match(/<([a-zA-Z][^\\s/>]*)/)
     if (!m) return html
-    return html.slice(0, m.index) + html.slice(m.index).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + keyAttr)
+    return html.slice(0, m.index) + html.slice(m.index).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + stampedKeyAttr)
   }
   // Slot-relationship markers (bf-h/bf-m) — mirrors the production
   // runtime renderChild in @barefootjs/client/runtime so CSR conformance
@@ -335,7 +341,7 @@ function renderChild(name, props, key, suffix, loopItemRoot) {
     // fallback (component.ts's \`renderChild\`).
     return isFragmentRoot
       ? '<!--bf-scope:' + scopeId + '--><div></div><!--bf-/scope:' + scopeId + '-->'
-      : '<div bf-s="' + scopeId + '"' + slotAttrs + keyAttr + '>[' + name + ']</div>'
+      : '<div bf-s="' + scopeId + '"' + slotAttrs + (key !== undefined ? ' data-key="' + key + '"' : '') + '>[' + name + ']</div>'
   }
   // Push \`__parentScope\` to this child's own derived scope while
   // \`template\` evaluates — mirrors production's renderChild
@@ -348,7 +354,7 @@ function renderChild(name, props, key, suffix, loopItemRoot) {
   __parentScope = scopeId
   let __rawHtml
   try {
-    __rawHtml = template(props)
+    __rawHtml = template(props, templateKey)
   } finally {
     __parentScope = __prevParentScope
   }
@@ -378,18 +384,18 @@ function renderChild(name, props, key, suffix, loopItemRoot) {
     // into the middle of the name (\`<my data-key="1"-widget>\`), which
     // the parser then drops. Mirrors production's \`TAG_HEAD_PATTERN\`.
     let keyedHtml = html
-    if (keyAttr) {
+    if (stampedKeyAttr) {
       const __m = html.match(/<([a-zA-Z][^\\s/>]*)/)
       if (__m) {
         const __pos = __m.index
-        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + keyAttr)
+        keyedHtml = html.slice(0, __pos) + html.slice(__pos).replace(/^(<[a-zA-Z][^\\s/>]*)/, '$1' + stampedKeyAttr)
       }
     }
     return '<!--bf-scope:' + scopeId + hostSuffix + '-->' + keyedHtml + '<!--bf-/scope:' + scopeId + '-->'
   }
 
   const bfsAttr = ' bf-s="' + scopeId + '"'
-  const extraAttrs = slotAttrs + keyAttr
+  const extraAttrs = slotAttrs + stampedKeyAttr
   // Dedupe bf-s only when the child template already carries one
   // (it was itself a renderChild call). slotAttrs / keyAttr still inject —
   // dropping them would regress list reconciliation. (#1320)

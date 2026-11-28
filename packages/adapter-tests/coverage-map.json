@@ -12034,6 +12034,29 @@
         "text"
       ]
     },
+    "loop-row-constant-props": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-controlled-input": {
       "kinds": [
         "array-literal",
@@ -12135,6 +12158,59 @@
         "text"
       ]
     },
+    "loop-row-root-component": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-root-component-branches": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-root-empty-lead": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-scalar-member-length": {
       "kinds": [
         "array-literal",
@@ -12169,6 +12245,18 @@
         "attribute",
         "condition",
         "loop"
+      ]
+    },
+    "loop-row-transparent-root": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
       ]
     },
     "loop-row-union-member-attr": {

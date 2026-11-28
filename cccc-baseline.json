@@ -105,7 +105,7 @@
     },
     "packages/adapter-go-template/src/test-render.ts": {
       "buildDynamicChildLoopSeeding": [
-        55
+        52
       ],
       "renderGoTemplateComponent": [
         58
@@ -271,9 +271,6 @@
     "packages/client/src/runtime/component.ts": {
       "materializeComponent": [
         63
-      ],
-      "renderChild": [
-        27
       ]
     },
     "packages/client/src/runtime/loop-markers.ts": {
@@ -617,10 +614,10 @@
         58
       ],
       "generateCsrTemplateWithOpts": [
-        76
+        74
       ],
       "irToComponentTemplateWithOpts": [
-        46
+        44
       ],
       "irToHtmlTemplate": [
         47

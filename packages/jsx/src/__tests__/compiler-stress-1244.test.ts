@@ -1844,7 +1844,9 @@ describe('children passed as a JSX expression value (not nested)', () => {
     `
     const result = compile(src)
     expectNoFatalErrors(result)
-    expect(result.clientJs).toContain('<span bf-s="__BF_PARENT_SCOPE__">x</span>')
+    // The unwrapped element also carries the row-key relay the IR marks on
+    // it (`keyAttr`), rendered by the template as SSR renders it (#4054).
+    expect(result.clientJs).toMatch(/<span bf-s="__BF_PARENT_SCOPE__"[^>]*>x<\/span>/)
   })
 })
 

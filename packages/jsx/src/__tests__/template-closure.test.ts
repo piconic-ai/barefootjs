@@ -28,7 +28,7 @@ function compileClient(source: string, fileName: string): string {
 function templateBody(clientJs: string): string {
   // Match the template lambda body up to the next prop key inside hydrate().
   // Handles both `template: (_p) => \`...\`}` and `template: (_p) => \`...\`, comment: ...`.
-  const m = clientJs.match(/template:\s*\(_p\)\s*=>\s*`([\s\S]*?)`(?=,\s*\w|\s*\})/)
+  const m = clientJs.match(/template:\s*\(_p(?:, __bf_key\w*)?\)\s*=>\s*`([\s\S]*?)`(?=,\s*\w|\s*\})/)
   // Asserting non-empty here defends against the regex silently drifting
   // out of sync with future emit-format changes — without this, every
   // `expect(tpl).toMatch(...)` below would pass spuriously on empty input.

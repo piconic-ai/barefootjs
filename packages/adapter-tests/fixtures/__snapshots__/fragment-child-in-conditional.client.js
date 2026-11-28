@@ -2,7 +2,7 @@ import { createComponent, createSignal, hydrate, markupOrEmpty, $, $c, initChild
 
 function initPassthrough() {}
 
-hydrate('Passthrough__9ec964fa', { init: initPassthrough, template: (_p) => `${markupOrEmpty(_p.children)}`, transparent: true, name: 'Passthrough' })
+hydrate('Passthrough__9ec964fa', { init: initPassthrough, template: (_p, __bf_key) => `${markupOrEmpty(_p.children)}`, keyRelay: true, transparent: true, name: 'Passthrough' })
 export function Passthrough(_p, __bfKey) { return createComponent('Passthrough__9ec964fa', _p, __bfKey) }
 export function initFragmentChildInConditional(__scope, _p = {}) {
   if (!__scope) return
