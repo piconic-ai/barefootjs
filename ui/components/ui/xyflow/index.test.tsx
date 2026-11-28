@@ -82,7 +82,7 @@ describe('Handle', () => {
 
   test('declares handleType / position / className / style memos', () => {
     expect(result.memos).toContain('handleType')
-    expect(result.memos).toContain('position')
+    expect(result.memos).toContain('bfMemo_position')
     expect(result.memos).toContain('className')
     expect(result.memos).toContain('style')
   })
