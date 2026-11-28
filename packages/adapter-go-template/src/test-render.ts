@@ -10,7 +10,7 @@ import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
 import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.ts'
-import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
+import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding, type LoopRowShape } from './adapter/lib/loop-row-path.ts'
 import { allocateRowsFields, rowsFieldSiteKey } from './adapter/lib/nested-rows-field.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
 import { restBagField as restBagFieldOf, type NestedComponentInfo } from './adapter/lib/types.ts'
@@ -927,7 +927,7 @@ function buildDynamicChildLoopSeeding(
     propsLines.push(`\t\tprops.${rowsField}[i] = New${nested.name}Props(${nested.name}Input{${inputFields.join(', ')}})`)
     propsLines.push(`\t\tprops.${rowsField}[i].BfParent = props.ScopeID`)
     propsLines.push(`\t\tprops.${rowsField}[i].BfMount = ${JSON.stringify(nested.slotId ?? '')}`)
-    const keyField = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex })?.go
+    const keyField = loopKeyToGoRowExpr(nested.loopKey, { ...row, index: nested.loopIndex }, scalarRowShape(goTypes, ir.metadata.componentName, datumField))?.go
     if (keyField) {
       propsLines.push(`\t\tprops.${rowsField}[i].BfDataKey = bf.String(${keyField})`)
     }
@@ -935,6 +935,21 @@ function buildDynamicChildLoopSeeding(
   }
   return { inputLines, propsLines }
 }
+
+/**
+ * The row shape of a signal-backed loop whose datum is a slice of scalars
+ * (`[]string`): its row variable `item` is the value itself, so a key that
+ * reads the row as a whole (`key={x}`) lowers to `item`, as the
+ * constructor-built rows' key does. Empty for a slice of structs.
+ */
+function scalarRowShape(goTypes: string, componentName: string, datumField: string): LoopRowShape {
+  const sliceType = goStructFieldTypes(goTypes, `${componentName}Props`)?.get(capitalizeFieldName(datumField))
+  const elementType = sliceType?.startsWith('[]') ? sliceType.slice(2) : null
+  if (!elementType || !SCALAR_ROW_GO_TYPES.has(elementType)) return {}
+  return { scalar: true, readGoType: segments => (segments.length === 0 ? elementType : null) }
+}
+
+const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'int64', 'float64', 'bool'])
 
 /** Whether the generated `<Component>Input` struct declares `field`. */
 function inputStructHasField(goTypes: string, componentName: string, field: string): boolean {
@@ -971,7 +986,8 @@ function loopRowChildInputFields(
   for (const prop of nested.props) {
     if (prop.isEventHandler) continue
     if (prop.name === 'key' || prop.name.includes('-')) continue
-    const value = prop.value.kind === 'expression' && prop.value.parsed ? resolve(prop.value.parsed) : null
+    const value = (prop.value.kind === 'expression' && prop.value.parsed ? resolve(prop.value.parsed) : null)
+      ?? constantPropGoValue(prop.value)
     if (value === null) return null
     const field = capitalizeFieldName(prop.name)
     const fieldType = childInput?.get(field)
@@ -985,6 +1001,33 @@ function loopRowChildInputFields(
   }
   if (restBagEntries.length > 0) fields.push(`${restBagField}: map[string]any{${restBagEntries.join(', ')}}`)
   return fields.length > 0 ? fields : null
+}
+
+/**
+ * A loop-body child prop whose value is the same constant on every row
+ * (`n={1}`, `on`, `label="x"`, `tags={['t']}`): the Go value a route handler
+ * passes each row, or null for anything else. An array of constants goes as
+ * `[]any`, which `bf.Coerce` reshapes into the child's slice type.
+ */
+function constantPropGoValue(value: NestedComponentInfo['props'][number]['value']): string | null {
+  switch (value.kind) {
+    case 'literal':
+      return goStringLit(value.value)
+    case 'boolean-attr':
+    case 'boolean-shorthand':
+      return 'true'
+    case 'expression':
+      return value.parsed ? constantParsedGoValue(value.parsed) : null
+    default:
+      return null
+  }
+}
+
+function constantParsedGoValue(parsed: ParsedExpr): string | null {
+  if (parsed.kind === 'literal') return parsed.literalType === 'null' ? null : goScalarLiteral(parsed.value)
+  if (parsed.kind !== 'array-literal') return null
+  const elements = parsed.elements.map(e => (e.kind === 'literal' && e.literalType !== 'null' ? goScalarLiteral(e.value) : null))
+  return elements.every(e => e !== null) ? `[]any{${elements.join(', ')}}` : null
 }
 
 /**

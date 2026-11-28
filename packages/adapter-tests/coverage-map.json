@@ -12149,6 +12149,27 @@
         "text"
       ]
     },
+    "loop-row-root-empty-lead": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-scalar-member-length": {
       "kinds": [
         "array-literal",
