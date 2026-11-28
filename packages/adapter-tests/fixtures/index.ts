@@ -1215,6 +1215,42 @@ import { fixture as destructureDefaultSpreadConstMemo } from './destructure-defa
 import { fixture as destructureDefaultSpreadConstMemoClient } from './destructure-default-spread-const-memo-client'
 import { fixture as destructureDefaultSpreadMemoBody } from './destructure-default-spread-memo-body'
 import { fixture as destructureDefaultSpreadMemoBodyClient } from './destructure-default-spread-memo-body-client'
+import { fixture as memoTypeofProp } from './memo-typeof-prop'
+import { fixture as memoTypeofPropClient } from './memo-typeof-prop-client'
+import { fixture as signalSeedTypeofProp } from './signal-seed-typeof-prop'
+import { fixture as signalSeedTypeofPropClient } from './signal-seed-typeof-prop-client'
+import { fixture as memoTypeofThroughMemo } from './memo-typeof-through-memo'
+import { fixture as memoTypeofThroughMemoClient } from './memo-typeof-through-memo-client'
+import { fixture as memoTypeofFilterCallback } from './memo-typeof-filter-callback'
+import { fixture as memoTypeofFilterCallbackClient } from './memo-typeof-filter-callback-client'
+import { fixture as memoExponentOperator } from './memo-exponent-operator'
+import { fixture as memoExponentOperatorClient } from './memo-exponent-operator-client'
+import { fixture as constTypeofProp } from './const-typeof-prop'
+import { fixture as constTypeofPropClient } from './const-typeof-prop-client'
+import { fixture as memoTypeofChildProp } from './memo-typeof-child-prop'
+import { fixture as childPropTypeof } from './child-prop-typeof'
+import { fixture as memoVoidNullishFallback } from './memo-void-nullish-fallback'
+import { fixture as memoBlockBranchLocalScope } from './memo-block-branch-local-scope'
+import { fixture as memoBlockVarRedeclare } from './memo-block-var-redeclare'
+import { fixture as memoBlockShadowingLocalReadsTypeofConst } from './memo-block-shadowing-local-reads-typeof-const'
+import { fixture as memoBlockShadowingLocalReadsTypeofConstClient } from './memo-block-shadowing-local-reads-typeof-const-client'
+import { fixture as memoBlockLocalChainReadsTypeofConst } from './memo-block-local-chain-reads-typeof-const'
+import { fixture as memoBlockLocalChainReadsTypeofConstClient } from './memo-block-local-chain-reads-typeof-const-client'
+import { fixture as memoBlockUncalledFunctionReadsTypeofConst } from './memo-block-uncalled-function-reads-typeof-const'
+import { fixture as memoBlockCalledFunctionReadsTypeofConst } from './memo-block-called-function-reads-typeof-const'
+import { fixture as memoBlockCalledFunctionReadsTypeofConstClient } from './memo-block-called-function-reads-typeof-const-client'
+import { fixture as memoObjectBodyReadsTypeofConst } from './memo-object-body-reads-typeof-const'
+import { fixture as memoObjectBodyReadsTypeofConstClient } from './memo-object-body-reads-typeof-const-client'
+import { fixture as memoBlockReturnReadsTypeofConst } from './memo-block-return-reads-typeof-const'
+import { fixture as memoBlockReturnReadsTypeofConstClient } from './memo-block-return-reads-typeof-const-client'
+import { fixture as signalSeedReadsTypeofConst } from './signal-seed-reads-typeof-const'
+import { fixture as signalSeedReadsTypeofConstClient } from './signal-seed-reads-typeof-const-client'
+import { fixture as memoTypeofBlockReturn } from './memo-typeof-block-return'
+import { fixture as memoTypeofBlockReturnClient } from './memo-typeof-block-return-client'
+import { fixture as memoTypeofObjectMember } from './memo-typeof-object-member'
+import { fixture as memoTypeofObjectMemberClient } from './memo-typeof-object-member-client'
+import { fixture as constTypeofUnreadMember } from './const-typeof-unread-member'
+import { fixture as memoTypeofBlockStatements } from './memo-typeof-block-statements'
 import { fixture as destructureDefaultSpreadConstSignalSeed } from './destructure-default-spread-const-signal-seed'
 import { fixture as destructureDefaultSpreadConstSignalSeedClient } from './destructure-default-spread-const-signal-seed-client'
 import { fixture as destructureDefaultSpreadConstChildProp } from './destructure-default-spread-const-child-prop'
@@ -3442,6 +3478,42 @@ export const jsxFixtures: JSXFixture[] = [
   searchParamsDerivedConst,
   memberReadOnLowPrecedenceConst,
   signalSeedLocalCallMemberOnConditional,
+  memoTypeofProp,
+  memoTypeofPropClient,
+  signalSeedTypeofProp,
+  signalSeedTypeofPropClient,
+  memoTypeofThroughMemo,
+  memoTypeofThroughMemoClient,
+  memoTypeofFilterCallback,
+  memoTypeofFilterCallbackClient,
+  memoExponentOperator,
+  memoExponentOperatorClient,
+  constTypeofProp,
+  constTypeofPropClient,
+  memoTypeofChildProp,
+  childPropTypeof,
+  memoVoidNullishFallback,
+  memoBlockBranchLocalScope,
+  memoBlockVarRedeclare,
+  memoBlockShadowingLocalReadsTypeofConst,
+  memoBlockShadowingLocalReadsTypeofConstClient,
+  memoBlockLocalChainReadsTypeofConst,
+  memoBlockLocalChainReadsTypeofConstClient,
+  memoBlockUncalledFunctionReadsTypeofConst,
+  memoBlockCalledFunctionReadsTypeofConst,
+  memoBlockCalledFunctionReadsTypeofConstClient,
+  memoObjectBodyReadsTypeofConst,
+  memoObjectBodyReadsTypeofConstClient,
+  memoBlockReturnReadsTypeofConst,
+  memoBlockReturnReadsTypeofConstClient,
+  signalSeedReadsTypeofConst,
+  signalSeedReadsTypeofConstClient,
+  memoTypeofBlockReturn,
+  memoTypeofBlockReturnClient,
+  memoTypeofObjectMember,
+  memoTypeofObjectMemberClient,
+  constTypeofUnreadMember,
+  memoTypeofBlockStatements,
   signalSeedSameNamedTransform,
   signalSeedSameNamedTransformKinds,
   memoSameNamedTransform,

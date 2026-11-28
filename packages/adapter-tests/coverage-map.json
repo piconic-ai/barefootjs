@@ -2135,6 +2135,18 @@
         "attribute"
       ]
     },
+    "child-prop-typeof": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "child-rest-bag-generated-field-name": {
       "kinds": [
         "array-literal",
@@ -4624,6 +4636,41 @@
       ],
       "contexts": [
         "condition"
+      ]
+    },
+    "const-typeof-prop": {
+      "kinds": [
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "const-typeof-prop-client": {
+      "kinds": [
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "const-typeof-unread-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
       ]
     },
     "context-provider": {
@@ -12610,6 +12657,186 @@
         "text"
       ]
     },
+    "memo-block-branch-local-scope": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-called-function-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-called-function-reads-typeof-const-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-local-chain-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-local-chain-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-return-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-return-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-shadowing-local-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-shadowing-local-reads-typeof-const-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-block-uncalled-function-reads-typeof-const": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "memo-block-var-redeclare": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-chain": {
       "kinds": [
         "binary",
@@ -12672,6 +12899,42 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "memo-exponent-operator": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "unary:~"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-exponent-operator-client": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "unary:~"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -12998,6 +13261,32 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "memo-object-body-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },
@@ -13333,6 +13622,166 @@
         "text"
       ]
     },
+    "memo-typeof-block-return": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-block-return-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-block-statements": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-filter-callback": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-filter-callback-client": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-object-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-object-member-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-prop-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-through-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-typeof-through-memo-client": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-uninlinable-local-function-named-like-prop": {
       "kinds": [
         "call",
@@ -13349,6 +13798,22 @@
         "identifier"
       ],
       "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-void-nullish-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
       "contexts": [
         "text"
       ]
@@ -21849,6 +22314,32 @@
         "text"
       ]
     },
+    "signal-seed-reads-typeof-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-reads-typeof-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-seed-renamed-default-beside-raw-nullish": {
       "kinds": [
         "call",
@@ -21945,6 +22436,28 @@
       ],
       "contexts": [
         "loop",
+        "text"
+      ]
+    },
+    "signal-seed-typeof-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-typeof-prop-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "unsupported"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

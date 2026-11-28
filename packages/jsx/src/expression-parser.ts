@@ -167,7 +167,11 @@ export type ParsedExpr =
       flatDepth: FlatDepth
       depthExpr?: ParsedExpr
     }
-  | { kind: 'unsupported'; raw: string; reason: string }
+  // `operator` names the JS operator the node applies when the node is an
+  // operator expression no template lowers and that has no `binary` /
+  // `unary` form of its own (`typeof x`), so a check can tell it apart from
+  // other unsupported syntax structurally (`unloweredOperator`).
+  | { kind: 'unsupported'; raw: string; reason: string; operator?: 'typeof' }
 
 /**
  * Runtime registry of every `ParsedExpr` kind — the denominator for
@@ -1329,7 +1333,17 @@ function convertNode(node: ts.Node, outerRaw: string, nested = false): ParsedExp
   }
 
   // Default: unsupported
-  return { kind: 'unsupported', raw, reason: `Unsupported syntax: ${ts.SyntaxKind[node.kind]}` }
+  return unsupportedSyntax(node, raw)
+}
+
+/**
+ * The `unsupported` node for syntax no other form represents. `typeof x` has
+ * no template lowering either; it is tagged so `unloweredOperator` reads it
+ * from the tree.
+ */
+function unsupportedSyntax(node: ts.Node, raw: string): ParsedExpr {
+  const reason = `Unsupported syntax: ${ts.SyntaxKind[node.kind]}`
+  return ts.isTypeOfExpression(node) ? { kind: 'unsupported', raw, reason, operator: 'typeof' } : { kind: 'unsupported', raw, reason }
 }
 
 /**
@@ -2189,6 +2203,28 @@ function getUnaryOperatorString(op: ts.PrefixUnaryOperator): string {
 // Support Checking
 // =============================================================================
 
+/** The `binary` operators a template lowers: comparison and arithmetic. Any other parses as `'unknown'`. */
+const TEMPLATE_BINARY_OPERATORS: ReadonlySet<string> = new Set(['===', '==', '!==', '!=', '>', '<', '>=', '<=', '+', '-', '*', '/', '%'])
+
+/** The `unary` operators a template lowers: negation and numeric `-` / `+`. */
+const TEMPLATE_UNARY_OPERATORS: ReadonlySet<string> = new Set(['!', '-', '+'])
+
+/**
+ * The operator `expr` applies, when it is one no template lowers: a
+ * `binary` operator outside comparison and arithmetic (`**`, a bitwise or
+ * shift operator, `in`, `instanceof`; all parse as `'unknown'`), a `unary`
+ * one other than `!`, `-` and `+` (`~`), or `typeof`. `null` for any other
+ * node, children not looked at. The support check refuses the same
+ * operators (`checkSupport`), so a value position the check classifies
+ * opaque for one of them has no server value at all.
+ */
+export function unloweredOperator(expr: ParsedExpr): string | null {
+  if (expr.kind === 'binary') return TEMPLATE_BINARY_OPERATORS.has(expr.op) ? null : expr.op
+  if (expr.kind === 'unary') return TEMPLATE_UNARY_OPERATORS.has(expr.op) ? null : expr.op
+  if (expr.kind === 'unsupported') return expr.operator ?? null
+  return null
+}
+
 /**
  * Check if a parsed expression is supported for SSR template conversion at
  * a RENDERED position — a standalone template expression (`{expr}`, an
@@ -2489,13 +2525,8 @@ function checkSupport(
       const rightSupport = checkSupport(expr.right, pos, matchers, scope)
       if (!rightSupport.supported) return rightSupport
 
-      // Comparison operators are L3
-      if (['===', '==', '!==', '!=', '>', '<', '>=', '<='].includes(expr.op)) {
-        return { supported: true, level: 'L3' }
-      }
-
-      // Arithmetic operators are L3
-      if (['+', '-', '*', '/', '%'].includes(expr.op)) {
+      // Comparison and arithmetic operators are L3
+      if (TEMPLATE_BINARY_OPERATORS.has(expr.op)) {
         return { supported: true, level: 'L3' }
       }
 
@@ -2507,16 +2538,11 @@ function checkSupport(
       const argSupport = checkSupport(expr.argument, pos, matchers, scope)
       if (!argSupport.supported) return argSupport
 
-      // Negation is L4
-      if (expr.op === '!') {
-        return { supported: true, level: 'L4' }
+      if (!TEMPLATE_UNARY_OPERATORS.has(expr.op)) {
+        return { supported: false, reason: `Unsupported unary operator: ${expr.op}` }
       }
-      // Numeric negation is L3
-      if (expr.op === '-' || expr.op === '+') {
-        return { supported: true, level: 'L3' }
-      }
-
-      return { supported: false, reason: `Unsupported unary operator: ${expr.op}` }
+      // Negation is L4, numeric negation L3
+      return { supported: true, level: expr.op === '!' ? 'L4' : 'L3' }
     }
 
     case 'logical': {

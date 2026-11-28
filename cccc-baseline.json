@@ -461,7 +461,7 @@
     },
     "packages/jsx/src/expression-parser.ts": {
       "checkSupport": [
-        128
+        125
       ],
       "collectDestructureBindings": [
         49
@@ -747,7 +747,7 @@
         205
       ],
       "evalStatementsForReturn": [
-        39
+        27
       ],
       "extractSsrDefaults": [
         63
