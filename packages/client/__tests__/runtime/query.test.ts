@@ -316,7 +316,7 @@ describe('find', () => {
       const scope = findScope('FragComp', 0, null, true)
       expect(scope).not.toBeNull()
       expect(find(scope, '[bf="s0"]')?.textContent).toBe('Own slot')
-      expect(findCondTarget(scope!, '[bf-c="c0"]')?.textContent).toBe('Own conditional')
+      expect(findCondTarget(scope!, 'c0')?.textContent).toBe('Own conditional')
     })
 
     test('finds slot directly in comment range (no nested scope)', () => {
