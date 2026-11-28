@@ -273,11 +273,6 @@
         63
       ]
     },
-    "packages/client/src/runtime/insert.ts": {
-      "updateFragmentConditional": [
-        33
-      ]
-    },
     "packages/client/src/runtime/loop-markers.ts": {
       "findLoopMarkers": [
         27
