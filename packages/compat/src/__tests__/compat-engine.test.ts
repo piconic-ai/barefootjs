@@ -80,6 +80,7 @@ describe('compileForCompat', () => {
           'loop-row-child-scalar-row-nested-component',
           'loop-row-dynamic-jsx-prop',
           'loop-row-key-outer-state',
+          'memo-object-literal-computed-key',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
           'nested-loop-row-child-own-child-no-rebuild',
