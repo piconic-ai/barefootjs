@@ -295,8 +295,12 @@ export function Test() {
         const clientJs = compileClientJs(fixture)
         if (!clientJs) return
 
-        // If client JS references data-key, source must have a .map() call
-        if (clientJs.includes('data-key')) {
+        // A `keyRelay` template renders the key its caller passes (#4054),
+        // whether or not this source has a loop; only a `keyRelay` def
+        // emits that relay. Any other data-key needs a .map() call.
+        const relay = `'data-key="' + escapeAttr(__bfKey) + '"'`
+        if (clientJs.includes(relay)) expect(clientJs).toContain('keyRelay: true')
+        if (clientJs.split(relay).join('').includes('data-key')) {
           expect(fixture.source).toMatch(/\.map\s*\(/)
         }
       })

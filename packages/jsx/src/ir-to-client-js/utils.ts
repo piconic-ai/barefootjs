@@ -148,7 +148,65 @@ export function componentDefScopeFlags(root: ComponentIR['root']): string[] {
   const flags: string[] = []
   if (isCommentScopedRoot(root)) flags.push('comment: true')
   if (isScopeCommentFragmentRoot(root)) flags.push('fragmentRoot: true')
+  if (keyRelayInTemplate(root)) flags.push('keyRelay: true')
   return flags
+}
+
+/**
+ * The second parameter of a `keyRelay` template (`ComponentDef.keyRelay`):
+ * the row key the caller passes to `renderChild` / `createComponent`.
+ */
+export const KEY_RELAY_PARAM = '__bfKey'
+
+/** The `template:` lambda's parameter list for a component with this root. */
+export function templateParams(root: ComponentIR['root']): string {
+  return keyRelayInTemplate(root) ? `${PROPS_PARAM}, ${KEY_RELAY_PARAM}` : PROPS_PARAM
+}
+
+/**
+ * True when the component's CSR template must render the caller's row key
+ * itself (`keyRelay: true` on the def, #4054) instead of letting the runtime
+ * stamp it onto the first element of the rendered markup.
+ *
+ * Where the key goes is decided once, in Phase 1: the elements carrying a
+ * valueless `IRElement.keyAttr` (`resolveRootKeyAttr` /
+ * `markDataKeyCarrier`, jsx-to-ir.ts). Every SSR adapter renders exactly
+ * those. The runtime's first-element stamp (`renderChild`, component.ts) is
+ * only a shorter encoding of the same answer, valid when the first element
+ * the component renders is such a carrier on every render path. That fails
+ * when the first element comes from somewhere else: a child component the
+ * root renders (`return <Kid />`, a fragment or branch that starts with
+ * one), or the caller's children (`<>{props.children}</>`). There SSR
+ * renders no key, or renders it on a later element, while the stamp put it
+ * on the child's root. Such a component gets the key as a template
+ * parameter and renders it on its carriers (`keyRelayTemplateAttr`,
+ * html-template.ts), so the CSR template places it where SSR does.
+ *
+ * Answering `true` for a shape the stamp would also get right only costs
+ * the longer encoding, so every shape not known to be equivalent answers
+ * `true`.
+ */
+export function keyRelayInTemplate(root: ComponentIR['root']): boolean {
+  return !firstElementCarriesKeyRelay(root)
+}
+
+function firstElementCarriesKeyRelay(node: IRNode | null): boolean {
+  if (!node) return true
+  switch (node.type) {
+    case 'element':
+      return !!node.keyAttr && node.keyAttr.value === undefined
+    case 'fragment':
+    case 'provider': {
+      const first = node.children.find((c) => !(c.type === 'text' && typeof c.value === 'string' && !c.value.trim()))
+      return first ? firstElementCarriesKeyRelay(first) : true
+    }
+    case 'conditional':
+      return firstElementCarriesKeyRelay(node.whenTrue) && firstElementCarriesKeyRelay(node.whenFalse)
+    case 'if-statement':
+      return firstElementCarriesKeyRelay(node.consequent) && firstElementCarriesKeyRelay(node.alternate)
+    default:
+      return false
+  }
 }
 
 /**

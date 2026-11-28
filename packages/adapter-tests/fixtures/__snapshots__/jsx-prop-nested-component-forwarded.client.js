@@ -56,5 +56,5 @@ export function initJsxPropNestedComponentForwarded(__scope, _p = {}) {
   initChild('TemplateDelimiterBadge', _s0, {})
 }
 
-hydrate('JsxPropNestedComponentForwarded', { init: initJsxPropNestedComponentForwarded, template: (_p) => `${renderChild('SlotForwardCard', {header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`)}, undefined, 's1')}`, comment: true })
+hydrate('JsxPropNestedComponentForwarded', { init: initJsxPropNestedComponentForwarded, template: (_p, __bfKey) => `${renderChild('SlotForwardCard', {header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`)}, undefined, 's1')}`, comment: true, keyRelay: true })
 export function JsxPropNestedComponentForwarded(_p, __bfKey) { return createComponent('JsxPropNestedComponentForwarded', _p, __bfKey) }

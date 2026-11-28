@@ -55,5 +55,5 @@ export function initJsxPropNestedComponentConditional(__scope, _p = {}) {
   initChild('TemplateDelimiterBadge', _s1, {})
 }
 
-hydrate('JsxPropNestedComponentConditional', { init: initJsxPropNestedComponentConditional, template: (_p) => `${renderChild('SlotConditionalCard', {show: true, header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`), footer: bfMarkup(`<b class="f">foot${renderChild('TemplateDelimiterBadge', {}, undefined, 's1')}</b>`)}, undefined, 's2')}`, comment: true })
+hydrate('JsxPropNestedComponentConditional', { init: initJsxPropNestedComponentConditional, template: (_p, __bfKey) => `${renderChild('SlotConditionalCard', {show: true, header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`), footer: bfMarkup(`<b class="f">foot${renderChild('TemplateDelimiterBadge', {}, undefined, 's1')}</b>`)}, undefined, 's2')}`, comment: true, keyRelay: true })
 export function JsxPropNestedComponentConditional(_p, __bfKey) { return createComponent('JsxPropNestedComponentConditional', _p, __bfKey) }

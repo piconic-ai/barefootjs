@@ -271,9 +271,6 @@
     "packages/client/src/runtime/component.ts": {
       "materializeComponent": [
         63
-      ],
-      "renderChild": [
-        27
       ]
     },
     "packages/client/src/runtime/insert.ts": {
@@ -622,10 +619,10 @@
         58
       ],
       "generateCsrTemplateWithOpts": [
-        76
+        74
       ],
       "irToComponentTemplateWithOpts": [
-        46
+        44
       ],
       "irToHtmlTemplate": [
         47

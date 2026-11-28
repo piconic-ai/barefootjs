@@ -40,5 +40,5 @@ export function initJsxPropNestedComponentPositions(__scope, _p = {}) {
   initChild('TemplateDelimiterBadge', _s0, {})
 }
 
-hydrate('JsxPropNestedComponentPositions', { init: initJsxPropNestedComponentPositions, template: (_p) => `${renderChild('SlotPositionsCard', {header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`), children: `<button bf="^s2"><!--bf:^s1-->${escapeTextOrMarkup((0))}<!--/--></button>`}, undefined, 's3')}`, comment: true })
+hydrate('JsxPropNestedComponentPositions', { init: initJsxPropNestedComponentPositions, template: (_p, __bfKey) => `${renderChild('SlotPositionsCard', {header: bfMarkup(`<span class="h" bf-s="__BF_PARENT_SCOPE__">head${renderChild('TemplateDelimiterBadge', {}, undefined, 's0')}</span>`), children: `<button bf="^s2"><!--bf:^s1-->${escapeTextOrMarkup((0))}<!--/--></button>`}, undefined, 's3')}`, comment: true, keyRelay: true })
 export function JsxPropNestedComponentPositions(_p, __bfKey) { return createComponent('JsxPropNestedComponentPositions', _p, __bfKey) }

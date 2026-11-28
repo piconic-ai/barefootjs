@@ -10,7 +10,7 @@ import { createRoot, hasOwner, untrack } from '@barefootjs/client/reactive'
 /**
  * Template function type - generates HTML string from props
  */
-export type TemplateFn = (props: Record<string, unknown>) => string
+export type TemplateFn = (props: Record<string, unknown>, key?: string | number) => string
 
 /**
  * Run a compiler-emitted `template()` call with reactivity isolated from the

@@ -6,7 +6,7 @@
 
 import type { ComponentIR, IRNode, ReferencesGraph, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
-import { PROPS_PARAM, componentDefScopeFlags, initFunctionName } from './utils.ts'
+import { PROPS_PARAM, componentDefScopeFlags, initFunctionName, templateParams } from './utils.ts'
 import { collectReactiveGetterNames } from '../analyzer-context.ts'
 import { computeInlinability, toLegacyInlinability } from './compute-inlinability.ts'
 import { canGenerateStaticTemplate, irToComponentTemplate, generateCsrTemplate } from './html-template.ts'
@@ -129,14 +129,14 @@ export function csrInlinableConstantsFromCtx(ctx: ClientJsContext): Map<string, 
  * that one signal's template reference exactly as unsound as before this
  * fix (never worse).
  */
-function buildTemplateDefPart(ctx: ClientJsContext, templateHtml: string): string {
+function buildTemplateDefPart(ctx: ClientJsContext, templateHtml: string, params: string): string {
   const envDecls = ctx.signals
     .filter((s): s is SignalInfo & { envFactory: string } => Boolean(s.envReader) && Boolean(s.envFactory))
     .map((s) => `const [${s.getter}] = ${s.envFactory}()`)
   if (envDecls.length === 0) {
-    return `template: (${PROPS_PARAM}) => \`${templateHtml}\``
+    return `template: (${params}) => \`${templateHtml}\``
   }
-  return `template: (${PROPS_PARAM}) => { ${envDecls.join('; ')}; return \`${templateHtml}\` }`
+  return `template: (${params}) => { ${envDecls.join('; ')}; return \`${templateHtml}\` }`
 }
 
 /** Emit hydrate() call that registers component, template, and hydrates. */
@@ -201,7 +201,7 @@ export function emitRegistrationAndHydration(
     const markupSlotIds = markupSlotIdsOf(ctx)
     const templateHtml = irToComponentTemplate(_ir.root, inlinableConstants, restSpreadNames, ctx.propsObjectName, markupSlotIds, ctx.restPropsName, templateBindingPlan(ctx))
     if (templateHtml) {
-      defParts.push(buildTemplateDefPart(ctx, templateHtml))
+      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root)))
     }
   } else {
     // CSR fallback: emit for all components that can't generate static templates.
@@ -217,7 +217,7 @@ export function emitRegistrationAndHydration(
       _ir.root, csrInlinableConstants, ctx, restSpreadNames, ctx.propsObjectName, unsafeLocalNames, ctx.deferredChildSlots
     )
     if (templateHtml) {
-      defParts.push(buildTemplateDefPart(ctx, templateHtml))
+      defParts.push(buildTemplateDefPart(ctx, templateHtml, templateParams(_ir.root)))
     }
   }
   // No else: top-level-only components skip template entirely (save bytes)

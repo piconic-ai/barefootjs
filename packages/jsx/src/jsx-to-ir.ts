@@ -1422,7 +1422,12 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, scope:
  * reference (Hono) adapter applied before #2762, and it matches what the
  * client runtime does for the CSR half of the contract: `renderChild` /
  * `materializeComponent` splice `data-key` onto the rendered markup's FIRST
- * element (component.ts), whatever wrapper nodes stand above it. A walk
+ * element (component.ts), whatever wrapper nodes stand above it. Where that
+ * first element is not one of this component's own (it renders another
+ * component or the caller's children first), no element here carries the
+ * relay, and the client template renders the key itself on the carriers
+ * this pass marks instead (`keyRelayInTemplate`, ir-to-client-js/utils.ts,
+ * #4054). A walk
  * that stops at the first non-element node instead of testing `needsScope`
  * throughout answers differently for every component whose root is a
  * `<Ctx.Provider>` — `transformProviderElement` passes `ctx.isRoot` through

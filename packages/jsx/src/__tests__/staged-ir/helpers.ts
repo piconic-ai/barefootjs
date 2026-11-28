@@ -27,9 +27,9 @@ export function compile(source: string, fileName = 'Component.tsx'): CompileResu
   }
 }
 
-/** Extract the `template: (_p) => \`...\`` body. Returns '' if not present. */
+/** Extract the `template: (_p) => \`...\`` body (`(_p, __bfKey)` for a `keyRelay` def). Returns '' if not present. */
 export function extractTemplateBody(clientJs: string): string {
-  const m = clientJs.match(/template:\s*\(_p\)\s*=>\s*`([\s\S]*?)`(?=,\s*\w|\s*\})/)
+  const m = clientJs.match(/template:\s*\(_p(?:, __bfKey)?\)\s*=>\s*`([\s\S]*?)`(?=,\s*\w|\s*\})/)
   return m ? m[1] : ''
 }
 
