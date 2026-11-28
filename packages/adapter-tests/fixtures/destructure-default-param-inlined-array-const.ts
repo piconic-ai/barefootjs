@@ -3,8 +3,8 @@ import { createFixture } from '../src/types'
 /**
  * A component-scope array const reading a parameter-destructured prop whose
  * default is an array (`{ b = ['y'] }`, `const local = [b, 'z']`): an omitted
- * `b` reads the default, a non-empty array. The client template reads the omitted prop
- * without it (limitation `csr-template-inlined-const-param-default`).
+ * `b` reads the default, a non-empty array. The client template binds the
+ * prop with its default once and the inlined const reads that binding.
  */
 export const fixture = createFixture({
   id: 'destructure-default-param-inlined-array-const',

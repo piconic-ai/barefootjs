@@ -374,6 +374,9 @@ export const renderDivergences: RenderDivergences = {
   // the constructor assigns the prop's `interface{}` field to the signal's
   // typed field (`S: in.B`), which does not compile.
   'destructure-default-local-const-signal-seed': { limitation: 'body-destructure-computed-default-signal-seed' },
+  // A default calling a method on a literal (`parts = 'a-b'.split('-')`):
+  // the SSR defaults carry `null`, so an omitted prop renders empty.
+  'destructure-default-param-method-call': { limitation: 'destructure-default-literal-method-call' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
   // A `null` / `undefined` `style` object property renders `color:` with

@@ -16,6 +16,7 @@ import { isVisibleIn } from './types.ts'
 import type { AnalyzerContext } from './analyzer-context.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { buildPropAliasMap, isPropsAliasConst, templatePropReads } from './props-binding.ts'
+import { generatedPrefixSpellingSet } from './generated-name-spellings.ts'
 import type {
   TemplatePrimitiveRegistry,
   TemplateCallAcceptor,
@@ -965,6 +966,7 @@ export function buildRelocateEnv(ctx: AnalyzerContext): RelocateEnv {
     propsObjectName: ctx.propsObjectName,
     signals: ctx.signals,
     memos: ctx.memos,
+    reservedSpellings: generatedPrefixSpellingSet(ctx.sourceFile),
   })
 }
 
@@ -986,7 +988,7 @@ export function buildRelocateEnvFromIR(
     acceptsTemplateCall?: TemplateCallAcceptor
   },
 ): RelocateEnv {
-  const env = buildRelocateEnvFromFields(metadata)
+  const env = buildRelocateEnvFromFields({ ...metadata, reservedSpellings: new Set(metadata.generatedNameSpellings ?? []) })
   if (options?.templatePrimitives) env.templatePrimitives = options.templatePrimitives
   if (options?.acceptsTemplateCall) env.acceptsTemplateCall = options.acceptsTemplateCall
   // Bind every registered LoweringPlugin (built-in + userland, #2057) to
@@ -1019,6 +1021,8 @@ interface EnvFields {
   propsObjectName: string | null
   signals: AnalyzerContext['signals']
   memos: AnalyzerContext['memos']
+  /** The source file's `__bf_` spellings a template prop parameter avoids (`templatePropReads`). */
+  reservedSpellings?: ReadonlySet<string>
 }
 
 function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
@@ -1131,7 +1135,7 @@ function buildRelocateEnvFromFields(src: EnvFields): RelocateEnv {
  * classifies as a prop.
  */
 function propTemplateReadsFor(src: EnvFields, bindings: ReadonlyMap<string, BindingKind>): Map<string, string> {
-  const reads = templatePropReads(src)
+  const reads = templatePropReads(src, src.reservedSpellings ?? new Set())
   for (const name of reads.keys()) {
     if (bindings.get(name) !== 'prop') reads.delete(name)
   }

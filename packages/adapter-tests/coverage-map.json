@@ -6499,6 +6499,24 @@
         "text"
       ]
     },
+    "destructure-default-param-inlined-const-call": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-param-inlined-const-default-text": {
       "kinds": [
         "array-literal",
@@ -6534,6 +6552,21 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-member": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -6593,6 +6626,53 @@
         "literal:string",
         "logical:??",
         "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-inlined-const-shapes": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "destructure-default-param-method-call": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:split",
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"

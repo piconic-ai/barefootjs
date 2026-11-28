@@ -76,6 +76,7 @@ export function buildEnvFromCtx(ctx: ClientJsContext): RelocateEnv {
       namedExports: [],
       localFunctions: ctx.localFunctions,
       localConstants: ctx.localConstants,
+      ...(ctx.generatedNameSpellings && { generatedNameSpellings: [...ctx.generatedNameSpellings] }),
     },
     {
       templatePrimitives: ctx.templatePrimitives,

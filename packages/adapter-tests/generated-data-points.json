@@ -6567,6 +6567,26 @@
       }
     }
   ],
+  "destructure-default-param-inlined-const-call": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "destructure-default-param-inlined-const-default-text": [
     {
       "name": "gen:a:empty",
@@ -6622,6 +6642,14 @@
       "name": "gen:c:empty",
       "props": {
         "c": []
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-member": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
       }
     }
   ],
@@ -6844,6 +6872,54 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "destructure-default-param-inlined-const-shapes": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    },
+    {
+      "name": "gen:o:object:minimal",
+      "props": {
+        "o": {
+          "k": ""
+        }
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "destructure-default-param-method-call": [
+    {
+      "name": "gen:parts:empty",
+      "props": {
+        "parts": []
       }
     }
   ],

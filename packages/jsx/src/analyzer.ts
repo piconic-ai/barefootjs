@@ -15,6 +15,7 @@ import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToE
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
+import { generatedPrefixSpellingSet } from './generated-name-spellings.ts'
 import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, propReadBase, resolveBodyPropAliases, signalPropSeed, templatePropReadParams, templatePropReads } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
@@ -3786,10 +3787,11 @@ function destructuredPropTemplateRead(ctx: AnalyzerContext): (localName: string,
 /**
  * The CSR `template:` read of a destructured prop an inlined constant names
  * (`templatePropReads`, #3980): the live read with its destructure default
- * when that default is copy-safe, else the bare `_p.<key>`.
+ * when that default is copy-safe, else the parameter the template binds the
+ * prop to.
  */
 function inlinedConstPropTemplateRead(ctx: AnalyzerContext): (localName: string, callerKey: string) => string {
-  const reads = templatePropReads(ctx)
+  const reads = templatePropReads(ctx, generatedPrefixSpellingSet(ctx.sourceFile))
   return (localName, callerKey) => reads.get(localName) ?? propReadBase({ name: localName, sourceName: callerKey })
 }
 
