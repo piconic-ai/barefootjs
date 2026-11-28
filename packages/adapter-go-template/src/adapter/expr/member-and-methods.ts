@@ -76,7 +76,7 @@ export interface MemberAndMethodsHost {
   /** Whether `node` is a member chain rooted in an inline-object-typed prop. */
   isMapRootedPropChain(node: ParsedExpr): boolean
   /** Whether `node` reads a member chain of a source-keyed signal seed map. */
-  isMapSeededSignalChain(node: ParsedExpr): boolean
+  isMapSeededGetterChain(node: ParsedExpr): boolean
   /** A static `Const.key` / `Const["key"]` / `Const[0]` lookup on a module literal const, or null. */
   resolveStaticConstMember(objectName: string, key: string): string | null
   /** The compile-time value of a literal const member read (`undefined` for a key the literal lacks), as a typed `ParsedExpr`, or null. */
@@ -319,7 +319,7 @@ function renderFieldMemberRead(
   // `keyRead` above), and so does a member of what an index read yields
   // (`rows[1].n`, `readsThroughIndex`): `bf_get .Rows "1".N` would read `.N`
   // off the key, and does not parse.
-  if (optional || keyRead || readsThroughIndex(object) || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
+  if (optional || keyRead || readsThroughIndex(object) || host.isMapRootedPropChain(object) || host.isMapSeededGetterChain(object)) {
     return host.renderOptionalMember(obj, property)
   }
   return host.optFieldRead(object, property, `${obj}.${goFieldNameForKey(property)}`)

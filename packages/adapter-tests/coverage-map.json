@@ -2101,6 +2101,20 @@
         "text"
       ]
     },
+    "child-prop-object-reads-module-const-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "child-prop-rest-forward": {
       "kinds": [
         "call",
@@ -11893,6 +11907,22 @@
         "text"
       ]
     },
+    "loop-row-child-prop-object-reads-module-const-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-renamed-rows-sibling-plural": {
       "kinds": [
         "identifier",
@@ -13282,6 +13312,190 @@
         "text"
       ]
     },
+    "memo-object-block-return-reads-module-const-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-computed-key-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-computed-key-module-const-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-literal-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-local-const-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-module-const-array-element": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-module-const-computed-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-module-const-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-module-const-nested-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-module-const-object-row": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-body-reads-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-object-body-reads-typeof-const": {
       "kinds": [
         "call",
@@ -13308,6 +13522,21 @@
         "text"
       ]
     },
+    "memo-object-body-spreads-module-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-object-const-arrow-sibling-key": {
       "kinds": [
         "arrow",
@@ -13322,6 +13551,25 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "memo-object-rows-read-module-const-member": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -22308,6 +22556,21 @@
         "binary:*",
         "literal:number",
         "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-object-reads-module-const-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
       ],
       "contexts": [
         "text"

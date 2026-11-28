@@ -10200,6 +10200,21 @@
           }
         }
       },
+      "memo-object-body-computed-key-module-const": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "memo-object-literal-computed-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-object-body-computed-key-module-const-client"
+          }
+        }
+      },
       "memo-object-body-reads-typeof-const": {
         "blade": {
           "kind": "refusal",
@@ -10317,6 +10332,14 @@
             "state": "escapable",
             "twin": "memo-object-body-reads-typeof-const-client"
           }
+        }
+      },
+      "memo-object-rows-read-module-const-member": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "memo-object-literal-rows"
+          ]
         }
       },
       "memo-over-array-const-index": {
@@ -23358,9 +23381,17 @@
         "description": "A memo applying ** and ~ to a prop renders the computed numbers (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-exponent-operator.ts"
       },
+      "memo-object-body-computed-key-module-const": {
+        "description": "A memo returning an object literal with a computed key reading a module const member renders it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-body-computed-key-module-const.ts"
+      },
       "memo-object-body-reads-typeof-const": {
         "description": "A memo reading a const member that applies typeof renders the type name (#3981)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-body-reads-typeof-const.ts"
+      },
+      "memo-object-rows-read-module-const-member": {
+        "description": "A memo of object rows reading a module const member renders it in each loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-rows-read-module-const-member.ts"
       },
       "memo-over-array-const-index": {
         "description": "A memo over an element of an array const, and over the length of a nested one (#3953)",
@@ -24177,6 +24208,10 @@
       "memo-exponent-operator-client": {
         "description": "The client-directive escape of a memo applying ** and ~ to a prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-exponent-operator-client.ts"
+      },
+      "memo-object-body-computed-key-module-const-client": {
+        "description": "The client-directive escape of memo-object-body-computed-key-module-const",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-object-body-computed-key-module-const-client.ts"
       },
       "memo-object-body-reads-typeof-const-client": {
         "description": "The client-directive escape of memo-object-body-reads-typeof-const",
@@ -25764,6 +25799,35 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "memo-object-literal-computed-key": {
+      "title": "A memo returning an object literal with a computed key",
+      "kind": "refusal",
+      "given": "a memo whose body is an object literal with a computed key (`createMemo(() => ({ ['k']: o.k }))`), whose member the server render reads (`m().k`)",
+      "expected": "the read renders the value the member holds (`v`)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "memo-object-body-computed-key-module-const"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "memo-object-literal-rows": {
+      "title": "A memo mapping an array to object-literal rows, rendered in a loop",
+      "kind": "silent",
+      "given": "a memo that maps an array to object literals (`createMemo(() => ROWS.map(r => ({ id: r, k: o.k })))`), rendered by a `.map()` over the memo that reads the rows' members",
+      "expected": "every row renders with its members (`av`, `bv`)",
+      "actual": "renders no rows",
+      "fixtures": [
+        "memo-object-rows-read-module-const-member"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "memo-void-operand": {

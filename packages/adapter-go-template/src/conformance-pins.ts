@@ -110,6 +110,9 @@ export const conformancePins: ConformancePins = {
   'memo-typeof-block-return': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-typeof-object-member': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-object-body-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
+  // An object-literal memo body with a computed key, which the constructor's
+  // evaluator has no tree for: refused instead of a nil field the read fails on.
+  'memo-object-body-computed-key-module-const': [{ code: 'BF101', severity: 'error', limitation: 'memo-object-literal-computed-key' }],
   'memo-block-return-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'signal-seed-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],
   'memo-block-called-function-reads-typeof-const': [{ code: 'BF101', severity: 'error', limitation: 'server-read-unlowered-operator' }],

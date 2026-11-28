@@ -12396,6 +12396,26 @@
       }
     }
   ],
+  "memo-object-body-reads-prop": [
+    {
+      "name": "gen:x:empty",
+      "props": {
+        "x": ""
+      }
+    },
+    {
+      "name": "gen:x:markup",
+      "props": {
+        "x": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:x:multibyte",
+      "props": {
+        "x": "日本語"
+      }
+    }
+  ],
   "memo-object-body-reads-typeof-const": [
     {
       "name": "gen:x:empty",

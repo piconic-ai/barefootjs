@@ -1242,6 +1242,23 @@ import { fixture as memoBlockUncalledFunctionReadsTypeofConst } from './memo-blo
 import { fixture as memoBlockCalledFunctionReadsTypeofConst } from './memo-block-called-function-reads-typeof-const'
 import { fixture as memoBlockCalledFunctionReadsTypeofConstClient } from './memo-block-called-function-reads-typeof-const-client'
 import { fixture as memoObjectBodyReadsTypeofConst } from './memo-object-body-reads-typeof-const'
+import { fixture as memoObjectBodyReadsModuleConstMember } from './memo-object-body-reads-module-const-member'
+import { fixture as memoObjectBodyComputedKeyModuleConstClient } from './memo-object-body-computed-key-module-const-client'
+import { fixture as loopRowChildPropObjectReadsModuleConstMember } from './loop-row-child-prop-object-reads-module-const-member'
+import { fixture as memoObjectBlockReturnReadsModuleConstMember } from './memo-object-block-return-reads-module-const-member'
+import { fixture as memoObjectRowsReadModuleConstMember } from './memo-object-rows-read-module-const-member'
+import { fixture as childPropObjectReadsModuleConstMember } from './child-prop-object-reads-module-const-member'
+import { fixture as signalSeedObjectReadsModuleConstMember } from './signal-seed-object-reads-module-const-member'
+import { fixture as memoObjectBodySpreadsModuleConst } from './memo-object-body-spreads-module-const'
+import { fixture as memoObjectBodyComputedKeyModuleConst } from './memo-object-body-computed-key-module-const'
+import { fixture as memoObjectBodyReadsModuleConstComputedMember } from './memo-object-body-reads-module-const-computed-member'
+import { fixture as memoObjectBodyReadsModuleConstObjectRow } from './memo-object-body-reads-module-const-object-row'
+import { fixture as memoObjectBodyReadsModuleConstArrayElement } from './memo-object-body-reads-module-const-array-element'
+import { fixture as memoObjectBodyReadsModuleConstNestedMember } from './memo-object-body-reads-module-const-nested-member'
+import { fixture as memoObjectBodyReadsMemo } from './memo-object-body-reads-memo'
+import { fixture as memoObjectBodyReadsProp } from './memo-object-body-reads-prop'
+import { fixture as memoObjectBodyReadsLocalConstMember } from './memo-object-body-reads-local-const-member'
+import { fixture as memoObjectBodyLiteralMember } from './memo-object-body-literal-member'
 import { fixture as memoObjectBodyReadsTypeofConstClient } from './memo-object-body-reads-typeof-const-client'
 import { fixture as memoBlockReturnReadsTypeofConst } from './memo-block-return-reads-typeof-const'
 import { fixture as memoBlockReturnReadsTypeofConstClient } from './memo-block-return-reads-typeof-const-client'
@@ -3507,6 +3524,23 @@ export const jsxFixtures: JSXFixture[] = [
   memoBlockCalledFunctionReadsTypeofConst,
   memoBlockCalledFunctionReadsTypeofConstClient,
   memoObjectBodyReadsTypeofConst,
+  memoObjectBodyReadsModuleConstMember,
+  memoObjectBodyComputedKeyModuleConstClient,
+  loopRowChildPropObjectReadsModuleConstMember,
+  memoObjectBlockReturnReadsModuleConstMember,
+  memoObjectRowsReadModuleConstMember,
+  childPropObjectReadsModuleConstMember,
+  signalSeedObjectReadsModuleConstMember,
+  memoObjectBodySpreadsModuleConst,
+  memoObjectBodyComputedKeyModuleConst,
+  memoObjectBodyReadsModuleConstComputedMember,
+  memoObjectBodyReadsModuleConstObjectRow,
+  memoObjectBodyReadsModuleConstArrayElement,
+  memoObjectBodyReadsModuleConstNestedMember,
+  memoObjectBodyReadsMemo,
+  memoObjectBodyReadsProp,
+  memoObjectBodyReadsLocalConstMember,
+  memoObjectBodyLiteralMember,
   memoObjectBodyReadsTypeofConstClient,
   memoBlockReturnReadsTypeofConst,
   memoBlockReturnReadsTypeofConstClient,

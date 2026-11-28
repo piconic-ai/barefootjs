@@ -497,7 +497,7 @@
         30
       ],
       "toEvalNode": [
-        111
+        106
       ],
       "usesPerPath/walk": [
         26
@@ -744,7 +744,7 @@
     },
     "packages/jsx/src/ssr-defaults.ts": {
       "evalNode": [
-        205
+        186
       ],
       "evalStatementsForReturn": [
         27

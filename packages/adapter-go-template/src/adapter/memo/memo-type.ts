@@ -110,3 +110,15 @@ export function isStringTernaryMemo(ctx: GoEmitContext, parsed: ParsedExpr | und
     (n.kind === 'identifier' && ctx.state.moduleStringConsts.has(n.name))
   return isStr(parsed.consequent) && isStr(parsed.alternate)
 }
+
+/**
+ * Whether a memo's body is an object literal (`() => ({ k: o.k })`). The
+ * analyzer leaves `parsed` unset for such a body and carries the literal as
+ * `unparsedValue`; the constructor evaluates that tree into a map keyed by
+ * the source property names, which a member read reaches through `bf_get`.
+ */
+export function isObjectLiteralMemo<M extends { parsed?: ParsedExpr; unparsedValue?: ParsedExpr }>(
+  memo: M,
+): memo is M & { unparsedValue: Extract<ParsedExpr, { kind: 'object-literal' }> } {
+  return memo.parsed === undefined && memo.unparsedValue?.kind === 'object-literal'
+}

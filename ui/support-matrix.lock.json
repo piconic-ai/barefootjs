@@ -1002,6 +1002,12 @@
               ]
             },
             {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
+              ]
+            },
+            {
               "fixture": "memo-over-array-const-index",
               "limitations": [
                 "memo-array-literal-element-read"
@@ -4940,6 +4946,12 @@
               "fixture": "memo-block-shadowing-local-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
@@ -11803,9 +11815,21 @@
               ]
             },
             {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
               "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
@@ -21597,9 +21621,21 @@
               ]
             },
             {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
               "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
@@ -32048,6 +32084,18 @@
               ]
             },
             {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
+              ]
+            },
+            {
               "fixture": "memo-over-array-const-index",
               "limitations": [
                 "memo-array-literal-element-read"
@@ -42123,9 +42171,21 @@
               ]
             },
             {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
               "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
@@ -49102,9 +49162,21 @@
               ]
             },
             {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
               "fixture": "memo-object-body-reads-typeof-const",
               "limitations": [
                 "server-read-unlowered-operator"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
@@ -66000,6 +66072,18 @@
               "fixture": "memo-block-var-redeclare",
               "limitations": [
                 "block-memo-static-value-unseeded"
+              ]
+            },
+            {
+              "fixture": "memo-object-body-computed-key-module-const",
+              "limitations": [
+                "memo-object-literal-computed-key"
+              ]
+            },
+            {
+              "fixture": "memo-object-rows-read-module-const-member",
+              "limitations": [
+                "memo-object-literal-rows"
               ]
             },
             {
