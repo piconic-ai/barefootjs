@@ -12196,6 +12196,110 @@
       }
     }
   ],
+  "memo-same-named-prop-fallback": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:other:absent",
+      "props": {
+        "alt": "alt"
+      }
+    },
+    {
+      "name": "gen:other:empty",
+      "props": {
+        "other": "",
+        "alt": "alt"
+      }
+    },
+    {
+      "name": "gen:other:markup",
+      "props": {
+        "other": "<b>&\"'</b>",
+        "alt": "alt"
+      }
+    },
+    {
+      "name": "gen:other:multibyte",
+      "props": {
+        "other": "日本語",
+        "alt": "alt"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "other": "yes",
+        "alt": "alt",
+        "title": "日本語"
+      }
+    },
+    {
+      "name": "gen:alt:absent",
+      "props": {
+        "other": "yes"
+      }
+    },
+    {
+      "name": "gen:alt:empty",
+      "props": {
+        "other": "yes",
+        "alt": ""
+      }
+    },
+    {
+      "name": "gen:alt:markup",
+      "props": {
+        "other": "yes",
+        "alt": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:alt:multibyte",
+      "props": {
+        "other": "yes",
+        "alt": "日本語"
+      }
+    }
+  ],
   "memo-same-named-transform": [
     {
       "name": "gen:seed:empty",
@@ -21115,6 +21219,81 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "signal-seed-same-named-falsy-fallback": [
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7,
+        "n": 0,
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890,
+        "n": 0,
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "count": 0,
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "count": 0,
+        "n": -7,
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "count": 0,
+        "n": 1234567890,
+        "tag": ""
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "count": 0,
+        "n": 0,
+        "tag": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "count": 0,
+        "n": 0,
+        "tag": "日本語"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "count": 0,
+        "n": 0,
+        "tag": "",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "count": 0,
+        "n": 0,
+        "tag": "",
+        "label": "日本語"
       }
     }
   ],

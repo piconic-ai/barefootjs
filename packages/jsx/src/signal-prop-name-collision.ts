@@ -5,6 +5,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { signalPropSeed } from './props-binding.ts'
 import type { SignalPropSeed, SourceLocation } from './types.ts'
 import { localConstValuesByName, referencesOwnProp } from './ssr-defaults.ts'
+import { isLiteralData } from './ssr-seed-plan.ts'
 
 // TypeScript exposes these resolution-cache readers on Program at runtime
 // (its own incremental rebuild uses them), but omits them from the public
@@ -116,16 +117,21 @@ function collidingBindings(ctx: AnalyzerContext, propsObjectName: string, propNa
 
 /**
  * Whether a seed (`SignalInfo.propSeed`, the analyzer's one reading of how
- * an initializer reads a prop) is the same-named prop's value wherever the
- * prop is present: the bare read (`props.label`) or its `??` / `||`
- * fallback (`props.label ?? 'x'`). Only such a binding can share the prop's
- * template variable. Any other derivation (`String(props.label) + '!'`, a
- * ternary, a template literal, arithmetic, a method call, `props.label.x`)
- * is a different value under the same name, so the binding is separated and
- * every backend seeds it from its own initializer.
+ * an initializer reads a prop) keeps the same-named prop's raw value as its
+ * result wherever the prop is present: the bare read (`props.label`), or a
+ * `??` fallback to literal data (`props.label ?? 'x'`, `props.rows ?? []`),
+ * which only replaces an absent prop with a constant. Only such a binding
+ * can share the prop's template variable. Every other derivation is a
+ * different value under the same name, so the binding is separated and
+ * every backend seeds it from its own initializer: `||` also replaces a
+ * supplied falsy value (`count={0}` under `props.count || 7`), a `??`
+ * fallback that reads anything (`props.label ?? props.other`) is not a
+ * constant, and so on for `String(props.label) + '!'`, a ternary, a
+ * template literal, arithmetic, a method call or `props.label.x`.
  */
 function isPropPassthrough(seed: SignalPropSeed | null | undefined, name: string): boolean {
-  return seed != null && seed.via === 'member' && !seed.nested && seed.propName.toLowerCase() === name.toLowerCase()
+  if (seed == null || seed.via !== 'member' || seed.nested || seed.propName.toLowerCase() !== name.toLowerCase()) return false
+  return seed.fallback === null || (seed.fallback.op === '??' && isLiteralData(seed.fallback.expr))
 }
 
 /** {@link isPropPassthrough} for a memo's parsed body; an unparsed body is no passthrough. */

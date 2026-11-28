@@ -230,9 +230,11 @@ export function C(props: { x?: number }) {
   })
 
   // The self-reference is decided from the variables the emitter reads, not
-  // from the rendered Kolon text: a read inside a native predicate body
-  // counts, and a `$x` inside a string literal does not.
-  test('captures a same-name read inside a native predicate body', () => {
+  // from the rendered Kolon text: a `$x` inside a string literal does not
+  // count. A same-named signal whose `??` fallback reads anything (here a
+  // predicate over `$x`) leaves the prop's name before IR is built, so it
+  // seeds its own local and needs no capture.
+  test('separates a same-named signal whose fallback reads its own prop', () => {
     const { template } = compileAndGenerate(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -241,8 +243,8 @@ export function C(props: { items: string[]; x?: string }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(": my $__bf_seed_x = ($bf.keep_nonnil($x) || [$bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($bf.keep_nonnil($x) || [''])[0])) }))])[0];")
-    expect(template).toContain(': my $x = $__bf_seed_x;')
+    expect(template).toContain(": my $bfSignal_x = ($bf.keep_nonnil($x) || [$bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($bf.keep_nonnil($x) || [''])[0])) }))])[0];")
+    expect(template).not.toContain('__bf_seed_x')
   })
 
   test('does not capture for a $<name> spelled inside a string literal', () => {

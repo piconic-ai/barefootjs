@@ -13205,6 +13205,21 @@
         "text"
       ]
     },
+    "memo-same-named-prop-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo-same-named-transform": {
       "kinds": [
         "array-method",
@@ -21845,6 +21860,25 @@
       "axes": [
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-same-named-falsy-fallback": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
       ],
       "contexts": [
         "attribute",
