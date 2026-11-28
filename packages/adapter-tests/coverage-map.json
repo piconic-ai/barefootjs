@@ -6502,7 +6502,6 @@
     "destructure-default-param-inlined-const-call": {
       "kinds": [
         "array-literal",
-        "array-method",
         "call",
         "identifier",
         "literal",
@@ -6510,9 +6509,7 @@
         "member"
       ],
       "axes": [
-        "array-method:split",
         "literal:number",
-        "literal:string",
         "logical:??",
         "member:computed"
       ],
@@ -6661,6 +6658,23 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "destructure-default-param-method-call": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:split",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },

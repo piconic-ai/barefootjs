@@ -3448,6 +3448,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -21213,6 +21219,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -31778,6 +31790,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -38487,6 +38505,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -41784,6 +41808,12 @@
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
                 "array-equality-through-inlined-const"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
               ]
             },
             {
@@ -56941,7 +56971,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -65769,6 +65808,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -71705,6 +71750,12 @@
               "fixture": "destructure-default-param-inlined-const-identity",
               "limitations": [
                 "array-equality-through-inlined-const"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-method-call",
+              "limitations": [
+                "destructure-default-literal-method-call"
               ]
             },
             {

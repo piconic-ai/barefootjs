@@ -6585,12 +6585,6 @@
       "props": {
         "label": "日本語"
       }
-    },
-    {
-      "name": "gen:parts:empty",
-      "props": {
-        "parts": []
-      }
     }
   ],
   "destructure-default-param-inlined-const-default-text": [
@@ -6918,6 +6912,14 @@
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "destructure-default-param-method-call": [
+    {
+      "name": "gen:parts:empty",
+      "props": {
+        "parts": []
       }
     }
   ],

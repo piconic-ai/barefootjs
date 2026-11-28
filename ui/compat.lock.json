@@ -5586,6 +5586,14 @@
           ]
         }
       },
+      "destructure-default-param-method-call": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-literal-method-call"
+          ]
+        }
+      },
       "destructure-default-reads-signal": {
         "blade": {
           "kind": "refusal",
@@ -23102,6 +23110,10 @@
         "description": "An inlined const reading an allocating parameter default twice sees one value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-inlined-const-identity.ts"
       },
+      "destructure-default-param-method-call": {
+        "description": "A parameter default calling a method on a literal applies the call result when the prop is omitted",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-method-call.ts"
+      },
       "destructure-default-reads-signal": {
         "description": "A destructure default reading a signal through a const is refused on the template adapters",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-reads-signal.ts"
@@ -25341,6 +25353,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "destructure-default-literal-method-call": {
+      "title": "A destructure default calling a method on a literal receiver",
+      "kind": "silent",
+      "given": "a parameter-destructured prop whose default calls a method on a literal (`{ parts = 'a-b'.split('-') }`), rendered with the prop omitted",
+      "expected": "the omitted prop takes the call result (`parts.length` renders `2`)",
+      "actual": "drops the default: the omitted prop reads as empty (`parts.length` renders `0`)",
+      "fixtures": [
+        "destructure-default-param-method-call"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "destructure-default-reads-component-state": {
