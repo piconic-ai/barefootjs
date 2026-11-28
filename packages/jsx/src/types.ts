@@ -1959,6 +1959,13 @@ export interface SignalInfo {
    */
   parsed?: ParsedExpr
   /**
+   * The parse of `initialValue` when `parsed` leaves it out and it is, at its
+   * root, an operator no template lowers (`createSignal(typeof props.x)`, an
+   * `unsupported` node with an `operator`). Read only by the server-read
+   * refusal of such operators (`refuseUnloweredOperators`).
+   */
+  unparsedValue?: ParsedExpr
+  /**
    * Set when `initialValue` is a read of one prop, bare or with a single
    * `??` / `||` fallback (`props.checked`, `checked ?? false`,
    * `props.value || ''`, `props.row.count`), recorded by the analyzer from
@@ -2178,6 +2185,15 @@ export interface MemoInfo {
    */
   parsed?: ParsedExpr
   /**
+   * The parse of the value the memo returns when `parsed` leaves it out: an
+   * object-literal expression body (`() => ({ kind: typeof props.x })`), or
+   * an operator no template lowers at the root of an expression body or of a
+   * block body's single `return` (`() => { return typeof props.x }`). Read
+   * only by the server-read refusal of such operators
+   * (`refuseUnloweredOperators`); never lowered.
+   */
+  unparsedValue?: ParsedExpr
+  /**
    * Whether the memo's effective body is a template literal (`() => `…`` or a
    * block body whose first `return` is one), classified once at analysis time
    * from the real arrow AST. Lets the Go adapter pick the `string` field type
@@ -2216,6 +2232,13 @@ export interface MemoInfo {
    * propagation in `ir-to-client-js` (#1277).
    */
   computationFreeIdentifiers?: ReadonlySet<string>
+  /**
+   * The names evaluating the computation reads: `computationFreeIdentifiers`
+   * less those read only inside a nested function it creates and never calls
+   * (`extractEvaluatedFreeIdentifiers`). Read by the server-read refusal of an
+   * operator no template lowers, for a memo with no tree to walk.
+   */
+  evaluatedFreeIdentifiers?: ReadonlySet<string>
   /** Same semantics as `SignalInfo.isModule`. */
   isModule?: boolean
   /** When true, the declaration carries an `export` keyword. */

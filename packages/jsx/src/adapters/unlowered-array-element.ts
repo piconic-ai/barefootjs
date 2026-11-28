@@ -32,10 +32,7 @@ import type { UninlinableSeedCallSink } from './uninlinable-seed-call.ts'
 
 /** Record BF101 for each position and declaration the server render reads that holds an array literal with an unlowered element. */
 export function refuseUnloweredArrayElements(ir: ComponentIR, sink: UninlinableSeedCallSink): void {
-  // A component renders on the server whatever directive its prop carries, so
-  // a declaration a child prop reads has no `/* @client */` escape.
-  const readByProp = new Set<string>()
-  walkServerReads(ir, read => readByProp.add(readKey(read)), { startsAt: position => position.role === 'prop' })
+  const readByProp = childPropReads(ir)
   const ctx = evaluatedWalkContext(ir.metadata, { component: BindingScope.EMPTY, module: BindingScope.EMPTY })
   // A position reaches the literal through a function it calls (`{api.add()}`),
   // which no emitter spells, or as a child prop Go's constructor drops.
@@ -51,9 +48,20 @@ export function refuseUnloweredArrayElements(ir: ComponentIR, sink: UninlinableS
     // the file) is out of this refusal's scope: its reads are left as they are.
     if (read.scope === 'module' || !read.expr) return
     if (holdsUnloweredArrayElement(read.expr, { scope: BindingScope.EMPTY, from: read.scope }, ctx)) {
-      record(read, !readByProp.has(readKey(read)), sink)
+      record(read, !readByProp(read), sink)
     }
   })
+}
+
+/**
+ * Whether a child prop reads `read`. A component renders on the server
+ * whatever directive its prop carries, so such a declaration has no
+ * `/* @client *\/` escape.
+ */
+export function childPropReads(ir: ComponentIR): (read: ServerRead) => boolean {
+  const readByProp = new Set<string>()
+  walkServerReads(ir, read => readByProp.add(readKey(read)), { startsAt: position => position.role === 'prop' })
+  return read => readByProp.has(readKey(read))
 }
 
 function readKey(read: ServerRead): string {
