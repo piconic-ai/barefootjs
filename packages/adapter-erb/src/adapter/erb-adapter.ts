@@ -1077,13 +1077,16 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // '_erbout')`), then slice everything appended since the mark back out
     // into a local. No literal text (not even a newline) may sit between
     // the mark/slice tags and the children, or it would leak into (or out
-    // of) the capture. Unlike the reserved `children` value, which the
-    // child reads through a structural bypass (`IRExpression.childrenRead`), a
-    // named slot is read through the generic `bf.h(v[:name])` path, so its
-    // HTML is wrapped in `bf.backend.mark_raw(...)` (`BarefootJS::
-    // SafeString`), which `Context#h` passes through unescaped. A named
-    // slot's locals are counter-based: a prop name can contain characters
-    // (`data-slot`) that are no valid Ruby local name.
+    // of) the capture. Each capture is HTML, so it is wrapped in
+    // `bf.backend.mark_raw(...)` (`BarefootJS::SafeString`), which
+    // `Context#h` passes through unescaped: a named slot is read through the
+    // generic `bf.h(v[:name])` path, and so are the children once the child
+    // holds them in state (`createSignal(props.children)`, `{value()}`) or
+    // forwards them into a nested component's prop. A direct read of the
+    // children prop takes a structural bypass (`IRExpression.childrenRead`)
+    // and prints them as they are. A named slot's locals are counter-based:
+    // a prop name can contain characters (`data-slot`) that are no valid
+    // Ruby local name.
     const tplName = childTemplateName(comp.name, this.importAliases)
     const captures: string[] = []
     const plan = planComponentProps(comp, {
@@ -1113,7 +1116,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
             const childrenBody = this.renderChildren(entry.children)
             const suffix = comp.slotId ?? `c${this.childrenCaptureCounter++}`
             const capVar = `__bf_children_${suffix}`
-            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = _erbout.slice!(__bf_len_${suffix}..) %>`)
+            captures.push(`<% __bf_len_${suffix} = _erbout.length %>${childrenBody}<% ${capVar} = bf.backend.mark_raw(_erbout.slice!(__bf_len_${suffix}..)) %>`)
             return `children: ${capVar}`
           }
         }

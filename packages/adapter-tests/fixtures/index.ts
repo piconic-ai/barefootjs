@@ -662,6 +662,7 @@ import { fixture as childrenBodyDefaultNullishSeed } from './children-body-defau
 import { fixture as childrenAbsentForwarded } from './children-absent-forwarded'
 import { fixture as nullishSeedOverUnknownProp } from './nullish-seed-over-unknown-prop'
 import { fixture as childrenDynamicReadIntoState } from './children-dynamic-read-into-state'
+import { fixture as childrenTextReadIntoState } from './children-text-read-into-state'
 import { fixture as childrenForwardedIntoChildPropSeed } from './children-forwarded-into-child-prop-seed'
 import { fixture as childrenForwardedIntoChildPropSeedForms } from './children-forwarded-into-child-prop-seed-forms'
 import { fixture as childrenForwardedIntoChildPropDelivered } from './children-forwarded-into-child-prop-delivered'
@@ -2402,6 +2403,7 @@ export const jsxFixtures: JSXFixture[] = [
   childrenAbsentForwarded,
   nullishSeedOverUnknownProp,
   childrenDynamicReadIntoState,
+  childrenTextReadIntoState,
   childrenForwardedIntoChildPropSeed,
   childrenForwardedIntoChildPropSeedForms,
   childrenForwardedIntoChildPropDelivered,

@@ -383,6 +383,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'module-const-inherited-key-function-nested',
   'module-const-inherited-key-object-method',
   'module-const-inherited-key-memo-method',
+  // Text children that read the caller's data, held in state and printed:
+  // the CSR template prints the children's markup (the caller's text slot
+  // markers) as escaped text, the CSR side of
+  // `children-element-read-into-state`. The fixture belongs to
+  // `template-time-children-read-into-state`, which the go-template refusal
+  // cites, so it cannot also be a render divergence citing the other entry.
+  'children-text-read-into-state',
 ])
 
 /**

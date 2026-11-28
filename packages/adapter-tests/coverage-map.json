@@ -2936,6 +2936,24 @@
         "text"
       ]
     },
+    "children-text-read-into-state": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "class-vs-classname": {
       "kinds": [],
       "axes": [],

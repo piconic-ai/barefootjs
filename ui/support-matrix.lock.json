@@ -10173,36 +10173,6 @@
               ]
             },
             {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -10964,6 +10934,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -18539,39 +18515,9 @@
               ]
             },
             {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
               ]
             },
             {
@@ -19612,6 +19558,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -28504,30 +28456,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -29397,6 +29325,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -35651,30 +35585,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-returns-function",
               "limitations": [
                 "const-iife-unlowered"
@@ -35890,6 +35800,12 @@
             },
             {
               "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -38159,33 +38075,9 @@
               ]
             },
             {
-              "fixture": "children-element-read-into-state",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "children-fallback-const-row-shadow",
               "limitations": [
                 "children-fallback-const-shadowed-read"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
               ]
             },
             {
@@ -38986,6 +38878,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -60101,30 +59999,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "component-const-iife-block-body",
               "limitations": [
                 "const-iife-unlowered"
@@ -60868,6 +60742,12 @@
             },
             {
               "fixture": "children-read-into-state-shadow-transform",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
@@ -66418,30 +66298,6 @@
               ]
             },
             {
-              "fixture": "children-markup-nullish-memo",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-markup-nullish-seed-bindings",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
-              "fixture": "children-param-default-nullish-seed",
-              "limitations": [
-                "children-element-read-into-state"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -66645,6 +66501,12 @@
             },
             {
               "fixture": "children-read-into-state-forms",
+              "limitations": [
+                "template-time-children-read-into-state"
+              ]
+            },
+            {
+              "fixture": "children-text-read-into-state",
               "limitations": [
                 "template-time-children-read-into-state"
               ]
